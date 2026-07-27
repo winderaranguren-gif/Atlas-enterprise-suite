@@ -1,0 +1,18 @@
+-- ATLAS Core seed file
+-- Production deliberately starts without fake customers, invoices, employees,
+-- expenses, or financial transactions.
+--
+-- After a real user signs in, create the first organization through the RPC:
+--
+-- select public.create_organization(
+--   'Your Company',
+--   'Your Company LLC',
+--   'Professional Services'
+-- );
+--
+-- The RPC automatically creates:
+--   * owner membership
+--   * organization settings
+--   * ATLAS Core module states
+--   * starter chart of accounts
+--   * starter expense categories
