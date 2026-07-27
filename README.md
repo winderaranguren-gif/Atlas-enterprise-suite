@@ -1,27 +1,30 @@
-# ATLAS Enterprise Suite — ATLAS Core v0.2.3
+# ATLAS Enterprise Suite — ATLAS Core v0.2.4
 
 Private repository for the first controlled ATLAS Core release.
 
-## Functional now
+## Two working surfaces
 
-- Demo login with six-digit verification.
-- Multi-company switching and separated local records.
-- Executive dashboard and KPIs.
-- Customer management with search and CSV export.
-- Invoices and accounts receivable.
-- Expenses and accounts payable.
-- Balanced journal-entry workflow.
-- Inventory and service catalog.
-- Employees and basic HR records.
-- Executive reports with browser PDF printing.
-- Module center, audit trail, settings, responsive layout, and PWA cache.
+### Local functional MVP
 
-## Cloud foundation included
+Open `/` for the local demo. It includes multi-company switching, dashboard, customers, invoices, expenses, accounting, inventory, employees, reports, modules, audit, settings, CSV export, and browser PDF printing. Demo data is stored in browser `localStorage`.
 
-- Supabase/PostgreSQL multi-company schema.
+### Supabase Private Beta Cloud
+
+Open `/private-beta.html` after configuring `atlas-config.js`. It includes:
+
+- Supabase Auth sign-in, signup, recovery, and sign-out.
+- RLS-protected organization memberships and company switching.
+- Cloud dashboard and PostgreSQL persistence.
+- Customers, invoices, payments, expenses, vendors, categories, inventory, employees, accounting, audit, and organization settings.
+- Transactional invoice payments and balanced journal entries through protected PostgreSQL RPC functions.
+- Automatic invoice balances, audit records, and private document-storage policies.
+
+## Cloud foundation
+
+- Three ordered Supabase/PostgreSQL migrations.
 - Row Level Security and role helpers.
 - Private organization-scoped document storage.
-- Supabase Auth test surface for sign-in, signup, recovery, memberships, and first-organization creation.
+- Owner, admin, accountant, manager, staff, and viewer roles.
 - Vercel configuration and GitHub Actions validation.
 - Spanish and English setup, deployment, security, and acceptance-test guides.
 
@@ -33,21 +36,14 @@ npm start
 
 Open `http://127.0.0.1:4173`.
 
-### Demo credentials
+### Local-demo credentials
 
 - Email: `demo@atlas.local`
 - Password: `Atlas2026!`
 - Verification code: `246810`
 
-## Current boundary
+## Activation boundary
 
-The operational dashboard still stores demo records in browser `localStorage`. The Supabase schema and real-auth surface are prepared, but operational CRUD must be connected to the founder-owned Supabase project before real customer, financial, employee, or health information is entered.
+The cloud application code is complete but cannot connect until the founder-owned Supabase project exists, all three migrations are applied, and the project URL plus publishable browser key are placed in `atlas-config.js`. Never commit a secret/service-role key, database password, or provider token.
 
-## Security controls
-
-- Repository must remain private during Private Beta.
-- Never commit Supabase secret/service-role keys, database passwords, or provider tokens.
-- Only the Supabase project URL and publishable browser key may be placed in `atlas-config.js`.
-- Changes should be reviewed before merging into `main`.
-
-See `SECURITY.md`, `ARCHITECTURE.md`, `docs/REPOSITORY_STATUS.md`, and `docs/SUPABASE_TEST_PLAN.md`.
+No real customer, financial, employee, health, or banking information should be entered until tenant isolation, role, backup, recovery, and pilot acceptance tests pass.
