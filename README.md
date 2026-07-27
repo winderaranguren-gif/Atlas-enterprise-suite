@@ -1,64 +1,53 @@
-# Atlas Enterprise Suite — Functional MVP
+# ATLAS Enterprise Suite — ATLAS Core v0.2.3
 
-This package is a runnable local MVP of the Atlas Core concept: one modular platform for multiple companies and industries.
+Private repository for the first controlled ATLAS Core release.
 
-## Included now
+## Functional now
 
-- Secure demo login plus a simulated six-digit verification code.
-- Multi-company switching with separate operational records.
-- Dashboard with KPIs, charts, recent invoices and activity.
-- Customer CRM with create, edit, delete, search and CSV export.
-- Invoices and accounts receivable with payment confirmation.
+- Demo login with six-digit verification.
+- Multi-company switching and separated local records.
+- Executive dashboard and KPIs.
+- Customer management with search and CSV export.
+- Invoices and accounts receivable.
 - Expenses and accounts payable.
-- General ledger with balanced journal entries.
+- Balanced journal-entry workflow.
 - Inventory and service catalog.
-- Employees and HR records.
-- Executive report with browser PDF printing.
-- Users, roles and company access.
-- Modular solution center for POS, CleanScan 3D, RideCare, Knowledge Atlas, United Hands Hub, Health Portal and Atlas Mail.
-- Audit trail, security settings, language switch and browser persistence.
-- Responsive layout and PWA cache support.
+- Employees and basic HR records.
+- Executive reports with browser PDF printing.
+- Module center, audit trail, settings, responsive layout, and PWA cache.
 
-## Run on Windows
+## Cloud foundation included
 
-1. Install Node.js 18 or newer from the official Node.js website.
-2. Extract this folder.
-3. Double-click `start-atlas.bat`.
-4. Open `http://127.0.0.1:4173` if it does not open automatically.
+- Supabase/PostgreSQL multi-company schema.
+- Row Level Security and role helpers.
+- Private organization-scoped document storage.
+- Supabase Auth test surface for sign-in, signup, recovery, memberships, and first-organization creation.
+- Vercel configuration and GitHub Actions validation.
+- Spanish and English setup, deployment, security, and acceptance-test guides.
 
-## Run on macOS or Linux
+## Run locally
 
 ```bash
-cd atlas-enterprise-suite-mvp
-./start-atlas.sh
+npm start
 ```
 
-Then open `http://127.0.0.1:4173`.
+Open `http://127.0.0.1:4173`.
 
-## Demo credentials
+### Demo credentials
 
 - Email: `demo@atlas.local`
 - Password: `Atlas2026!`
 - Verification code: `246810`
 
-## Important production note
+## Current boundary
 
-This MVP stores data in the browser's local storage. It demonstrates the user experience and core workflows, but it is not yet a production accounting system. A production release needs a protected backend API, PostgreSQL or another managed database, encrypted secrets, real email/SMS providers, backups, multi-tenant authorization enforcement, testing, logging, deployment, and compliance review.
+The operational dashboard still stores demo records in browser `localStorage`. The Supabase schema and real-auth surface are prepared, but operational CRUD must be connected to the founder-owned Supabase project before real customer, financial, employee, or health information is entered.
 
-## Repository controls
+## Security controls
 
-- The official repository must remain **private** during the Private Beta phase.
-- Real secrets belong in protected hosting environment variables, never in Git.
-- Changes should be made through branches and reviewed before merging into `main`.
-- GitHub Actions validates JavaScript syntax and performs a server smoke test on each push and pull request.
+- Repository must remain private during Private Beta.
+- Never commit Supabase secret/service-role keys, database passwords, or provider tokens.
+- Only the Supabase project URL and publishable browser key may be placed in `atlas-config.js`.
+- Changes should be reviewed before merging into `main`.
 
-See [`SECURITY.md`](SECURITY.md), [`ARCHITECTURE.md`](ARCHITECTURE.md), and [`docs/REPOSITORY_STATUS.md`](docs/REPOSITORY_STATUS.md).
-
-## Cloud database foundation
-
-The `supabase/` directory now contains the PostgreSQL schema, Row Level Security policies, private document storage policies, accounting controls, audit trail, and organization bootstrap function planned for ATLAS Core v0.2.0. See the Spanish and English setup guides in `docs/`.
-
-
-## Cloud authentication test surface
-
-Open `cloud-auth.html` after configuring `atlas-config.js` to validate Supabase password authentication, signup, recovery, organization memberships, and the protected organization-creation RPC. This is deliberately separate from the localStorage dashboard until the production CRUD adapter is complete.
+See `SECURITY.md`, `ARCHITECTURE.md`, `docs/REPOSITORY_STATUS.md`, and `docs/SUPABASE_TEST_PLAN.md`.
