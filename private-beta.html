@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex,nofollow" />
+  <meta name="theme-color" content="#081c2c" />
+  <title>ATLAS Core — Private Beta Cloud</title>
+  <link rel="stylesheet" href="private-beta.css" />
+</head>
+<body>
+  <div id="toast-root" aria-live="polite"></div>
+
+  <section id="setup-view" class="center-shell hidden">
+    <article class="auth-card">
+      <span class="logo">A</span>
+      <p class="eyebrow">ATLAS CORE · PRIVATE BETA CLOUD</p>
+      <h1>Conexión pendiente</h1>
+      <p>La aplicación cloud está construida. Para activarla, completa la URL del proyecto y la clave publicable de Supabase en <code>atlas-config.js</code>.</p>
+      <p class="warning">Nunca coloques aquí la clave secreta, service role ni contraseña de base de datos.</p>
+      <a class="button secondary" href="./">Abrir demo local</a>
+    </article>
+  </section>
+
+  <section id="auth-view" class="auth-shell hidden">
+    <div class="auth-brand">
+      <span class="logo large">A</span>
+      <p class="eyebrow">ATLAS CORE · PRIVATE BETA</p>
+      <h1>Operaciones empresariales conectadas a la nube.</h1>
+      <p>Acceso real, empresas separadas por RLS, módulos operativos y auditoría controlada desde PostgreSQL.</p>
+      <div class="feature-grid">
+        <div><strong>Multiempresa</strong><span>Cada registro pertenece a una organización.</span></div>
+        <div><strong>Roles</strong><span>Owner, admin, accountant, manager, staff y viewer.</span></div>
+        <div><strong>Auditoría</strong><span>Los cambios importantes quedan registrados.</span></div>
+        <div><strong>Private Beta</strong><span>No usar con datos reales hasta aprobar las pruebas.</span></div>
+      </div>
+    </div>
+
+    <div class="auth-form-wrap">
+      <article class="auth-card">
+        <div class="tabs">
+          <button class="tab active" type="button" data-mode="signin">Entrar</button>
+          <button class="tab" type="button" data-mode="signup">Crear cuenta</button>
+          <button class="tab" type="button" data-mode="recovery">Recuperar</button>
+        </div>
+        <form id="auth-form" class="stack">
+          <label>Correo electrónico<input id="auth-email" type="email" required autocomplete="email" /></label>
+          <label id="auth-password-label">Contraseña<input id="auth-password" type="password" minlength="8" required autocomplete="current-password" /></label>
+          <label id="auth-name-label" class="hidden">Nombre completo<input id="auth-name" autocomplete="name" /></label>
+          <button id="auth-submit" class="button primary" type="submit">Entrar</button>
+        </form>
+        <p id="auth-help" class="help">Accede con una cuenta autorizada en el proyecto privado.</p>
+        <a href="./" class="text-link">Abrir demo local</a>
+      </article>
+    </div>
+  </section>
+
+  <section id="onboarding-view" class="center-shell hidden">
+    <article class="auth-card wide-card">
+      <span class="logo">A</span>
+      <p class="eyebrow">PRIMERA EMPRESA</p>
+      <h1>Configura tu organización</h1>
+      <p>Tu usuario todavía no pertenece a una empresa. Crea la primera y quedarás asignado como owner.</p>
+      <form id="organization-form" class="form-grid">
+        <label>Nombre comercial<input id="organization-name" required /></label>
+        <label>Nombre legal<input id="organization-legal-name" /></label>
+        <label class="full">Industria<input id="organization-industry" /></label>
+        <button class="button primary full" type="submit">Crear empresa</button>
+      </form>
+      <button id="onboarding-signout" class="button secondary" type="button">Cerrar sesión</button>
+    </article>
+  </section>
+
+  <div id="app-view" class="app-shell hidden">
+    <aside id="sidebar" class="sidebar">
+      <div class="brand-row"><span class="logo">A</span><span><strong>ATLAS</strong><small>Core Private Beta</small></span><button id="close-menu" class="icon-button mobile-only">×</button></div>
+      <label class="org-picker">Empresa activa<select id="organization-select"></select></label>
+      <div id="role-badge" class="role-badge"></div>
+      <nav id="main-nav"></nav>
+      <div class="sidebar-foot">
+        <div class="account-chip"><strong id="account-email">—</strong><small>Sesión protegida</small></div>
+        <button id="signout-button" class="button sidebar-button" type="button">Cerrar sesión</button>
+      </div>
+    </aside>
+
+    <section class="main-area">
+      <header class="topbar">
+        <button id="open-menu" class="icon-button mobile-only">☰</button>
+        <div><p class="eyebrow">ATLAS CORE CLOUD</p><h2 id="page-title">Dashboard</h2></div>
+        <div class="top-actions"><span id="sync-state" class="sync-state">Conectado</span><button id="refresh-button" class="button secondary" type="button">Actualizar</button><button id="create-button" class="button primary" type="button">＋ Crear</button></div>
+      </header>
+      <main id="content" class="content"></main>
+    </section>
+  </div>
+
+  <div id="modal-root"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.1"></script>
+  <script src="atlas-config.js"></script>
+  <script src="private-beta.js"></script>
+</body>
+</html>
