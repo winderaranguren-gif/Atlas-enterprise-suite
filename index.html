@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0b3a53" />
+  <meta name="description" content="Atlas Enterprise Suite - MVP modular multiempresa" />
+  <title>Atlas Enterprise Suite</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="toast-root" aria-live="polite"></div>
+
+  <section id="login-view" class="auth-shell">
+    <div class="auth-panel auth-brand">
+      <div class="brand-mark large">A</div>
+      <p class="eyebrow">ATLAS ENTERPRISE SUITE</p>
+      <h1>Un solo software.<br />Múltiples soluciones.</h1>
+      <p class="auth-copy">Administra operaciones, contabilidad, clientes, inventario, recursos humanos y reportes desde un núcleo seguro y modular.</p>
+      <div class="auth-feature-grid">
+        <div><strong>Multiempresa</strong><span>Una cuenta, varias organizaciones.</span></div>
+        <div><strong>Modular</strong><span>Activa solo lo que cada empresa necesita.</span></div>
+        <div><strong>Auditable</strong><span>Cada cambio importante queda registrado.</span></div>
+        <div><strong>Bilingüe</strong><span>Español e inglés desde el mismo panel.</span></div>
+      </div>
+    </div>
+    <div class="auth-panel auth-form-wrap">
+      <form id="login-form" class="auth-card">
+        <div class="brand-inline"><span class="brand-mark">A</span><span><strong>ATLAS</strong><small>Enterprise Suite</small></span></div>
+        <h2>Acceso seguro</h2>
+        <p class="muted">Usa las credenciales del demo para entrar al MVP.</p>
+        <label>Correo electrónico
+          <input id="login-email" type="email" value="demo@atlas.local" autocomplete="username" required />
+        </label>
+        <label>Contraseña
+          <div class="password-field"><input id="login-password" type="password" value="Atlas2026!" autocomplete="current-password" required /><button type="button" id="toggle-password" class="icon-btn" title="Mostrar contraseña">◉</button></div>
+        </label>
+        <button type="submit" class="btn primary wide">Continuar</button>
+        <div class="demo-credentials">
+          <strong>Demo:</strong> demo@atlas.local / Atlas2026!
+        </div>
+      </form>
+
+      <form id="otp-form" class="auth-card hidden">
+        <div class="brand-inline"><span class="brand-mark">A</span><span><strong>ATLAS</strong><small>Verificación</small></span></div>
+        <h2>Confirma tu identidad</h2>
+        <p class="muted">Código temporal de demostración: <strong>246810</strong></p>
+        <label>Código de 6 dígitos
+          <input id="otp-code" inputmode="numeric" maxlength="6" placeholder="000000" required />
+        </label>
+        <button type="submit" class="btn primary wide">Verificar y entrar</button>
+        <button type="button" id="back-to-login" class="btn ghost wide">Volver</button>
+      </form>
+    </div>
+  </section>
+
+  <div id="app-view" class="app-shell hidden">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <span class="brand-mark">A</span>
+        <span><strong>ATLAS</strong><small>Enterprise Suite</small></span>
+        <button id="sidebar-close" class="icon-btn mobile-only" aria-label="Cerrar menú">×</button>
+      </div>
+
+      <div class="company-switcher">
+        <label for="company-select">Empresa activa</label>
+        <select id="company-select"></select>
+      </div>
+
+      <nav id="main-nav" class="nav-list" aria-label="Navegación principal"></nav>
+
+      <div class="sidebar-footer">
+        <div class="user-chip">
+          <span class="avatar">WA</span>
+          <span><strong>Winder Admin</strong><small>Superadministrador</small></span>
+        </div>
+        <button id="logout-btn" class="btn ghost wide">Cerrar sesión</button>
+      </div>
+    </aside>
+
+    <div class="main-area">
+      <header class="topbar">
+        <button id="menu-btn" class="icon-btn mobile-only" aria-label="Abrir menú">☰</button>
+        <div>
+          <p class="eyebrow" id="page-eyebrow">ATLAS CORE</p>
+          <h2 id="page-title">Panel principal</h2>
+        </div>
+        <div class="topbar-actions">
+          <button id="global-search-btn" class="search-button">⌕ <span>Buscar en Atlas</span><kbd>Ctrl K</kbd></button>
+          <button id="language-btn" class="icon-btn" title="Cambiar idioma">ES</button>
+          <button id="notifications-btn" class="icon-btn has-badge" title="Notificaciones">♢<span class="badge">3</span></button>
+          <button id="quick-add-btn" class="btn primary">＋ Crear</button>
+        </div>
+      </header>
+      <main id="content" class="content" tabindex="-1"></main>
+    </div>
+  </div>
+
+  <div id="modal-root"></div>
+  <div id="search-overlay" class="overlay hidden" role="dialog" aria-modal="true" aria-label="Búsqueda global">
+    <div class="search-modal">
+      <div class="search-input-row"><span>⌕</span><input id="global-search-input" placeholder="Buscar clientes, facturas, empleados, inventario..." /><button id="close-search" class="icon-btn">×</button></div>
+      <div id="search-results" class="search-results"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
