@@ -10,14 +10,15 @@ Data separation is enforced with Row Level Security (RLS). A user can only read 
 
 - `migrations/202607270001_atlas_core_schema.sql`: tables, functions, controls, and RLS.
 - `migrations/202607270002_atlas_storage.sql`: private document storage.
-- `migrations/202607270003_atlas_cloud_operations.sql`: payment transactions, invoice balances, balanced journals, profile bootstrap, updated timestamps, and automatic audit.
+- `migrations/202607270003_atlas_cloud_operations.sql`: payment transactions, invoice balances, balanced journals, profile bootstrap, automatic audit, role hardening, and cross-organization guards.
+- `migrations/202607270004_atlas_security_patch.sql`: trigger-safety fixes and final expense-category permissions.
 - `seed.sql`: first-organization instructions without fake financial transactions.
 
 ## Supabase installation
 
 1. Create a Supabase project under an account controlled by Winder.
 2. Copy the project URL and publishable browser key into `atlas-config.js`.
-3. Run migrations `001`, `002`, and `003` in order through the Supabase SQL Editor or CLI.
+3. Run migrations `001`, `002`, `003`, and `004` in order through the Supabase SQL Editor or CLI.
 4. Add the deployed `/private-beta.html` URL to Supabase Auth Redirect URLs.
 5. Open `/private-beta.html` and create or sign into a real user.
 6. Create the first organization from the onboarding screen.
@@ -32,7 +33,8 @@ Data separation is enforced with Row Level Security (RLS). A user can only read 
 - Accounting and payment writes require owner, admin, or accountant roles.
 - Posted journal entries must have balanced debits and credits.
 - Important record changes create immutable audit entries.
+- Cross-organization foreign-key relationships are rejected by database triggers.
 
 ## Status
 
-The code and migrations are prepared. The founder-owned Supabase project must still be activated, the three migrations applied, the two public browser values configured, and acceptance testing completed before real data is entered.
+The code and migrations are prepared. The founder-owned Supabase project must still be activated, the four migrations applied, the two public browser values configured, and acceptance testing completed before real data is entered.
