@@ -1,4 +1,4 @@
-# ATLAS Enterprise Suite — ATLAS Core v0.2.4
+# ATLAS Enterprise Suite — ATLAS Core v0.2.5
 
 Private repository for the first controlled ATLAS Core release.
 
@@ -18,14 +18,15 @@ Open `/private-beta.html` after configuring `atlas-config.js`. It includes:
 - Customers, invoices, payments, expenses, vendors, categories, inventory, employees, accounting, audit, and organization settings.
 - Transactional invoice payments and balanced journal entries through protected PostgreSQL RPC functions.
 - Automatic invoice balances, audit records, and private document-storage policies.
+- Operation-specific write permissions and cross-organization integrity guards.
 
 ## Cloud foundation
 
-- Three ordered Supabase/PostgreSQL migrations.
+- Four ordered Supabase/PostgreSQL migrations.
 - Row Level Security and role helpers.
 - Private organization-scoped document storage.
 - Owner, admin, accountant, manager, staff, and viewer roles.
-- Vercel configuration and GitHub Actions validation.
+- Vercel configuration and GitHub Actions validation workflow.
 - Spanish and English setup, deployment, security, and acceptance-test guides.
 
 ## Run locally
@@ -44,6 +45,6 @@ Open `http://127.0.0.1:4173`.
 
 ## Activation boundary
 
-The cloud application code is complete but cannot connect until the founder-owned Supabase project exists, all three migrations are applied, and the project URL plus publishable browser key are placed in `atlas-config.js`. Never commit a secret/service-role key, database password, or provider token.
+The cloud application code is complete but cannot connect until the founder-owned Supabase project exists, all four migrations are applied, and the project URL plus publishable browser key are placed in `atlas-config.js`. Never commit a secret/service-role key, database password, or provider token.
 
 No real customer, financial, employee, health, or banking information should be entered until tenant isolation, role, backup, recovery, and pilot acceptance tests pass.
