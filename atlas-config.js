@@ -5,5 +5,6 @@ window.ATLAS_CONFIG = Object.freeze({
   supabaseUrl: '',
   supabasePublishableKey: '',
   authRedirectUrl: `${window.location.origin}/cloud-auth.html`,
+  privateBetaRedirectUrl: `${window.location.origin}/private-beta.html`,
   environment: 'unconfigured'
 });
