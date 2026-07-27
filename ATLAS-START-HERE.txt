@@ -1,0 +1,39 @@
+ATLAS ENTERPRISE SUITE — START HERE
+Version: 0.2.1 Cloud Auth Foundation
+
+WINDOWS
+1. Install Node.js 18 or newer.
+2. Double-click start-atlas.bat.
+3. Atlas opens at http://127.0.0.1:4173
+
+LOGIN
+Email: demo@atlas.local
+Password: Atlas2026!
+Verification code: 246810
+
+FIRST THINGS TO TEST
+- Change the active company in the left sidebar.
+- Create a client, invoice, expense, inventory item and employee.
+- Mark an invoice as paid using the verification code.
+- Review the automatic journal entry in Accounting.
+- Print the Executive Report to PDF.
+- Activate or deactivate modules.
+- Review all events in Audit Trail.
+
+DATA STORAGE
+This MVP saves data only in the current browser using localStorage. It is a functional prototype, not a production accounting deployment.
+
+
+CLOUD FOUNDATION
+- Supabase/PostgreSQL schema: supabase/migrations/
+- Spanish setup guide: docs/DATABASE_SETUP_ES.md
+- English setup guide: docs/DATABASE_SETUP_EN.md
+- Staging acceptance tests: docs/SUPABASE_TEST_PLAN.md
+
+The browser application still uses localStorage until the cloud adapter is connected.
+
+CLOUD AUTH TEST
+- Open: http://127.0.0.1:4173/cloud-auth.html
+- Configuration: atlas-config.js
+- Activation guides: docs/AUTH_SETUP_ES.md and docs/AUTH_SETUP_EN.md
+- Deployment guides: docs/DEPLOYMENT_ES.md and docs/DEPLOYMENT_EN.md
