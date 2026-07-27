@@ -8,6 +8,7 @@ const root = path.resolve(__dirname, '..');
 const corePath = path.join(root, 'supabase/migrations/202607270001_atlas_core_schema.sql');
 const storagePath = path.join(root, 'supabase/migrations/202607270002_atlas_storage.sql');
 const operationsPath = path.join(root, 'supabase/migrations/202607270003_atlas_cloud_operations.sql');
+const securityPatchPath = path.join(root, 'supabase/migrations/202607270004_atlas_security_patch.sql');
 const envPath = path.join(root, '.env.example');
 
 function fail(message) {
@@ -113,8 +114,12 @@ function validateLexicalBalance(text, label) {
     i += 1;
   }
 
-  if (state !== 'normal' && state !== 'line-comment') fail(`${label} ends inside ${state}`);
-  if (parens !== 0) fail(`${label} has ${parens} unmatched parenthesis level(s)`);
+  if (state !== 'normal' && state !== 'line-comment') {
+    fail(`${label} ends inside ${state}`);
+  }
+  if (parens !== 0) {
+    fail(`${label} has ${parens} unmatched parenthesis level(s)`);
+  }
 }
 
 function duplicates(text, regex) {
@@ -125,6 +130,7 @@ function duplicates(text, regex) {
 const core = read(corePath);
 const storage = read(storagePath);
 const operations = read(operationsPath);
+const securityPatch = read(securityPatchPath);
 const env = read(envPath);
 
 if (core) {
@@ -136,9 +142,11 @@ if (core) {
   assertIncludes(core, 'create or replace function public.validate_journal_entry', 'journal control');
   assertIncludes(core, 'create table if not exists public.audit_logs', 'audit table');
 
-  const tables = [...core.matchAll(/create table if not exists public\.([a-z_]+)/gi)].map((match) => match[1]);
-  const rlsTables = new Set([...core.matchAll(/alter table public\.([a-z_]+) enable row level security/gi)].map((match) => match[1]));
-  for (const table of tables) if (!rlsTables.has(table)) fail(`RLS is not enabled on public.${table}`);
+  const tables = [...core.matchAll(/create table if not exists public\.([a-z_]+)/gi)].map((m) => m[1]);
+  const rlsTables = new Set([...core.matchAll(/alter table public\.([a-z_]+) enable row level security/gi)].map((m) => m[1]));
+  for (const table of tables) {
+    if (!rlsTables.has(table)) fail(`RLS is not enabled on public.${table}`);
+  }
 
   const duplicatePolicies = duplicates(core, /create policy\s+([a-z0-9_]+)/gi);
   if (duplicatePolicies.length) fail(`Duplicate policy names: ${duplicatePolicies.join(', ')}`);
@@ -146,8 +154,14 @@ if (core) {
   const duplicateTriggers = duplicates(core, /create (?:constraint )?trigger\s+([a-z0-9_]+)/gi);
   if (duplicateTriggers.length) fail(`Duplicate trigger names: ${duplicateTriggers.join(', ')}`);
 
-  const requiredTenantTables = ['organizations','organization_members','customers','vendors','products','invoices','invoice_lines','payments','expenses','chart_of_accounts','journal_entries','journal_lines','employees','documents','audit_logs'];
-  for (const table of requiredTenantTables) assertIncludes(core, `public.${table}`, `tenant table ${table}`);
+  const requiredTenantTables = [
+    'organizations', 'organization_members', 'customers', 'vendors', 'products',
+    'invoices', 'invoice_lines', 'payments', 'expenses', 'chart_of_accounts',
+    'journal_entries', 'journal_lines', 'employees', 'documents', 'audit_logs'
+  ];
+  for (const table of requiredTenantTables) {
+    assertIncludes(core, `public.${table}`, `tenant table ${table}`);
+  }
 
   const unsafeServiceKey = /(SUPABASE_SERVICE_ROLE_KEY\s*=\s*[^\s#]+)|(SUPABASE_SECRET_KEY\s*=\s*[^\s#]+)|(sb_secret_[A-Za-z0-9_-]+)|(eyJ[a-zA-Z0-9_-]{20,}\.[a-zA-Z0-9_-]{20,}\.[a-zA-Z0-9_-]{20,})/;
   if (unsafeServiceKey.test(core)) fail('Core migration appears to contain a real credential');
@@ -171,13 +185,24 @@ if (operations) {
   assertIncludes(operations, 'commit;', 'cloud operations migration');
 }
 
+if (securityPatch) {
+  validateLexicalBalance(securityPatch, 'security patch migration');
+  assertIncludes(securityPatch, 'create or replace function public.refresh_invoice_from_payments', 'safe payment refresh');
+  assertIncludes(securityPatch, 'expense_categories_insert', 'expense-category policy');
+  assertIncludes(securityPatch, 'commit;', 'security patch migration');
+}
+
 if (env) {
   const assignments = env.split(/\r?\n/).filter((line) => /^[A-Z0-9_]+=/.test(line));
   for (const line of assignments) {
     const [name, ...parts] = line.split('=');
     const value = parts.join('=').trim();
-    if (['SUPABASE_URL','SUPABASE_PUBLISHABLE_KEY','SUPABASE_SECRET_KEY','SUPABASE_ANON_KEY','SUPABASE_SERVICE_ROLE_KEY','DATABASE_URL'].includes(name) && value) fail(`${name} must remain empty in .env.example`);
+    if (['SUPABASE_URL', 'SUPABASE_PUBLISHABLE_KEY', 'SUPABASE_SECRET_KEY', 'SUPABASE_ANON_KEY', 'SUPABASE_SERVICE_ROLE_KEY', 'DATABASE_URL'].includes(name) && value) {
+      fail(`${name} must remain empty in .env.example`);
+    }
   }
 }
 
-if (!process.exitCode) console.log('ATLAS database package structural validation: PASS');
+if (!process.exitCode) {
+  console.log('ATLAS database package structural validation: PASS');
+}
