@@ -2,40 +2,37 @@
 
 ## Qué queda preparado
 
-La carpeta `supabase/` contiene una base multiempresa para la Private Beta de ATLAS Core.
-Incluye usuarios, empresas, miembros, clientes, proveedores, inventario, facturas,
-pagos, gastos, contabilidad, empleados, documentos, módulos y auditoría.
+La carpeta `supabase/` contiene la base multiempresa y la capa transaccional para ATLAS Core Private Beta Cloud. Incluye usuarios, empresas, miembros, clientes, proveedores, inventario, facturas, pagos, gastos, contabilidad, empleados, documentos, módulos y auditoría.
 
-La separación de datos se aplica mediante Row Level Security (RLS). Un usuario solo
-puede consultar registros de una empresa si figura como miembro activo de esa empresa.
-Los permisos de escritura dependen de su rol: owner, admin, accountant, manager, staff o viewer.
+La separación de datos se aplica mediante Row Level Security (RLS). Un usuario solo puede consultar registros de una empresa si figura como miembro activo de esa empresa. Los permisos de escritura dependen de su rol: owner, admin, accountant, manager, staff o viewer.
 
 ## Archivos
 
 - `migrations/202607270001_atlas_core_schema.sql`: tablas, funciones, controles y RLS.
 - `migrations/202607270002_atlas_storage.sql`: almacenamiento privado de documentos.
+- `migrations/202607270003_atlas_cloud_operations.sql`: pagos transaccionales, balances de facturas, asientos balanceados, perfiles, fechas de actualización y auditoría automática.
 - `seed.sql`: instrucciones para crear la primera empresa sin datos financieros falsos.
 
 ## Instalación en Supabase
 
 1. Crear un proyecto Supabase bajo una cuenta controlada por Winder.
-2. Copiar `SUPABASE_URL` y `SUPABASE_PUBLISHABLE_KEY` a las variables protegidas del hosting.
-3. Ejecutar primero la migración `001` y luego la `002` desde Supabase SQL Editor o CLI.
-4. Crear un usuario real mediante Supabase Auth.
-5. Iniciar sesión con ese usuario y ejecutar la función `create_organization` desde la aplicación.
-6. Confirmar que otro usuario sin membresía no pueda leer registros de la empresa.
+2. Copiar la URL del proyecto y la clave publicable del navegador en `atlas-config.js`.
+3. Ejecutar las migraciones `001`, `002` y `003` en ese orden desde Supabase SQL Editor o CLI.
+4. Agregar la URL publicada de `/private-beta.html` a Auth Redirect URLs de Supabase.
+5. Abrir `/private-beta.html` y crear o iniciar un usuario real.
+6. Crear la primera empresa desde la pantalla inicial.
+7. Confirmar con un segundo usuario y una segunda empresa que RLS bloquee accesos no autorizados.
 
 ## Seguridad
 
-- Nunca colocar `SUPABASE_SECRET_KEY` en el navegador.
-- Nunca guardar contraseñas, claves o tokens reales en GitHub.
+- Nunca colocar `SUPABASE_SECRET_KEY`, service role, contraseña de base de datos o token administrativo en el navegador.
+- Nunca guardar contraseñas, claves secretas o tokens de proveedores en GitHub.
 - El bucket `atlas-documents` es privado.
 - La ruta de cada archivo comienza con el UUID de la empresa.
 - Contabilidad y pagos requieren roles de owner, admin o accountant.
 - Los asientos contabilizados deben tener débitos y créditos balanceados.
-- Cada cambio importante genera una entrada de auditoría.
+- Cada cambio importante genera una entrada de auditoría inmutable.
 
 ## Estado
 
-Este paquete prepara la infraestructura. Todavía falta crear el proyecto real de Supabase,
-aplicar las migraciones y conectar el frontend mediante las credenciales públicas del proyecto.
+El código y las migraciones están preparados. Todavía debe activarse el proyecto Supabase propiedad del fundador, ejecutar las tres migraciones, configurar los dos valores públicos del navegador y completar las pruebas de aceptación antes de ingresar datos reales.
