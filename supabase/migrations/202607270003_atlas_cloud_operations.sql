@@ -42,7 +42,8 @@ begin
     case when tg_op in ('UPDATE','DELETE') then to_jsonb(old) else null end,
     case when tg_op in ('INSERT','UPDATE') then to_jsonb(new) else null end
   );
-  return case when tg_op = 'DELETE' then old else new end;
+  if tg_op = 'DELETE' then return old; end if;
+  return new;
 end;
 $$;
 
@@ -52,7 +53,7 @@ declare
 begin
   foreach table_name in array array[
     'customers','vendors','products','invoices','invoice_lines','payments','expense_categories',
-    'expenses','chart_of_accounts','journal_entries','journal_lines','employees','documents','organization_modules'
+    'expenses','chart_of_accounts','journal_entries','journal_lines','employees','documents'
   ] loop
     execute format('drop trigger if exists atlas_audit_%I on public.%I', table_name, table_name);
     execute format('create trigger atlas_audit_%I after insert or update or delete on public.%I for each row execute function public.audit_row_change()', table_name, table_name);
@@ -118,9 +119,10 @@ declare
 begin
   invoice_uuid := coalesce(new.invoice_id, old.invoice_id);
   update public.invoices
-     set updated_at = now()
+     set total = total, updated_at = now()
    where id = invoice_uuid;
-  return coalesce(new, old);
+  if tg_op = 'DELETE' then return old; end if;
+  return new;
 end;
 $$;
 
@@ -148,7 +150,8 @@ begin
   if line_count > 0 then
     update public.invoices set total = round(line_total, 2), updated_at = now() where id = invoice_uuid;
   end if;
-  return coalesce(new, old);
+  if tg_op = 'DELETE' then return old; end if;
+  return new;
 end;
 $$;
 
@@ -198,6 +201,7 @@ begin
     from public.invoices where id = invoice_uuid for update;
   if organization_uuid is null then raise exception 'Invoice not found'; end if;
   if not public.can_write_accounting_data(organization_uuid) then raise exception 'Accounting role required'; end if;
+  if coalesce(outstanding, 0) <= 0 then raise exception 'Invoice has no outstanding balance'; end if;
   if payment_amount > outstanding then raise exception 'Payment exceeds outstanding balance'; end if;
 
   insert into public.payments(org_id, invoice_id, amount, payment_date, status, created_by)
@@ -248,6 +252,93 @@ begin
   return journal_uuid;
 end;
 $$;
+
+-- Replace broad ALL policies with operation-specific policies so read-only users cannot mutate data.
+do $$
+declare
+  table_name text;
+begin
+  foreach table_name in array array['customers','vendors','products','invoices','invoice_lines','expenses','documents'] loop
+    execute format('drop policy if exists %I on public.%I', table_name || '_access', table_name);
+    execute format('create policy %I on public.%I for select to authenticated using (public.is_org_member(org_id))', table_name || '_read', table_name);
+    execute format('create policy %I on public.%I for insert to authenticated with check (public.can_write_business_data(org_id))', table_name || '_insert', table_name);
+    execute format('create policy %I on public.%I for update to authenticated using (public.can_write_business_data(org_id)) with check (public.can_write_business_data(org_id))', table_name || '_update', table_name);
+    execute format('create policy %I on public.%I for delete to authenticated using (public.can_write_business_data(org_id))', table_name || '_delete', table_name);
+  end loop;
+
+  foreach table_name in array array['payments','expense_categories','chart_of_accounts','journal_entries','journal_lines'] loop
+    execute format('drop policy if exists %I on public.%I', case table_name when 'expense_categories' then 'categories_access' when 'chart_of_accounts' then 'accounts_access' when 'journal_entries' then 'journals_access' when 'journal_lines' then 'lines_access' else table_name || '_access' end, table_name);
+    execute format('create policy %I on public.%I for select to authenticated using (public.is_org_member(org_id))', table_name || '_read', table_name);
+    execute format('create policy %I on public.%I for insert to authenticated with check (public.can_write_accounting_data(org_id))', table_name || '_insert', table_name);
+    execute format('create policy %I on public.%I for update to authenticated using (public.can_write_accounting_data(org_id)) with check (public.can_write_accounting_data(org_id))', table_name || '_update', table_name);
+    execute format('create policy %I on public.%I for delete to authenticated using (public.can_write_accounting_data(org_id))', table_name || '_delete', table_name);
+  end loop;
+end;
+$$;
+
+drop policy if exists settings_access on public.organization_settings;
+create policy settings_read on public.organization_settings for select to authenticated using(public.is_org_member(org_id));
+create policy settings_insert on public.organization_settings for insert to authenticated with check(public.has_org_role(org_id,array['owner','admin']));
+create policy settings_update on public.organization_settings for update to authenticated using(public.has_org_role(org_id,array['owner','admin'])) with check(public.has_org_role(org_id,array['owner','admin']));
+create policy settings_delete on public.organization_settings for delete to authenticated using(public.has_org_role(org_id,array['owner','admin']));
+
+drop policy if exists modules_access on public.organization_modules;
+create policy modules_read on public.organization_modules for select to authenticated using(public.is_org_member(org_id));
+create policy modules_insert on public.organization_modules for insert to authenticated with check(public.has_org_role(org_id,array['owner','admin']));
+create policy modules_update on public.organization_modules for update to authenticated using(public.has_org_role(org_id,array['owner','admin'])) with check(public.has_org_role(org_id,array['owner','admin']));
+create policy modules_delete on public.organization_modules for delete to authenticated using(public.has_org_role(org_id,array['owner','admin']));
+
+drop policy if exists employees_access on public.employees;
+create policy employees_read on public.employees for select to authenticated using(public.can_manage_people(org_id) or user_id=auth.uid());
+create policy employees_insert on public.employees for insert to authenticated with check(public.can_manage_people(org_id));
+create policy employees_update on public.employees for update to authenticated using(public.can_manage_people(org_id)) with check(public.can_manage_people(org_id));
+create policy employees_delete on public.employees for delete to authenticated using(public.can_manage_people(org_id));
+
+-- Cross-organization foreign-key guards.
+create or replace function public.guard_invoice_org() returns trigger language plpgsql as $$
+begin
+  if new.customer_id is not null and not exists(select 1 from public.customers where id=new.customer_id and org_id=new.org_id) then raise exception 'Customer must belong to invoice organization'; end if;
+  return new;
+end;
+$$;
+create or replace function public.guard_invoice_line_org() returns trigger language plpgsql as $$
+begin
+  if not exists(select 1 from public.invoices where id=new.invoice_id and org_id=new.org_id) then raise exception 'Invoice must belong to line organization'; end if;
+  if new.product_id is not null and not exists(select 1 from public.products where id=new.product_id and org_id=new.org_id) then raise exception 'Product must belong to line organization'; end if;
+  return new;
+end;
+$$;
+create or replace function public.guard_payment_org() returns trigger language plpgsql as $$
+begin
+  if not exists(select 1 from public.invoices where id=new.invoice_id and org_id=new.org_id) then raise exception 'Invoice must belong to payment organization'; end if;
+  return new;
+end;
+$$;
+create or replace function public.guard_expense_org() returns trigger language plpgsql as $$
+begin
+  if new.vendor_id is not null and not exists(select 1 from public.vendors where id=new.vendor_id and org_id=new.org_id) then raise exception 'Vendor must belong to expense organization'; end if;
+  if new.category_id is not null and not exists(select 1 from public.expense_categories where id=new.category_id and org_id=new.org_id) then raise exception 'Category must belong to expense organization'; end if;
+  return new;
+end;
+$$;
+create or replace function public.guard_journal_line_org() returns trigger language plpgsql as $$
+begin
+  if not exists(select 1 from public.journal_entries where id=new.journal_entry_id and org_id=new.org_id) then raise exception 'Journal entry must belong to line organization'; end if;
+  if not exists(select 1 from public.chart_of_accounts where id=new.account_id and org_id=new.org_id) then raise exception 'Account must belong to line organization'; end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists atlas_guard_invoice_org on public.invoices;
+create trigger atlas_guard_invoice_org before insert or update of customer_id,org_id on public.invoices for each row execute function public.guard_invoice_org();
+drop trigger if exists atlas_guard_invoice_line_org on public.invoice_lines;
+create trigger atlas_guard_invoice_line_org before insert or update of invoice_id,product_id,org_id on public.invoice_lines for each row execute function public.guard_invoice_line_org();
+drop trigger if exists atlas_guard_payment_org on public.payments;
+create trigger atlas_guard_payment_org before insert or update of invoice_id,org_id on public.payments for each row execute function public.guard_payment_org();
+drop trigger if exists atlas_guard_expense_org on public.expenses;
+create trigger atlas_guard_expense_org before insert or update of vendor_id,category_id,org_id on public.expenses for each row execute function public.guard_expense_org();
+drop trigger if exists atlas_guard_journal_line_org on public.journal_lines;
+create trigger atlas_guard_journal_line_org before insert or update of journal_entry_id,account_id,org_id on public.journal_lines for each row execute function public.guard_journal_line_org();
 
 grant execute on function public.record_invoice_payment(uuid, numeric, date) to authenticated;
 grant execute on function public.create_balanced_journal_entry(uuid, text, date, text, uuid, uuid, numeric) to authenticated;
