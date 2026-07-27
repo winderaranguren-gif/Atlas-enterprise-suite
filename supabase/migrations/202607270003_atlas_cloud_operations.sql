@@ -55,8 +55,8 @@ begin
     'customers','vendors','products','invoices','invoice_lines','payments','expense_categories',
     'expenses','chart_of_accounts','journal_entries','journal_lines','employees','documents'
   ] loop
-    execute format('drop trigger if exists atlas_audit_%I on public.%I', table_name, table_name);
-    execute format('create trigger atlas_audit_%I after insert or update or delete on public.%I for each row execute function public.audit_row_change()', table_name, table_name);
+    execute format('drop trigger if exists %I on public.%I', 'atlas_audit_' || table_name, table_name);
+    execute format('create trigger %I after insert or update or delete on public.%I for each row execute function public.audit_row_change()', 'atlas_audit_' || table_name, table_name);
   end loop;
 end;
 $$;
@@ -70,8 +70,8 @@ begin
     'customers','vendors','products','invoices','invoice_lines','payments','expense_categories',
     'expenses','chart_of_accounts','journal_entries','employees','documents'
   ] loop
-    execute format('drop trigger if exists atlas_updated_%I on public.%I', table_name, table_name);
-    execute format('create trigger atlas_updated_%I before update on public.%I for each row execute function public.set_updated_at()', table_name, table_name);
+    execute format('drop trigger if exists %I on public.%I', 'atlas_updated_' || table_name, table_name);
+    execute format('create trigger %I before update on public.%I for each row execute function public.set_updated_at()', 'atlas_updated_' || table_name, table_name);
   end loop;
 end;
 $$;
@@ -260,6 +260,10 @@ declare
 begin
   foreach table_name in array array['customers','vendors','products','invoices','invoice_lines','expenses','documents'] loop
     execute format('drop policy if exists %I on public.%I', table_name || '_access', table_name);
+    execute format('drop policy if exists %I on public.%I', table_name || '_read', table_name);
+    execute format('drop policy if exists %I on public.%I', table_name || '_insert', table_name);
+    execute format('drop policy if exists %I on public.%I', table_name || '_update', table_name);
+    execute format('drop policy if exists %I on public.%I', table_name || '_delete', table_name);
     execute format('create policy %I on public.%I for select to authenticated using (public.is_org_member(org_id))', table_name || '_read', table_name);
     execute format('create policy %I on public.%I for insert to authenticated with check (public.can_write_business_data(org_id))', table_name || '_insert', table_name);
     execute format('create policy %I on public.%I for update to authenticated using (public.can_write_business_data(org_id)) with check (public.can_write_business_data(org_id))', table_name || '_update', table_name);
@@ -268,6 +272,10 @@ begin
 
   foreach table_name in array array['payments','expense_categories','chart_of_accounts','journal_entries','journal_lines'] loop
     execute format('drop policy if exists %I on public.%I', case table_name when 'expense_categories' then 'categories_access' when 'chart_of_accounts' then 'accounts_access' when 'journal_entries' then 'journals_access' when 'journal_lines' then 'lines_access' else table_name || '_access' end, table_name);
+    execute format('drop policy if exists %I on public.%I', table_name || '_read', table_name);
+    execute format('drop policy if exists %I on public.%I', table_name || '_insert', table_name);
+    execute format('drop policy if exists %I on public.%I', table_name || '_update', table_name);
+    execute format('drop policy if exists %I on public.%I', table_name || '_delete', table_name);
     execute format('create policy %I on public.%I for select to authenticated using (public.is_org_member(org_id))', table_name || '_read', table_name);
     execute format('create policy %I on public.%I for insert to authenticated with check (public.can_write_accounting_data(org_id))', table_name || '_insert', table_name);
     execute format('create policy %I on public.%I for update to authenticated using (public.can_write_accounting_data(org_id)) with check (public.can_write_accounting_data(org_id))', table_name || '_update', table_name);
@@ -276,19 +284,33 @@ begin
 end;
 $$;
 
+drop policy if exists org_create on public.organizations;
+
 drop policy if exists settings_access on public.organization_settings;
+drop policy if exists settings_read on public.organization_settings;
+drop policy if exists settings_insert on public.organization_settings;
+drop policy if exists settings_update on public.organization_settings;
+drop policy if exists settings_delete on public.organization_settings;
 create policy settings_read on public.organization_settings for select to authenticated using(public.is_org_member(org_id));
 create policy settings_insert on public.organization_settings for insert to authenticated with check(public.has_org_role(org_id,array['owner','admin']));
 create policy settings_update on public.organization_settings for update to authenticated using(public.has_org_role(org_id,array['owner','admin'])) with check(public.has_org_role(org_id,array['owner','admin']));
 create policy settings_delete on public.organization_settings for delete to authenticated using(public.has_org_role(org_id,array['owner','admin']));
 
 drop policy if exists modules_access on public.organization_modules;
+drop policy if exists modules_read on public.organization_modules;
+drop policy if exists modules_insert on public.organization_modules;
+drop policy if exists modules_update on public.organization_modules;
+drop policy if exists modules_delete on public.organization_modules;
 create policy modules_read on public.organization_modules for select to authenticated using(public.is_org_member(org_id));
 create policy modules_insert on public.organization_modules for insert to authenticated with check(public.has_org_role(org_id,array['owner','admin']));
 create policy modules_update on public.organization_modules for update to authenticated using(public.has_org_role(org_id,array['owner','admin'])) with check(public.has_org_role(org_id,array['owner','admin']));
 create policy modules_delete on public.organization_modules for delete to authenticated using(public.has_org_role(org_id,array['owner','admin']));
 
 drop policy if exists employees_access on public.employees;
+drop policy if exists employees_read on public.employees;
+drop policy if exists employees_insert on public.employees;
+drop policy if exists employees_update on public.employees;
+drop policy if exists employees_delete on public.employees;
 create policy employees_read on public.employees for select to authenticated using(public.can_manage_people(org_id) or user_id=auth.uid());
 create policy employees_insert on public.employees for insert to authenticated with check(public.can_manage_people(org_id));
 create policy employees_update on public.employees for update to authenticated using(public.can_manage_people(org_id)) with check(public.can_manage_people(org_id));
