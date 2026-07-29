@@ -1,15 +1,29 @@
 {
-  "name": "atlas-enterprise-suite-mvp",
-  "version": "0.2.5",
+  "name": "atlas-enterprise-suite",
+  "version": "0.3.0",
   "private": true,
-  "description": "ATLAS Core functional local and Supabase cloud Private Beta",
+  "description": "ATLAS Enterprise Suite production-ready web, PWA and mobile foundation",
   "scripts": {
     "start": "node server.js",
+    "serve": "node server.js",
     "check:js": "node --check app.js && node --check server.js && node --check service-worker.js && node --check cloud-auth.js && node --check private-beta.js && node --check private-beta-recovery.js && node --check atlas-config.js",
     "check:db": "node scripts/validate-database-package.js",
-    "validate": "npm run check:js && npm run check:db"
+    "validate": "npm run check:js && npm run check:db",
+    "mobile:add:ios": "npx cap add ios",
+    "mobile:add:android": "npx cap add android",
+    "mobile:sync": "npx cap sync",
+    "mobile:open:ios": "npx cap open ios",
+    "mobile:open:android": "npx cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.4.3",
+    "@capacitor/core": "^7.4.3",
+    "@capacitor/ios": "^7.4.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.4.3"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   }
 }
