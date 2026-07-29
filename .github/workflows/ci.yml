@@ -1,3 +1,4 @@
+# ATLAS CI refreshed on 2026-07-29 to trigger the corrected workflow.
 name: ATLAS CI
 
 on:
