@@ -1,10 +1,38 @@
 {
-  "name": "Atlas Enterprise Suite",
-  "short_name": "Atlas",
-  "start_url": "./",
+  "id": "/",
+  "name": "ATLAS Enterprise Suite",
+  "short_name": "ATLAS",
+  "description": "Plataforma empresarial multiempresa para operaciones, finanzas, clientes, inventario, recursos humanos y reportes.",
+  "lang": "es-US",
+  "dir": "ltr",
+  "start_url": "/?source=pwa",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#f5f7f8",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#071f2d",
   "theme_color": "#0b3a53",
-  "description": "MVP modular, multiempresa y bilingüe para operaciones empresariales.",
-  "icons": []
+  "categories": ["business", "finance", "productivity"],
+  "icons": [
+    {
+      "src": "/public/icons/atlas-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "url": "/?page=dashboard",
+      "icons": [{"src": "/public/icons/atlas-icon.svg", "sizes": "any", "type": "image/svg+xml"}]
+    },
+    {
+      "name": "Crear factura",
+      "short_name": "Factura",
+      "url": "/?page=invoices&action=create",
+      "icons": [{"src": "/public/icons/atlas-icon.svg", "sizes": "any", "type": "image/svg+xml"}]
+    }
+  ]
 }
