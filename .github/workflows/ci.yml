@@ -1,4 +1,3 @@
-# ATLAS CI refreshed on 2026-07-29 to trigger the corrected workflow.
 name: ATLAS CI
 
 on:
@@ -27,32 +26,26 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: Set up Node.js 22
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      - name: Install dependencies
-        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Show runtime versions
+        run: |
+          node --version
+          npm --version
 
-      - name: Validate JavaScript and database package
-        run: npm run validate
+      - name: Validate ATLAS JavaScript
+        run: npm run check:js
 
-      - name: Verify required Supabase configuration references
+      - name: Validate ATLAS database package
+        run: npm run check:db
+
+      - name: Verify Supabase configuration references
         shell: bash
         run: |
           set -euo pipefail
-
-          required_patterns=(
-            "SUPABASE_URL"
-            "SUPABASE_ANON_KEY"
-          )
-
-          for pattern in "${required_patterns[@]}"; do
-            if ! grep -R --exclude-dir=.git --exclude-dir=node_modules --exclude='*.md' -q "$pattern" .; then
-              echo "::error::Required configuration reference not found: $pattern"
-              exit 1
-            fi
-          done
-
-          echo "Supabase configuration references are present. Runtime secret values remain outside source control."
+          grep -R --exclude-dir=.git --exclude-dir=node_modules --exclude='*.md' -q "SUPABASE_URL" .
+          grep -R --exclude-dir=.git --exclude-dir=node_modules --exclude='*.md' -q "SUPABASE_ANON_KEY\|SUPABASE_PUBLISHABLE_KEY" .
+          echo "ATLAS Supabase configuration references verified."
