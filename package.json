@@ -6,9 +6,12 @@
   "scripts": {
     "start": "node server.js",
     "serve": "node server.js",
-    "check:js": "node --check app.js && node --check server.js && node --check service-worker.js && node --check cloud-auth.js && node --check private-beta.js && node --check private-beta-recovery.js && node --check atlas-config.js",
+    "check:js": "node --check app.js && node --check server.js && node --check service-worker.js && node --check cloud-auth.js && node --check private-beta.js && node --check private-beta-recovery.js && node --check atlas-config.js && node --check scripts/build-cloudflare.js",
     "check:db": "node scripts/validate-database-package.js",
     "validate": "npm run check:js && npm run check:db",
+    "build:cloudflare": "node scripts/build-cloudflare.js",
+    "cloudflare:dev": "npm run build:cloudflare && npx wrangler@4 dev",
+    "cloudflare:deploy": "npm run validate && npm run build:cloudflare && npx wrangler@4 deploy",
     "mobile:add:ios": "npx cap add ios",
     "mobile:add:android": "npx cap add android",
     "mobile:sync": "npx cap sync",
