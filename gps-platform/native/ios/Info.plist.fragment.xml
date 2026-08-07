@@ -1,0 +1,34 @@
+<dict>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>ATLAS uses your location to calculate and display turn-by-turn navigation.</string>
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>ATLAS uses background location only while an active navigation session is running.</string>
+    <key>NSCameraUsageDescription</key>
+    <string>ATLAS uses the camera for on-device augmented road guidance. Raw frames are not uploaded by default.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>ATLAS uses the microphone only when you activate a voice destination command.</string>
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>location</string>
+        <string>audio</string>
+    </array>
+    <key>UIApplicationSceneManifest</key>
+    <dict>
+        <key>UIApplicationSupportsMultipleScenes</key>
+        <true/>
+        <key>UISceneConfigurations</key>
+        <dict>
+            <key>CPTemplateApplicationSceneSessionRoleApplication</key>
+            <array>
+                <dict>
+                    <key>UISceneClassName</key>
+                    <string>CPTemplateApplicationScene</string>
+                    <key>UISceneConfigurationName</key>
+                    <string>ATLAS CarPlay</string>
+                    <key>UISceneDelegateClassName</key>
+                    <string>$(PRODUCT_MODULE_NAME).AtlasCarPlaySceneDelegate</string>
+                </dict>
+            </array>
+        </dict>
+    </dict>
+</dict>
