@@ -1,6 +1,6 @@
 {
   "name": "atlas-enterprise-suite",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "private": true,
   "description": "ATLAS Enterprise Suite production-ready web, PWA and mobile foundation",
   "scripts": {
@@ -9,9 +9,11 @@
     "check:js": "node --check app.js && node --check atlas-legacy-migrate.js && node --check atlas-suite.js && node --check atlas-calendar.js && node --check server.js && node --check service-worker.js && node --check cloud-auth.js && node --check private-beta.js && node --check private-beta-recovery.js && node --check atlas-config.js && node --check scripts/build-cloudflare.js",
     "check:db": "node scripts/validate-database-package.js",
     "validate": "npm run check:js && npm run check:db",
+    "build": "npm run validate && npm run build:cloudflare",
     "build:cloudflare": "node scripts/build-cloudflare.js",
+    "deploy": "npm run build && npx wrangler@4 deploy",
     "cloudflare:dev": "npm run build:cloudflare && npx wrangler@4 dev",
-    "cloudflare:deploy": "npm run validate && npm run build:cloudflare && npx wrangler@4 deploy",
+    "cloudflare:deploy": "npm run build && npx wrangler@4 deploy",
     "mobile:add:ios": "npx cap add ios",
     "mobile:add:android": "npx cap add android",
     "mobile:sync": "npx cap sync",
