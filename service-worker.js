@@ -7,6 +7,7 @@ const APP_SHELL = [
   '/styles.css',
   '/atlas-suite.css',
   '/app.js',
+  '/atlas-legacy-migrate.js',
   '/atlas-suite.js',
   '/manifest.webmanifest',
   '/offline.html',
