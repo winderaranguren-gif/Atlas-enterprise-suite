@@ -1,12 +1,12 @@
 {
   "name": "atlas-enterprise-suite",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "description": "ATLAS Enterprise Suite production-ready web, PWA and mobile foundation",
   "scripts": {
     "start": "node server.js",
     "serve": "node server.js",
-    "check:js": "node --check app.js && node --check server.js && node --check service-worker.js && node --check cloud-auth.js && node --check private-beta.js && node --check private-beta-recovery.js && node --check atlas-config.js && node --check scripts/build-cloudflare.js",
+    "check:js": "node --check app.js && node --check atlas-suite.js && node --check server.js && node --check service-worker.js && node --check cloud-auth.js && node --check private-beta.js && node --check private-beta-recovery.js && node --check atlas-config.js && node --check scripts/build-cloudflare.js",
     "check:db": "node scripts/validate-database-package.js",
     "validate": "npm run check:js && npm run check:db",
     "build:cloudflare": "node scripts/build-cloudflare.js",
