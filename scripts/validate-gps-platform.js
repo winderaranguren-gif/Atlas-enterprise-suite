@@ -36,6 +36,16 @@ const requiredFiles = [
   'gps-platform/native/android/AndroidManifest.fragment.xml',
   'gps-platform/native/android/res/xml/automotive_app_desc.xml',
   'gps-platform/native/android/res/values/atlas_car_hosts.xml',
+  'gps-platform/activation/README.md',
+  'gps-platform/activation/production-resources.json',
+  'gps-platform/infrastructure/cloudflare/provision-dns.mjs',
+  'gps-platform/infrastructure/kubernetes/atlas-gps-production.yaml',
+  'gps-platform/data/official-sources.json',
+  'gps-platform/approvals/carplay-entitlement-package.md',
+  'gps-platform/approvals/android-for-cars-release-package.md',
+  'gps-platform/ar/model-pipeline.md',
+  'gps-platform/field-tests/global-road-test-protocol.md',
+  'scripts/gps-production-readiness.js',
   'scripts/test-gps-gateway.js',
   'tests/gps-planetary.matrix.json'
 ];
@@ -54,6 +64,8 @@ if (!failures.length) {
   const manifest = json('gps-platform/offline/manifest.json');
   const security = json('gps-platform/security/policy.json');
   const matrix = json('tests/gps-planetary.matrix.json');
+  const activation = json('gps-platform/activation/production-resources.json');
+  const officialSources = json('gps-platform/data/official-sources.json');
   const html = read('atlas-gps-4d.html');
   const gateway = read('gps-platform/api/server.js');
   const providers = read('gps-platform/api/providers.js');
@@ -63,6 +75,12 @@ if (!failures.length) {
   const carPlay = read('gps-platform/native/ios/AtlasCarPlaySceneDelegate.swift');
   const androidAuto = read('gps-platform/native/android/AtlasNavigationScreen.kt');
   const androidManifest = read('gps-platform/native/android/AndroidManifest.fragment.xml');
+  const cloudflare = read('gps-platform/infrastructure/cloudflare/provision-dns.mjs');
+  const kubernetes = read('gps-platform/infrastructure/kubernetes/atlas-gps-production.yaml');
+  const carPlayPackage = read('gps-platform/approvals/carplay-entitlement-package.md');
+  const androidPackage = read('gps-platform/approvals/android-for-cars-release-package.md');
+  const modelPipeline = read('gps-platform/ar/model-pipeline.md');
+  const fieldProtocol = read('gps-platform/field-tests/global-road-test-protocol.md');
 
   const requiredModes = ['car', 'truck', 'transit', 'bicycle', 'walking', 'emergency', 'maritime', 'aviation'];
   for (const mode of requiredModes) pass(Boolean(modes.modes?.[mode]), `Missing routing mode: ${mode}`);
@@ -109,6 +127,30 @@ if (!failures.length) {
   pass(carPlay.includes('startNavigationSession'), 'CarPlay implementation must start a navigation session');
   pass(androidAuto.includes('NavigationTemplate'), 'Android Auto implementation must use NavigationTemplate');
   pass(androidManifest.includes('androidx.car.app.category.NAVIGATION'), 'Android manifest must declare the navigation car-app category');
+
+  pass(Array.isArray(activation.resources) && activation.resources.length >= 11, 'Production activation matrix is incomplete');
+  for (const id of ['infra.compute', 'infra.storage', 'maps.planet', 'domain.production', 'feeds.live', 'data.maritime', 'data.aviation', 'approval.carplay', 'approval.android_cars', 'models.vision', 'tests.field']) {
+    pass(activation.resources.some((item) => item.id === id), `Activation matrix missing resource: ${id}`);
+  }
+  pass((officialSources.sources || []).some((item) => item.id === 'osm-planet'), 'Official source registry missing OSM planet');
+  pass((officialSources.sources || []).some((item) => item.id === 'noaa-enc-us'), 'Official source registry missing NOAA ENC');
+  pass((officialSources.sources || []).some((item) => item.id === 'faa-aeronautical-data-us'), 'Official source registry missing FAA aeronautical data');
+
+  pass(cloudflare.includes('/dns_records'), 'Cloudflare provisioning must manage DNS records');
+  pass(cloudflare.includes('/dnssec'), 'Cloudflare provisioning must request DNSSEC');
+  pass(cloudflare.includes("setZoneSetting('ssl', 'strict')"), 'Cloudflare provisioning must enforce strict TLS');
+  pass(kubernetes.includes('kind: StatefulSet'), 'Kubernetes production topology must include stateful workloads');
+  pass(kubernetes.includes('kind: HorizontalPodAutoscaler'), 'Kubernetes production topology must include autoscaling');
+  pass(kubernetes.includes('kind: PodDisruptionBudget'), 'Kubernetes production topology must include disruption controls');
+
+  pass(carPlayPackage.includes('CarPlay Entitlement Addendum'), 'CarPlay package must cover the entitlement addendum');
+  pass(carPlayPackage.includes('Managed capability'), 'CarPlay package must require managed capability evidence');
+  pass(androidPackage.includes('Desktop Head Unit'), 'Android for Cars package must include DHU testing');
+  pass(androidPackage.includes('Android Automotive OS'), 'Android for Cars package must include AAOS testing');
+  pass(modelPipeline.includes('signature.ed25519'), 'Model pipeline must require signed model artifacts');
+  pass(modelPipeline.includes('independent safety review'), 'Model pipeline must require independent safety review');
+  pass(fieldProtocol.includes('stop-work'), 'Field-test protocol must include stop-work authority');
+  pass(fieldProtocol.includes('Zero unresolved critical safety defects'), 'Field-test protocol must block unresolved critical safety defects');
 }
 
 if (failures.length) {
@@ -117,4 +159,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log(`ATLAS GPS platform validation passed (${requiredFiles.length} required files, 9 production layers).`);
+console.log(`ATLAS GPS platform validation passed (${requiredFiles.length} required files, 9 production layers, activation controls included).`);
