@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#06111d">
+<title>ATLAS Holographic Health Twin</title>
+<link rel="stylesheet" href="atlas-holographic-health-twin.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><span class="logo">A</span><span><strong>ATLAS</strong><small>Holographic Health Twin</small></span></div>
+  <div class="actions">
+    <select id="lang" aria-label="Idioma"><option value="es">ES</option><option value="en">EN</option></select>
+    <button class="btn" id="exportBtn">Exportar JSON</button>
+    <button class="btn" onclick="window.print()">Imprimir</button>
+    <a class="btn primary" href="index.html"><span class="back-label">Volver a </span>ATLAS</a>
+  </div>
+</header>
+<div class="shell">
+<aside class="assistant">
+  <div class="assistant-head"><div><div class="eyebrow">ATLAS AVATAR CORE</div><h2>Winder Holographic Twin</h2></div><span class="status-dot">Online</span></div>
+  <div class="holo-stage">
+    <img id="avatarImage" class="holo-image" alt="ATLAS holographic assistant" src="">
+    <div class="scan-line"></div><div class="rings"></div>
+    <span class="holo-badge hb1">IDENTITY VERIFIED</span><span class="holo-badge hb2">LIVE DATA</span><span class="holo-badge hb3">CONSENT ON</span>
+  </div>
+  <div class="assistant-copy">
+    <div id="assistantSpeech" class="speech">Estoy listo para consolidar el escaneo corporal, los signos vitales y los resultados emitidos por analizadores compatibles. No emitiré diagnósticos sin un protocolo clínico validado.</div>
+    <div class="assistant-controls">
+      <button class="btn primary" id="speakBtn">Hablar</button>
+      <button class="btn" id="summarizeBtn">Analizar datos</button>
+      <label class="btn" style="display:grid;place-items:center">Cambiar holograma<input id="avatarUpload" class="sr-only" type="file" accept="image/*"></label>
+      <button class="btn" id="resetAvatar">Restaurar</button>
+    </div>
+  </div>
+</aside>
+<main class="main">
+  <section class="hero">
+    <div><div class="eyebrow">ATLAS HEALTH · DIGITAL TWIN</div><h1>Escaneo corporal y datos de salud, en un sistema funcional</h1><p>Este módulo registra estructura corporal, tendencias, signos vitales y resultados de pruebas emitidos por equipos compatibles. La capa de bienestar resume información; la capa clínica permanece bloqueada hasta integrar dispositivos, protocolos y validación regulatoria.</p></div>
+    <div class="mode"><strong>Modo activo</strong><span>● Bienestar y seguimiento</span><small style="display:block;color:var(--muted);margin-top:7px">Diagnóstico automático: bloqueado</small></div>
+  </section>
+  <section class="grid kpis">
+    <article class="card kpi"><small>Integridad de datos</small><strong id="kpiCompleteness">0%</strong><em id="kpiCompletenessNote">Sin registros</em></article>
+    <article class="card kpi"><small>Último escaneo</small><strong id="kpiScan">—</strong><em id="kpiScanNote">Pendiente</em></article>
+    <article class="card kpi"><small>Dispositivos</small><strong id="kpiDevices">0</strong><em>Conectados en esta sesión</em></article>
+    <article class="card kpi"><small>Revisión</small><strong id="kpiReview">Pendiente</strong><em id="kpiReviewNote">Faltan datos</em></article>
+  </section>
+  <nav class="tabs" aria-label="Secciones">
+    <button class="tab active" data-tab="overview">Resumen</button><button class="tab" data-tab="scan">Escaneo corporal</button><button class="tab" data-tab="vitals">Signos vitales</button><button class="tab" data-tab="labs">Gota de sangre / IVD</button><button class="tab" data-tab="trends">Tendencias</button><button class="tab" data-tab="safety">Seguridad</button>
+  </nav>
+
+  <section class="panel active" id="panel-overview">
+    <div class="grid section-grid">
+      <article class="card"><div class="card-head"><div><h3>Perfil físico</h3><p>Datos necesarios para contextualizar mediciones, sin evaluar apariencia.</p></div><span class="pill">Local encrypted-ready</span></div><div class="card-body"><form id="profileForm" class="form-grid">
+        <label>Edad<input id="age" type="number" min="1" max="120" placeholder="Edad"></label><label>Altura (cm)<input id="height" type="number" min="50" max="260" step="0.1" placeholder="170"></label><label>Peso (kg)<input id="weight" type="number" min="10" max="400" step="0.1" placeholder="61"></label><label>Cintura (cm, opcional)<input id="waist" type="number" min="20" max="250" step="0.1"></label><label class="full">Notas del usuario<input id="profileNotes" maxlength="240" placeholder="Objetivo, contexto o condiciones de medición"></label><button class="btn primary full" type="submit">Guardar perfil</button>
+      </form><div id="bmiNote" class="note" style="margin-top:14px">ATLAS calculará métricas de contexto cuando se introduzcan edad, altura y peso.</div></div></article>
+      <article class="card"><div class="card-head"><div><h3>Resumen de ATLAS</h3><p>Explicación trazable basada en los datos guardados.</p></div><button class="btn" id="refreshSummary">Actualizar</button></div><div class="card-body"><div id="summaryList" class="summary-list"></div></div></article>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-scan">
+    <div class="grid section-grid">
+      <article class="card"><div class="card-head"><div><h3>Nueva sesión de escaneo</h3><p>Mediciones externas, postura y composición estimada.</p></div><span class="pill">3D / LiDAR / Manual</span></div><div class="card-body"><form id="scanForm" class="form-grid">
+        <label>Origen<select id="scanSource"><option value="manual">Entrada manual</option><option value="lidar">LiDAR / sensor de profundidad</option><option value="optical">Escáner óptico 3D</option><option value="camera">Reconstrucción multicámara</option></select></label><label>Fecha<input id="scanDate" type="datetime-local"></label><label>Grasa corporal estimada (%)<input id="bodyFat" type="number" min="1" max="75" step="0.1"></label><label>Masa magra estimada (kg)<input id="leanMass" type="number" min="1" max="250" step="0.1"></label><label>Circunferencia de hombros (cm)<input id="shoulders" type="number" min="30" max="250" step="0.1"></label><label>Cadera (cm)<input id="hips" type="number" min="30" max="250" step="0.1"></label><label>Puntuación de postura (0–100)<input id="posture" type="number" min="0" max="100"></label><label>Simetría estimada (0–100)<input id="symmetry" type="number" min="0" max="100"></label><button class="btn primary full" type="submit">Guardar escaneo</button>
+      </form><div class="note warning" style="margin-top:14px">Un escaneo 3D puede medir forma, volumen y tendencias. No identifica por sí solo enfermedades internas ni confirma un “buen estado de salud”.</div></div></article>
+      <article class="card"><div class="card-head"><div><h3>Historial de escaneos</h3><p>Comparación longitudinal.</p></div><button class="btn danger" id="clearScans">Borrar</button></div><div class="card-body table-wrap"><table><thead><tr><th>Fecha</th><th>Fuente</th><th>Grasa %</th><th>Masa magra</th><th>Postura</th><th></th></tr></thead><tbody id="scanRows"></tbody></table></div></article>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-vitals">
+    <article class="card"><div class="card-head"><div><h3>Conectores de dispositivos</h3><p>Bluetooth estándar, puente serial USB o simulador para pruebas.</p></div><span id="deviceStatus" class="pill">Sin conexión</span></div><div class="card-body"><div class="device-grid">
+      <div class="device"><strong>Bluetooth Heart Rate</strong><small>Lee el servicio GATT estándar de frecuencia cardíaca.</small><button class="btn" id="btHeart">Conectar</button></div>
+      <div class="device"><strong>USB / Web Serial Bridge</strong><small>Acepta líneas JSON desde un equipo o gateway autorizado.</small><button class="btn" id="serialBtn">Conectar</button></div>
+      <div class="device"><strong>Simulador ATLAS</strong><small>Genera datos ficticios para probar el flujo completo.</small><button class="btn" id="simulateVitals">Simular</button></div>
+    </div></div></article>
+    <div class="grid section-grid" style="margin-top:14px">
+      <article class="card"><div class="card-head"><div><h3>Captura de signos vitales</h3><p>Datos manuales o recibidos desde dispositivos.</p></div></div><div class="card-body"><form id="vitalsForm" class="form-grid">
+        <label>Frecuencia cardíaca (bpm)<input id="heartRate" type="number" min="20" max="250"></label><label>Oxígeno SpO₂ (%)<input id="spo2" type="number" min="50" max="100" step="0.1"></label><label>Presión sistólica (mmHg)<input id="systolic" type="number" min="40" max="260"></label><label>Presión diastólica (mmHg)<input id="diastolic" type="number" min="20" max="180"></label><label>Temperatura (°C)<input id="temperature" type="number" min="30" max="45" step="0.1"></label><label>Respiración (/min)<input id="respiratoryRate" type="number" min="4" max="80"></label><label class="full">Fuente<input id="vitalSource" value="manual"></label><button class="btn primary full" type="submit">Guardar lectura</button>
+      </form></div></article>
+      <article class="card"><div class="card-head"><div><h3>Lecturas recientes</h3><p>Sin interpretación diagnóstica automática.</p></div><button class="btn danger" id="clearVitals">Borrar</button></div><div class="card-body table-wrap"><table><thead><tr><th>Hora</th><th>FC</th><th>SpO₂</th><th>PA</th><th>Temp.</th><th>Fuente</th><th></th></tr></thead><tbody id="vitalRows"></tbody></table></div></article>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-labs">
+    <div class="note critical" style="margin-bottom:14px"><strong>Límite funcional:</strong> ATLAS no analiza directamente una fotografía de una gota de sangre. Debe recibir resultados de un analizador IVD/cartridge validado. El sitio que realiza pruebas humanas puede necesitar certificación CLIA y requisitos estatales.</div>
+    <div class="grid section-grid">
+      <article class="card"><div class="card-head"><div><h3>Resultado de analizador / cartucho</h3><p>Registro con trazabilidad de equipo, lote y rango de referencia.</p></div><span class="pill">IVD data intake</span></div><div class="card-body"><form id="labForm" class="form-grid">
+        <label>Analizador<input id="analyzer" placeholder="Marca / modelo"></label><label>Ensayo o cartucho<input id="assay" placeholder="Nombre del panel"></label><label>Lote<input id="lot" placeholder="Lot ID"></label><label>Vencimiento<input id="expiry" type="date"></label><label>Analito<input id="analyte" placeholder="Glucosa, HbA1c, hemoglobina..."></label><label>Resultado<input id="labValue" type="number" step="any"></label><label>Unidad<input id="labUnit" placeholder="mg/dL, %, g/dL..."></label><label>Referencia mínima<input id="refMin" type="number" step="any"></label><label>Referencia máxima<input id="refMax" type="number" step="any"></label><label>Control de calidad<select id="qc"><option value="not-recorded">No registrado</option><option value="pass">Aprobado</option><option value="fail">Falló</option></select></label><button class="btn primary full" type="submit">Guardar resultado</button>
+      </form></div></article>
+      <article class="card"><div class="card-head"><div><h3>Resultados guardados</h3><p>El rango debe provenir del laboratorio o fabricante.</p></div><button class="btn danger" id="clearLabs">Borrar</button></div><div class="card-body table-wrap"><table><thead><tr><th>Fecha</th><th>Analito</th><th>Resultado</th><th>Referencia</th><th>QC</th><th></th></tr></thead><tbody id="labRows"></tbody></table></div></article>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-trends">
+    <div class="grid section-grid">
+      <article class="card"><div class="card-head"><div><h3>Tendencia seleccionada</h3><p>Gráfico de registros longitudinales.</p></div><select id="trendMetric"><option value="weight">Peso</option><option value="heartRate">Frecuencia cardíaca</option><option value="spo2">SpO₂</option><option value="bodyFat">Grasa corporal</option><option value="posture">Postura</option></select></div><div class="card-body"><div class="chart" id="trendChart"></div></div></article>
+      <article class="card"><div class="card-head"><div><h3>Calidad y procedencia</h3><p>Cuánto puede confiar ATLAS en cada dato.</p></div></div><div class="card-body"><div class="metric-list"><div class="metric-row"><span>Perfil</span><strong id="qualityProfile">0%</strong></div><div class="metric-row"><span>Escaneo corporal</span><strong id="qualityScan">0%</strong></div><div class="metric-row"><span>Signos vitales</span><strong id="qualityVitals">0%</strong></div><div class="metric-row"><span>Laboratorio / IVD</span><strong id="qualityLabs">0%</strong></div></div><div class="note" style="margin-top:14px">La confianza depende de calibración, identificación del paciente, lote, control de calidad, fuente del dispositivo y fecha de medición.</div></div></article>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-safety">
+    <div class="grid section-grid">
+      <article class="card"><div class="card-head"><div><h3>Arquitectura de seguridad</h3><p>Controles requeridos antes de usar datos reales.</p></div></div><div class="card-body summary-list">
+        <div class="summary-item"><span class="summary-icon">1</span><div><strong>Consentimiento granular</strong><p>Separar permisos para rostro, cuerpo, voz, signos vitales y laboratorio.</p></div></div>
+        <div class="summary-item"><span class="summary-icon">2</span><div><strong>Cifrado y aislamiento</strong><p>Datos biométricos y clínicos cifrados; aislamiento por organización y usuario.</p></div></div>
+        <div class="summary-item"><span class="summary-icon">3</span><div><strong>Trazabilidad</strong><p>Cada resultado conserva dispositivo, operador, lote, QC, hora y versión del algoritmo.</p></div></div>
+        <div class="summary-item"><span class="summary-icon">4</span><div><strong>Human-in-the-loop</strong><p>Las decisiones clínicas se muestran para revisión profesional y nunca se oculta la base del resultado.</p></div></div>
+      </div></article>
+      <article class="card"><div class="card-head"><div><h3>Auditoría local</h3><p>Actividad de este prototipo.</p></div><button class="btn danger" id="clearAudit">Borrar</button></div><div class="card-body audit" id="auditLog"></div></article>
+    </div>
+  </section>
+  <footer class="footer">ATLAS Holographic Health Twin · MVP funcional local · Datos guardados en este navegador · No sustituye evaluación médica ni equipos de diagnóstico autorizados.</footer>
+</main>
+</div>
+<script src="atlas-hologram-avatar.js"></script>
+<script src="atlas-holographic-health-twin.js"></script>
+</body></html>
