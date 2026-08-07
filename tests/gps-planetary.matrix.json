@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "releaseGate": "all-critical-pass",
+  "dimensions": {
+    "continents": ["Africa", "Antarctica", "Asia", "Europe", "North America", "Oceania", "South America"],
+    "scripts": ["Latin", "Cyrillic", "Arabic", "Hebrew", "Devanagari", "Bengali", "Thai", "Han", "Hiragana-Katakana", "Hangul", "Georgian", "Armenian"],
+    "drivingSides": ["right", "left"],
+    "units": ["imperial", "metric"],
+    "modes": ["car", "truck", "transit", "bicycle", "walking", "emergency", "maritime", "aviation"]
+  },
+  "cases": [
+    {"id":"orlando-interchange","priority":"critical","mode":"car","locale":"en-US","scenario":"multi-level tolled interchange with lane guidance, ramps and live traffic"},
+    {"id":"miami-flood","priority":"critical","mode":"car","locale":"es-US","scenario":"flash-flood closure forces safe reroute"},
+    {"id":"new-york-tunnel","priority":"critical","mode":"car","locale":"en-US","scenario":"GNSS loss in tunnel with dead-reckoning recovery"},
+    {"id":"toronto-border","priority":"high","mode":"car","locale":"en-CA","scenario":"international border, units and roaming transition"},
+    {"id":"caracas-rural","priority":"high","mode":"car","locale":"es-VE","scenario":"rural road with incomplete lane metadata and offline fallback"},
+    {"id":"madrid-roundabout","priority":"high","mode":"car","locale":"es-ES","scenario":"multi-exit roundabout with spoken ordinal exit"},
+    {"id":"london-left-driving","priority":"critical","mode":"car","locale":"en-GB","scenario":"left-side driving and restricted urban roads"},
+    {"id":"berlin-construction","priority":"high","mode":"bicycle","locale":"de-DE","scenario":"temporary construction closure on cycle network"},
+    {"id":"kyiv-cyrillic","priority":"high","mode":"car","locale":"uk-UA","scenario":"Cyrillic search, transliteration and offline address lookup"},
+    {"id":"cairo-arabic","priority":"critical","mode":"car","locale":"ar-EG","scenario":"right-to-left labels, Arabic voice and dense interchange"},
+    {"id":"jerusalem-hebrew","priority":"high","mode":"walking","locale":"he-IL","scenario":"right-to-left pedestrian navigation through narrow streets"},
+    {"id":"mumbai-deva","priority":"critical","mode":"transit","locale":"hi-IN","scenario":"multimodal route with Devanagari labels and live transit delay"},
+    {"id":"dhaka-bengali","priority":"high","mode":"walking","locale":"bn-BD","scenario":"Bengali search and flood-affected pedestrian route"},
+    {"id":"bangkok-thai","priority":"critical","mode":"car","locale":"th-TH","scenario":"Thai labels, elevated expressways and left-side driving"},
+    {"id":"tokyo-levels","priority":"critical","mode":"transit","locale":"ja-JP","scenario":"multi-level station, Japanese scripts and platform transfer"},
+    {"id":"seoul-hangul","priority":"high","mode":"car","locale":"ko-KR","scenario":"Hangul search and urban tunnel navigation"},
+    {"id":"beijing-han","priority":"critical","mode":"car","locale":"zh-CN","scenario":"Han labels, restricted roads and provider availability boundary"},
+    {"id":"tbilisi-georgian","priority":"medium","mode":"car","locale":"ka-GE","scenario":"Georgian script and mountain road elevation"},
+    {"id":"yerevan-armenian","priority":"medium","mode":"walking","locale":"hy-AM","scenario":"Armenian search and steep pedestrian route"},
+    {"id":"cape-town-left","priority":"high","mode":"truck","locale":"en-ZA","scenario":"left-side truck restrictions, height and weight constraints"},
+    {"id":"lagos-traffic","priority":"critical","mode":"emergency","locale":"en-NG","scenario":"congestion-aware emergency dispatch with authorization"},
+    {"id":"nairobi-unpaved","priority":"high","mode":"truck","locale":"sw-KE","scenario":"unpaved-road avoidance and vehicle restriction profile"},
+    {"id":"sydney-left","priority":"critical","mode":"car","locale":"en-AU","scenario":"left-side driving, toll roads and offline state package"},
+    {"id":"new-zealand-island","priority":"high","mode":"car","locale":"en-NZ","scenario":"ferry connection, remote roads and island offline coverage"},
+    {"id":"amazon-river","priority":"critical","mode":"maritime","locale":"pt-BR","scenario":"authorized river chart, weather, depth and restricted-area routing"},
+    {"id":"caribbean-maritime","priority":"critical","mode":"maritime","locale":"es-PR","scenario":"island passage, weather alert and offline nautical package"},
+    {"id":"atlantic-aviation","priority":"critical","mode":"aviation","locale":"en-US","scenario":"authorized chart, NOTAM, weather and diversion logic"},
+    {"id":"antarctica-offline","priority":"high","mode":"walking","locale":"en","scenario":"no-network expedition package, extreme latitude and battery constraints"},
+    {"id":"privacy-purge","priority":"critical","mode":"car","locale":"en-US","scenario":"complete local and server location purge with audit evidence"},
+    {"id":"camera-denied","priority":"critical","mode":"car","locale":"es-US","scenario":"navigation remains usable when camera permission is denied"}
+  ]
+}
