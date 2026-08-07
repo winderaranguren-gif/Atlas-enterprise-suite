@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "policy": {
+    "sourcePriority": ["national authority", "intergovernmental authority", "licensed commercial provider", "community map data"],
+    "requireEffectiveDate": true,
+    "requireTermsReview": true,
+    "requireChecksum": true,
+    "requireAttribution": true,
+    "rejectExpiredSafetyData": true
+  },
+  "sources": [
+    {
+      "id": "osm-planet",
+      "mode": ["road", "walking", "bicycle"],
+      "authority": "OpenStreetMap contributors",
+      "catalog": "https://planet.openstreetmap.org/",
+      "format": ["OSM PBF"],
+      "updatePolicy": "Use dated planet or regional extracts and record replication sequence.",
+      "licenseReview": "ODbL attribution and database-use obligations must be reviewed before publication.",
+      "productionRole": "Base road, place and feature graph; supplement with authority and licensed lane/live data."
+    },
+    {
+      "id": "noaa-enc-us",
+      "mode": ["maritime"],
+      "authority": "NOAA Office of Coast Survey",
+      "catalog": "https://www.charts.noaa.gov/ENCs/ENCs.shtml",
+      "terms": "https://www.charts.noaa.gov/ENCs/ENC_Agreement.shtml",
+      "format": ["S-57 ENC"],
+      "territory": ["United States waters"],
+      "updatePolicy": "Import current ENC cells and process Notice to Mariners updates before release.",
+      "productionRole": "Official U.S. electronic navigational chart source; maintain edition and update metadata."
+    },
+    {
+      "id": "faa-aeronautical-data-us",
+      "mode": ["aviation"],
+      "authority": "Federal Aviation Administration",
+      "catalog": "https://www.faa.gov/data/aero_data",
+      "digitalProducts": "https://www.faa.gov/air_traffic/flight_info/aeronav/digital_products/",
+      "format": ["CIFP", "GeoTIFF", "PDF", "obstacle data", "airport and procedure data"],
+      "territory": ["United States and published coverage areas"],
+      "updatePolicy": "Track effective cycles, NOTAMs, safety alerts and digital-product notices.",
+      "productionRole": "Authoritative U.S. aeronautical data; aviation release remains subject to aviation-specific safety controls."
+    }
+  ],
+  "territoryOnboardingTemplate": {
+    "territoryId": "replace-me",
+    "roadAuthorityFeeds": [],
+    "trafficFeeds": [],
+    "weatherAuthorityFeeds": [],
+    "marineAuthorityFeeds": [],
+    "aviationAuthorityFeeds": [],
+    "legalOwner": "unassigned",
+    "safetyOwner": "unassigned",
+    "releaseStatus": "blocked"
+  }
+}
