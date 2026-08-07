@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "modes": {
+    "car": {
+      "engine": "valhalla",
+      "costing": "auto",
+      "liveLayers": ["traffic", "incidents", "closures", "construction", "floods", "weather", "road-status"],
+      "laneGuidance": true,
+      "offline": true
+    },
+    "truck": {
+      "engine": "valhalla",
+      "costing": "truck",
+      "requiredVehicleFields": ["heightMeters", "widthMeters", "lengthMeters", "weightMetricTons", "axleLoadMetricTons", "hazardousCargo"],
+      "liveLayers": ["traffic", "incidents", "closures", "construction", "floods", "weather", "road-status"],
+      "laneGuidance": true,
+      "offline": true
+    },
+    "transit": {
+      "engine": "valhalla",
+      "costing": "multimodal",
+      "requiredData": ["GTFS", "GTFS-Realtime"],
+      "liveLayers": ["transit", "weather", "incidents"],
+      "offline": "schedule-dependent"
+    },
+    "bicycle": {
+      "engine": "valhalla",
+      "costing": "bicycle",
+      "liveLayers": ["closures", "construction", "floods", "weather", "road-status"],
+      "laneGuidance": false,
+      "offline": true
+    },
+    "walking": {
+      "engine": "valhalla",
+      "costing": "pedestrian",
+      "liveLayers": ["closures", "floods", "weather", "road-status"],
+      "laneGuidance": false,
+      "offline": true
+    },
+    "emergency": {
+      "engine": "valhalla",
+      "costing": "auto",
+      "authorizationRequired": true,
+      "liveLayers": ["traffic", "incidents", "closures", "construction", "floods", "weather", "road-status"],
+      "laneGuidance": true,
+      "offline": true
+    },
+    "maritime": {
+      "engine": "licensed-provider",
+      "requiredData": ["authorized-nautical-charts", "notices-to-mariners", "weather", "tides", "restricted-areas"],
+      "liveLayers": ["maritime", "weather", "incidents"],
+      "offline": "chart-license-dependent"
+    },
+    "aviation": {
+      "engine": "licensed-provider",
+      "requiredData": ["authorized-aeronautical-charts", "NOTAM", "METAR", "TAF", "airspace", "airport-data"],
+      "liveLayers": ["aviation", "weather", "incidents"],
+      "offline": "chart-license-dependent"
+    }
+  }
+}
