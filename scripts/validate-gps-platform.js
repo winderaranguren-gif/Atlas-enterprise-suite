@@ -26,8 +26,16 @@ const requiredFiles = [
   'gps-platform/security/policy.json',
   'gps-platform/native/README.md',
   'gps-platform/native/ios/AtlasNavigationPlugin.swift',
+  'gps-platform/native/ios/AtlasCarPlaySceneDelegate.swift',
+  'gps-platform/native/ios/Info.plist.fragment.xml',
   'gps-platform/native/android/AtlasNavigationPlugin.kt',
   'gps-platform/native/android/AtlasNavigationService.kt',
+  'gps-platform/native/android/AtlasCarAppService.kt',
+  'gps-platform/native/android/AtlasCarSession.kt',
+  'gps-platform/native/android/AtlasNavigationScreen.kt',
+  'gps-platform/native/android/AndroidManifest.fragment.xml',
+  'gps-platform/native/android/res/xml/automotive_app_desc.xml',
+  'gps-platform/native/android/res/values/atlas_car_hosts.xml',
   'scripts/test-gps-gateway.js',
   'tests/gps-planetary.matrix.json'
 ];
@@ -52,6 +60,9 @@ if (!failures.length) {
   const laneSchema = read('gps-platform/database/001_lane_intelligence.sql');
   const compose = read('gps-platform/docker-compose.yml');
   const offlineBuilder = read('gps-platform/offline/build-region.sh');
+  const carPlay = read('gps-platform/native/ios/AtlasCarPlaySceneDelegate.swift');
+  const androidAuto = read('gps-platform/native/android/AtlasNavigationScreen.kt');
+  const androidManifest = read('gps-platform/native/android/AndroidManifest.fragment.xml');
 
   const requiredModes = ['car', 'truck', 'transit', 'bicycle', 'walking', 'emergency', 'maritime', 'aviation'];
   for (const mode of requiredModes) pass(Boolean(modes.modes?.[mode]), `Missing routing mode: ${mode}`);
@@ -93,6 +104,11 @@ if (!failures.length) {
   for (const service of ['gps-gateway:', 'postgis:', 'redis:', 'minio:', 'martin:', 'valhalla:', 'nominatim:']) {
     pass(compose.includes(service), `Global Map Cloud compose missing service: ${service.replace(':', '')}`);
   }
+
+  pass(carPlay.includes('CPMapTemplate'), 'CarPlay implementation must use CPMapTemplate');
+  pass(carPlay.includes('startNavigationSession'), 'CarPlay implementation must start a navigation session');
+  pass(androidAuto.includes('NavigationTemplate'), 'Android Auto implementation must use NavigationTemplate');
+  pass(androidManifest.includes('androidx.car.app.category.NAVIGATION'), 'Android manifest must declare the navigation car-app category');
 }
 
 if (failures.length) {
