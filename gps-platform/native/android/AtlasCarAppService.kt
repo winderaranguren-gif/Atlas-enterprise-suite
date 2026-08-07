@@ -6,10 +6,12 @@ import androidx.car.app.SessionInfo
 import androidx.car.app.validation.HostValidator
 
 class AtlasCarAppService : CarAppService() {
-    override fun createHostValidator(): HostValidator =
-        HostValidator.Builder(applicationContext)
-            .addAllowedHosts(androidx.car.app.R.array.hosts_allowlist_sample)
+    override fun createHostValidator(): HostValidator {
+        if (BuildConfig.DEBUG) return HostValidator.ALLOW_ALL_HOSTS_VALIDATOR
+        return HostValidator.Builder(applicationContext)
+            .addAllowedHosts(R.array.atlas_allowed_car_hosts)
             .build()
+    }
 
     override fun onCreateSession(sessionInfo: SessionInfo): Session = AtlasCarSession()
 }
