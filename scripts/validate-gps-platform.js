@@ -14,15 +14,21 @@ const requiredFiles = [
   'atlas-gps-ar-worker.js',
   'gps-platform/README.md',
   'gps-platform/docker-compose.yml',
+  'gps-platform/.env.example',
   'gps-platform/api/Dockerfile',
   'gps-platform/api/server.js',
   'gps-platform/api/providers.js',
   'gps-platform/config/modes.json',
+  'gps-platform/database/001_lane_intelligence.sql',
+  'gps-platform/import/import-region.sh',
   'gps-platform/offline/manifest.json',
+  'gps-platform/offline/build-region.sh',
   'gps-platform/security/policy.json',
+  'gps-platform/native/README.md',
   'gps-platform/native/ios/AtlasNavigationPlugin.swift',
   'gps-platform/native/android/AtlasNavigationPlugin.kt',
   'gps-platform/native/android/AtlasNavigationService.kt',
+  'scripts/test-gps-gateway.js',
   'tests/gps-planetary.matrix.json'
 ];
 
@@ -43,6 +49,9 @@ if (!failures.length) {
   const html = read('atlas-gps-4d.html');
   const gateway = read('gps-platform/api/server.js');
   const providers = read('gps-platform/api/providers.js');
+  const laneSchema = read('gps-platform/database/001_lane_intelligence.sql');
+  const compose = read('gps-platform/docker-compose.yml');
+  const offlineBuilder = read('gps-platform/offline/build-region.sh');
 
   const requiredModes = ['car', 'truck', 'transit', 'bicycle', 'walking', 'emergency', 'maritime', 'aviation'];
   for (const mode of requiredModes) pass(Boolean(modes.modes?.[mode]), `Missing routing mode: ${mode}`);
@@ -53,6 +62,8 @@ if (!failures.length) {
   }
   pass(manifest.coverage === 'planetary', 'Offline manifest must declare planetary coverage');
   pass(manifest.signatureAlgorithm === 'Ed25519', 'Offline packages must use Ed25519 signatures');
+  pass(offlineBuilder.includes('openssl pkeyutl -sign'), 'Offline package builder must sign packages');
+  pass(offlineBuilder.includes('sha256sum'), 'Offline package builder must calculate a checksum');
 
   pass(security.defaults?.locationHistory === false, 'Location history must be disabled by default');
   pass(security.defaults?.rawCameraUpload === false, 'Raw camera upload must be disabled by default');
@@ -75,6 +86,13 @@ if (!failures.length) {
     pass(gateway.includes(endpoint), `GPS gateway missing endpoint: ${endpoint}`);
   }
   for (const mode of requiredModes) pass(providers.includes(`${mode}:`), `Provider adapter missing mode: ${mode}`);
+
+  for (const table of ['road_segments', 'lanes', 'lane_connectivity', 'traffic_signs', 'speed_limits', 'interchanges', 'dynamic_road_events']) {
+    pass(laneSchema.includes(`atlas_gps.${table}`), `Lane intelligence schema missing table: ${table}`);
+  }
+  for (const service of ['gps-gateway:', 'postgis:', 'redis:', 'minio:', 'martin:', 'valhalla:', 'nominatim:']) {
+    pass(compose.includes(service), `Global Map Cloud compose missing service: ${service.replace(':', '')}`);
+  }
 }
 
 if (failures.length) {
