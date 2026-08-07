@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "product": "ATLAS GPS 4D",
+  "releasePolicy": "territory-and-mode gated",
+  "resources": [
+    {
+      "id": "infra.compute",
+      "name": "Planetary compute clusters",
+      "status": "requires_owner_account",
+      "evidence": ["provider account", "billing enabled", "three availability zones", "capacity test", "failover drill"],
+      "automation": "gps-platform/infrastructure/kubernetes/atlas-gps-production.yaml"
+    },
+    {
+      "id": "infra.storage",
+      "name": "Object, database and backup storage",
+      "status": "requires_owner_account",
+      "evidence": ["encrypted volumes", "object-lock policy", "cross-region replication", "restore test", "retention approval"]
+    },
+    {
+      "id": "maps.planet",
+      "name": "Planet map dataset and indexes",
+      "status": "requires_large_import",
+      "evidence": ["source URL", "source date", "checksum", "attribution", "tile build", "search build", "routing build", "quality report"]
+    },
+    {
+      "id": "domain.production",
+      "name": "Production domain, DNS, DNSSEC and TLS",
+      "status": "requires_credentials",
+      "evidence": ["zone ID", "scoped API token", "DNSSEC active", "strict TLS", "origin certificate", "certificate monitoring"],
+      "automation": "gps-platform/infrastructure/cloudflare/provision-dns.mjs"
+    },
+    {
+      "id": "feeds.live",
+      "name": "Traffic, incident, closure, construction, flood, weather and road-status feeds",
+      "status": "requires_authorized_feeds",
+      "evidence": ["terms accepted", "coverage map", "freshness SLA", "rate limits", "outage contact", "data-processing review"]
+    },
+    {
+      "id": "data.maritime",
+      "name": "Official maritime data",
+      "status": "territory_specific",
+      "evidence": ["authority source", "usage terms", "update frequency", "chart edition", "notice-to-mariners process", "safety disclaimer"]
+    },
+    {
+      "id": "data.aviation",
+      "name": "Official aeronautical data",
+      "status": "territory_specific",
+      "evidence": ["authority source", "usage terms", "effective cycle", "NOTAM integration", "obstacle-data cycle", "aviation safety review"]
+    },
+    {
+      "id": "approval.carplay",
+      "name": "Apple CarPlay navigation entitlement",
+      "status": "requires_apple_approval",
+      "evidence": ["Apple Developer account", "entitlement request", "addendum accepted", "managed capability", "provisioning profile", "App Store review"]
+    },
+    {
+      "id": "approval.android_cars",
+      "name": "Android for Cars distribution approval",
+      "status": "requires_google_play_review",
+      "evidence": ["signed AAB", "car app quality report", "DHU tests", "AAOS emulator tests", "privacy declaration", "Google Play approval"]
+    },
+    {
+      "id": "models.vision",
+      "name": "Signed and validated vision models",
+      "status": "requires_training_and_validation",
+      "evidence": ["licensed datasets", "model card", "territory metrics", "night/rain metrics", "bias review", "adversarial tests", "independent safety review", "signed artifact"]
+    },
+    {
+      "id": "tests.field",
+      "name": "Real-world field validation",
+      "status": "requires_physical_execution",
+      "evidence": ["test permits where required", "insured test vehicles", "trained safety drivers", "route logs", "incident reports", "stop-work records", "territory sign-off"]
+    }
+  ]
+}
