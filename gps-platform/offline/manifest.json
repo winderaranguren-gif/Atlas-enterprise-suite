@@ -1,0 +1,113 @@
+{
+  "version": 1,
+  "generatedAt": "2026-08-07T00:44:00Z",
+  "coverage": "planetary",
+  "packageFormat": "atlas-region-v1",
+  "signatureAlgorithm": "Ed25519",
+  "baseUrl": null,
+  "retention": {
+    "keepCurrentVersions": 2,
+    "removeRevokedImmediately": true
+  },
+  "regions": [
+    {
+      "id": "world",
+      "name": "Earth",
+      "type": "planet",
+      "status": "build-required",
+      "children": ["africa", "antarctica", "asia", "europe", "north-america", "oceania", "south-america"]
+    },
+    {
+      "id": "africa",
+      "name": "Africa",
+      "type": "continent",
+      "status": "build-required",
+      "sourceSelector": "africa/*",
+      "estimatedTier": "very-large"
+    },
+    {
+      "id": "antarctica",
+      "name": "Antarctica",
+      "type": "continent",
+      "status": "build-required",
+      "sourceSelector": "antarctica/*",
+      "estimatedTier": "large"
+    },
+    {
+      "id": "asia",
+      "name": "Asia",
+      "type": "continent",
+      "status": "build-required",
+      "sourceSelector": "asia/*",
+      "estimatedTier": "very-large"
+    },
+    {
+      "id": "europe",
+      "name": "Europe",
+      "type": "continent",
+      "status": "build-required",
+      "sourceSelector": "europe/*",
+      "estimatedTier": "very-large"
+    },
+    {
+      "id": "north-america",
+      "name": "North America",
+      "type": "continent",
+      "status": "build-required",
+      "sourceSelector": "north-america/*",
+      "estimatedTier": "very-large"
+    },
+    {
+      "id": "oceania",
+      "name": "Oceania",
+      "type": "continent",
+      "status": "build-required",
+      "sourceSelector": "australia-oceania/*",
+      "estimatedTier": "very-large"
+    },
+    {
+      "id": "south-america",
+      "name": "South America",
+      "type": "continent",
+      "status": "build-required",
+      "sourceSelector": "south-america/*",
+      "estimatedTier": "very-large"
+    },
+    {
+      "id": "us-florida",
+      "name": "Florida, United States",
+      "type": "state",
+      "status": "build-required",
+      "sourceSelector": "north-america/us/florida",
+      "estimatedTier": "medium",
+      "priorityPilot": true
+    },
+    {
+      "id": "us-puerto-rico",
+      "name": "Puerto Rico, United States",
+      "type": "territory",
+      "status": "build-required",
+      "sourceSelector": "north-america/us/puerto-rico",
+      "estimatedTier": "small",
+      "priorityPilot": true
+    },
+    {
+      "id": "venezuela",
+      "name": "Venezuela",
+      "type": "country",
+      "status": "build-required",
+      "sourceSelector": "south-america/venezuela",
+      "estimatedTier": "medium",
+      "priorityPilot": true
+    },
+    {
+      "id": "spain",
+      "name": "Spain",
+      "type": "country",
+      "status": "build-required",
+      "sourceSelector": "europe/spain",
+      "estimatedTier": "medium",
+      "priorityPilot": true
+    }
+  ]
+}
