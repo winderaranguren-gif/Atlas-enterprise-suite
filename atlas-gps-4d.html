@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#020914" />
+  <meta name="description" content="ATLAS GPS 4D — navegación global inmersiva con cámara, geolocalización, rutas y globo 3D." />
+  <title>ATLAS GPS 4D</title>
+  <link rel="preconnect" href="https://tiles.openfreemap.org" crossorigin />
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css" />
+  <link rel="stylesheet" href="atlas-gps-4d.css" />
+</head>
+<body>
+  <div class="atlas-gps" id="atlas-gps-app">
+    <header class="gps-header glass">
+      <a class="back-link" href="index.html" aria-label="Volver a ATLAS Enterprise Suite">←</a>
+      <div class="brand-lockup" aria-label="ATLAS GPS 4D">
+        <span class="brand-mark">A</span>
+        <span><strong>ATLAS</strong><small>GPS 4D · PLANETARY NAVIGATION</small></span>
+      </div>
+      <div class="header-status">
+        <span class="status-pill" id="network-status"><i></i> ONLINE</span>
+        <button class="icon-button" id="language-button" type="button" aria-label="Cambiar idioma">ES</button>
+        <button class="icon-button" id="fullscreen-button" type="button" aria-label="Pantalla completa">⛶</button>
+      </div>
+    </header>
+
+    <main class="navigation-stage">
+      <section class="camera-stage" aria-label="Vista de carretera con realidad aumentada">
+        <video id="road-camera" autoplay muted playsinline></video>
+        <div class="camera-fallback" id="camera-fallback" aria-hidden="true">
+          <div class="horizon"></div>
+          <div class="sim-road"><span></span><span></span><span></span></div>
+        </div>
+        <div class="camera-shade"></div>
+
+        <div class="road-signs" aria-hidden="true">
+          <div class="ar-sign"><small id="sign-direction">NORTH</small><strong id="sign-primary">Route active</strong><span id="sign-secondary">ATLAS guidance</span></div>
+          <div class="ar-sign compact"><small id="sign-exit">NEXT</small><strong id="sign-distance">—</strong></div>
+        </div>
+
+        <div class="ar-route" aria-hidden="true">
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+
+        <aside class="speed-card glass">
+          <strong id="speed-value">0</strong><span>MPH</span>
+          <small>GPS SPEED</small>
+        </aside>
+
+        <aside class="camera-weather glass">
+          <span id="weather-icon">◌</span>
+          <div><strong id="heading-value">—°</strong><small id="heading-label">HEADING</small></div>
+        </aside>
+
+        <div class="camera-status-row">
+          <span class="status-pill live"><i></i> LIVE 4D</span>
+          <span class="status-pill" id="accuracy-pill">ACCURACY —</span>
+        </div>
+
+        <button class="camera-permission glass" id="camera-button" type="button">Enable road camera</button>
+      </section>
+
+      <section class="map-stage" aria-label="Mapa global y navegación">
+        <div id="map" role="application" aria-label="Mapa interactivo ATLAS GPS 4D"></div>
+        <div class="map-vignette" aria-hidden="true"></div>
+
+        <form class="search-panel glass" id="destination-form" autocomplete="off">
+          <span class="search-icon">⌕</span>
+          <label class="sr-only" for="destination-input">Destino</label>
+          <input id="destination-input" name="destination" type="search" placeholder="Search any destination on Earth" aria-expanded="false" aria-controls="search-results" />
+          <button id="clear-search" class="icon-button compact-button" type="button" aria-label="Limpiar destino">×</button>
+          <button class="route-button" type="submit">GO</button>
+          <div class="search-results" id="search-results" role="listbox"></div>
+        </form>
+
+        <aside class="route-card glass" id="route-card">
+          <div class="maneuver-icon" id="maneuver-icon">↑</div>
+          <div class="route-copy">
+            <div class="route-distance"><strong id="next-distance">Ready</strong><span id="route-status">Select a destination</span></div>
+            <p id="next-instruction">ATLAS will calculate a global driving route from your current position.</p>
+            <div class="route-metrics">
+              <span><strong id="remaining-distance">—</strong> distance</span>
+              <span><strong id="remaining-time">—</strong> time</span>
+              <span><strong id="arrival-time">—</strong> arrival</span>
+            </div>
+            <div class="route-actions">
+              <button class="ghost-button" id="voice-button" type="button" aria-pressed="true">🔊 Voice</button>
+              <button class="ghost-button" id="recalculate-button" type="button">↻ Recalculate</button>
+              <button class="ghost-button danger" id="stop-route-button" type="button">× Stop</button>
+            </div>
+          </div>
+        </aside>
+
+        <aside class="lane-card glass" id="lane-card" aria-label="Guía de carril">
+          <div class="lane-arrows" aria-hidden="true"><span>↑</span><span class="active">↑</span><span>↑</span></div>
+          <strong>Recommended lane</strong>
+          <small id="lane-guidance">Keep centered</small>
+        </aside>
+
+        <aside class="timeline-card glass" aria-label="Línea de tiempo 4D">
+          <div class="timeline-title"><span>4D TIME</span><strong id="timeline-label">NOW</strong></div>
+          <input id="timeline-slider" type="range" min="0" max="100" value="0" step="1" aria-label="Vista futura de la ruta" />
+          <div class="timeline-scale"><span>NOW</span><span>25%</span><span>50%</span><span>75%</span><span>ARRIVAL</span></div>
+        </aside>
+
+        <div class="map-controls glass" aria-label="Controles del mapa">
+          <button id="locate-button" class="control-button" type="button" title="Mi ubicación">◎</button>
+          <button id="follow-button" class="control-button active" type="button" title="Seguir vehículo" aria-pressed="true">➤</button>
+          <button id="globe-button" class="control-button" type="button" title="Vista global" aria-pressed="false">◉</button>
+          <button id="buildings-button" class="control-button active" type="button" title="Edificios 3D" aria-pressed="true">▰</button>
+        </div>
+
+        <nav class="bottom-dock glass" aria-label="Herramientas de navegación">
+          <button class="dock-button active" type="button" data-mode="overview"><span>◉</span><small>OVERVIEW</small></button>
+          <button class="dock-button" type="button" data-mode="traffic"><span>≋</span><small>TRAFFIC</small></button>
+          <button class="atlas-orb" id="atlas-orb" type="button" aria-label="Comando de voz ATLAS"><span>A</span></button>
+          <button class="dock-button" type="button" data-mode="hazards"><span>△</span><small>HAZARDS</small></button>
+          <button class="dock-button" type="button" data-mode="settings"><span>⚙</span><small>SETTINGS</small></button>
+        </nav>
+      </section>
+    </main>
+
+    <div class="permission-sheet glass" id="permission-sheet" role="dialog" aria-modal="true" aria-labelledby="permission-title">
+      <div class="permission-icon">A</div>
+      <p class="eyebrow">ATLAS GPS 4D</p>
+      <h1 id="permission-title">Activate planetary navigation</h1>
+      <p>Allow location for real routing. Camera and orientation are optional and power the augmented road view.</p>
+      <div class="permission-grid">
+        <span>✓ Global 3D map</span><span>✓ Live geolocation</span><span>✓ Turn-by-turn route</span><span>✓ AR camera mode</span>
+      </div>
+      <button class="primary-button" id="start-navigation-button" type="button">Start ATLAS GPS 4D</button>
+      <button class="text-button" id="demo-navigation-button" type="button">Explore in demo mode</button>
+      <small class="legal-note">Do not interact with the screen while driving. Use a mounted device and follow local laws.</small>
+    </div>
+
+    <div class="toast-region" id="toast-region" aria-live="polite"></div>
+  </div>
+
+  <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+  <script src="atlas-gps-4d.js"></script>
+</body>
+</html>
