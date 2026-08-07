@@ -1,0 +1,521 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: atlas-gps
+  labels:
+    app.kubernetes.io/part-of: atlas-gps-4d
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: atlas-gps-secrets
+  namespace: atlas-gps
+type: Opaque
+stringData:
+  POSTGRES_PASSWORD: REPLACE_WITH_SECRET_MANAGER_VALUE
+  MINIO_ROOT_USER: REPLACE_WITH_SECRET_MANAGER_VALUE
+  MINIO_ROOT_PASSWORD: REPLACE_WITH_SECRET_MANAGER_VALUE
+  ATLAS_GPS_ADMIN_TOKEN: REPLACE_WITH_SECRET_MANAGER_VALUE
+  ATLAS_LOCATION_ENCRYPTION_KEY: REPLACE_WITH_32_BYTE_BASE64_KEY
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: atlas-gps-config
+  namespace: atlas-gps
+data:
+  ATLAS_GPS_HOST: "0.0.0.0"
+  ATLAS_GPS_PORT: "4280"
+  ATLAS_GPS_PUBLIC_ORIGIN: "https://gps.atlas.example.com"
+  ATLAS_GPS_ALLOWED_ORIGINS: "https://atlas.example.com,https://gps.atlas.example.com"
+  ATLAS_GPS_ALLOW_PUBLIC_DEMO: "false"
+  ATLAS_GPS_LOCATION_RETENTION_SECONDS: "0"
+  ATLAS_TILE_SERVER_URL: "http://martin:3000"
+  ATLAS_SEARCH_URL: "http://pelias-api:4000/v1"
+  ATLAS_ROUTER_URL: "http://valhalla:8002"
+  ATLAS_OBJECT_STORAGE_ENDPOINT: "http://minio:9000"
+  ATLAS_OBJECT_STORAGE_BUCKET: "atlas-gps-offline"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgis
+  namespace: atlas-gps
+spec:
+  selector:
+    app: postgis
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgis
+  namespace: atlas-gps
+spec:
+  serviceName: postgis
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgis
+  template:
+    metadata:
+      labels:
+        app: postgis
+    spec:
+      securityContext:
+        fsGroup: 999
+      containers:
+        - name: postgis
+          image: postgis/postgis:16-3.4
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: atlas_gps
+            - name: POSTGRES_USER
+              value: atlas_gps
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: atlas-gps-secrets
+                  key: POSTGRES_PASSWORD
+          readinessProbe:
+            exec:
+              command: ["sh", "-c", "pg_isready -U atlas_gps -d atlas_gps"]
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command: ["sh", "-c", "pg_isready -U atlas_gps -d atlas_gps"]
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "4"
+              memory: 16Gi
+            limits:
+              cpu: "16"
+              memory: 64Gi
+          volumeMounts:
+            - name: postgis-data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: postgis-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 4Ti
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: atlas-gps
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          args: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "allkeys-lru"]
+          ports:
+            - containerPort: 6379
+          resources:
+            requests:
+              cpu: "500m"
+              memory: 1Gi
+            limits:
+              cpu: "2"
+              memory: 4Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: atlas-gps
+spec:
+  selector:
+    app: redis
+  ports:
+    - port: 6379
+      targetPort: 6379
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: minio
+  namespace: atlas-gps
+spec:
+  serviceName: minio
+  replicas: 4
+  selector:
+    matchLabels:
+      app: minio
+  template:
+    metadata:
+      labels:
+        app: minio
+    spec:
+      containers:
+        - name: minio
+          image: minio/minio:latest
+          args: ["server", "http://minio-{0...3}.minio.atlas-gps.svc.cluster.local/data", "--console-address", ":9001"]
+          env:
+            - name: MINIO_ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: atlas-gps-secrets
+                  key: MINIO_ROOT_USER
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: atlas-gps-secrets
+                  key: MINIO_ROOT_PASSWORD
+          ports:
+            - containerPort: 9000
+            - containerPort: 9001
+          resources:
+            requests:
+              cpu: "2"
+              memory: 8Gi
+            limits:
+              cpu: "8"
+              memory: 32Gi
+          volumeMounts:
+            - name: minio-data
+              mountPath: /data
+  volumeClaimTemplates:
+    - metadata:
+        name: minio-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 8Ti
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio
+  namespace: atlas-gps
+spec:
+  clusterIP: None
+  selector:
+    app: minio
+  ports:
+    - name: api
+      port: 9000
+    - name: console
+      port: 9001
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: martin
+  namespace: atlas-gps
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: martin
+  template:
+    metadata:
+      labels:
+        app: martin
+    spec:
+      containers:
+        - name: martin
+          image: ghcr.io/maplibre/martin:latest
+          args: ["postgresql://atlas_gps:$(POSTGRES_PASSWORD)@postgis:5432/atlas_gps"]
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: atlas-gps-secrets
+                  key: POSTGRES_PASSWORD
+          ports:
+            - containerPort: 3000
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "2"
+              memory: 4Gi
+            limits:
+              cpu: "8"
+              memory: 16Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: martin
+  namespace: atlas-gps
+spec:
+  selector:
+    app: martin
+  ports:
+    - port: 3000
+      targetPort: 3000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: valhalla
+  namespace: atlas-gps
+spec:
+  replicas: 6
+  selector:
+    matchLabels:
+      app: valhalla
+  template:
+    metadata:
+      labels:
+        app: valhalla
+    spec:
+      containers:
+        - name: valhalla
+          image: ghcr.io/gis-ops/docker-valhalla/valhalla:latest
+          env:
+            - name: serve_tiles
+              value: "True"
+            - name: force_rebuild
+              value: "False"
+          ports:
+            - containerPort: 8002
+          readinessProbe:
+            httpGet:
+              path: /status
+              port: 8002
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: "4"
+              memory: 16Gi
+            limits:
+              cpu: "16"
+              memory: 64Gi
+          volumeMounts:
+            - name: routing-tiles
+              mountPath: /custom_files
+      volumes:
+        - name: routing-tiles
+          persistentVolumeClaim:
+            claimName: routing-tiles
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: routing-tiles
+  namespace: atlas-gps
+spec:
+  accessModes: ["ReadOnlyMany"]
+  resources:
+    requests:
+      storage: 6Ti
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: valhalla
+  namespace: atlas-gps
+spec:
+  selector:
+    app: valhalla
+  ports:
+    - port: 8002
+      targetPort: 8002
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pelias-api
+  namespace: atlas-gps
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: pelias-api
+  template:
+    metadata:
+      labels:
+        app: pelias-api
+    spec:
+      containers:
+        - name: pelias-api
+          image: pelias/api:master
+          ports:
+            - containerPort: 4000
+          resources:
+            requests:
+              cpu: "2"
+              memory: 4Gi
+            limits:
+              cpu: "8"
+              memory: 16Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pelias-api
+  namespace: atlas-gps
+spec:
+  selector:
+    app: pelias-api
+  ports:
+    - port: 4000
+      targetPort: 4000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-gps-gateway
+  namespace: atlas-gps
+spec:
+  replicas: 6
+  selector:
+    matchLabels:
+      app: atlas-gps-gateway
+  template:
+    metadata:
+      labels:
+        app: atlas-gps-gateway
+    spec:
+      containers:
+        - name: gateway
+          image: ghcr.io/winderaranguren-gif/atlas-gps-gateway:REPLACE_WITH_SIGNED_TAG
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: atlas-gps-config
+          env:
+            - name: ATLAS_GPS_ADMIN_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: atlas-gps-secrets
+                  key: ATLAS_GPS_ADMIN_TOKEN
+            - name: ATLAS_LOCATION_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: atlas-gps-secrets
+                  key: ATLAS_LOCATION_ENCRYPTION_KEY
+          ports:
+            - containerPort: 4280
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 4280
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 4280
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "1"
+              memory: 1Gi
+            limits:
+              cpu: "4"
+              memory: 8Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-gps-gateway
+  namespace: atlas-gps
+spec:
+  selector:
+    app: atlas-gps-gateway
+  ports:
+    - port: 4280
+      targetPort: 4280
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: atlas-gps-gateway
+  namespace: atlas-gps
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: atlas-gps-gateway
+  minReplicas: 6
+  maxReplicas: 60
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: atlas-gps-public
+  namespace: atlas-gps
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/limit-rps: "50"
+spec:
+  tls:
+    - hosts:
+        - gps-api.atlas.example.com
+        - maps.atlas.example.com
+      secretName: atlas-gps-production-tls
+  rules:
+    - host: gps-api.atlas.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: atlas-gps-gateway
+                port:
+                  number: 4280
+    - host: maps.atlas.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: martin
+                port:
+                  number: 3000
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: atlas-gps-gateway
+  namespace: atlas-gps
+spec:
+  minAvailable: 4
+  selector:
+    matchLabels:
+      app: atlas-gps-gateway
