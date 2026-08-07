@@ -1,13 +1,14 @@
 {
   "name": "atlas-enterprise-suite",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "private": true,
   "description": "ATLAS Enterprise Suite production-ready web, PWA, mobile and planetary navigation foundation",
   "scripts": {
     "start": "node server.js",
     "serve": "node server.js",
     "gps:gateway": "node gps-platform/api/server.js",
-    "check:js": "node --check app.js && node --check server.js && node --check service-worker.js && node --check cloud-auth.js && node --check private-beta.js && node --check private-beta-recovery.js && node --check atlas-config.js && node --check atlas-gps-4d.js && node --check atlas-gps-enterprise.js && node --check atlas-gps-ar.js && node --check atlas-gps-ar-worker.js && node --check gps-platform/api/server.js && node --check gps-platform/api/providers.js && node --check scripts/validate-gps-platform.js && node --check scripts/test-gps-gateway.js && node --check scripts/build-cloudflare.js",
+    "gps:readiness": "node scripts/gps-production-readiness.js",
+    "check:js": "node --check app.js && node --check server.js && node --check service-worker.js && node --check cloud-auth.js && node --check private-beta.js && node --check private-beta-recovery.js && node --check atlas-config.js && node --check atlas-gps-4d.js && node --check atlas-gps-enterprise.js && node --check atlas-gps-ar.js && node --check atlas-gps-ar-worker.js && node --check gps-platform/api/server.js && node --check gps-platform/api/providers.js && node --check gps-platform/infrastructure/cloudflare/provision-dns.mjs && node --check scripts/validate-gps-platform.js && node --check scripts/test-gps-gateway.js && node --check scripts/gps-production-readiness.js && node --check scripts/build-cloudflare.js",
     "check:db": "node scripts/validate-database-package.js",
     "check:gps": "node scripts/validate-gps-platform.js",
     "test:gps": "node scripts/test-gps-gateway.js",
