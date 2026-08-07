@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Replace with approved Android Auto and Android Automotive OS host package/signature entries before release. -->
+    <string-array name="atlas_allowed_car_hosts">
+    </string-array>
+</resources>
