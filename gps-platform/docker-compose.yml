@@ -1,0 +1,136 @@
+services:
+  gps-gateway:
+    build:
+      context: ./api
+    restart: unless-stopped
+    environment:
+      ATLAS_GPS_PORT: 4280
+      ATLAS_GPS_HOST: 0.0.0.0
+      ATLAS_GPS_ALLOWED_ORIGINS: ${ATLAS_GPS_ALLOWED_ORIGINS}
+      ATLAS_GPS_ADMIN_TOKEN: ${ATLAS_GPS_ADMIN_TOKEN}
+      ATLAS_GPS_ALLOW_PUBLIC_DEMO: ${ATLAS_GPS_ALLOW_PUBLIC_DEMO:-false}
+      ATLAS_GPS_LOG_RETENTION_DAYS: ${ATLAS_GPS_LOG_RETENTION_DAYS:-7}
+      ATLAS_GPS_LOCATION_RETENTION_SECONDS: ${ATLAS_GPS_LOCATION_RETENTION_SECONDS:-0}
+      ATLAS_TILE_STYLE_URL: ${ATLAS_TILE_STYLE_URL}
+      ATLAS_TILE_SERVER_URL: http://martin:3000
+      ATLAS_SEARCH_URL: http://nominatim:8080
+      ATLAS_ROUTER_URL: http://valhalla:8002
+      ATLAS_OFFLINE_BASE_URL: ${ATLAS_OFFLINE_BASE_URL}
+      ATLAS_TRAFFIC_URL: ${ATLAS_TRAFFIC_URL:-}
+      ATLAS_TRAFFIC_TOKEN: ${ATLAS_TRAFFIC_TOKEN:-}
+      ATLAS_INCIDENTS_URL: ${ATLAS_INCIDENTS_URL:-}
+      ATLAS_INCIDENTS_TOKEN: ${ATLAS_INCIDENTS_TOKEN:-}
+      ATLAS_CLOSURES_URL: ${ATLAS_CLOSURES_URL:-}
+      ATLAS_CLOSURES_TOKEN: ${ATLAS_CLOSURES_TOKEN:-}
+      ATLAS_CONSTRUCTION_URL: ${ATLAS_CONSTRUCTION_URL:-}
+      ATLAS_CONSTRUCTION_TOKEN: ${ATLAS_CONSTRUCTION_TOKEN:-}
+      ATLAS_FLOODS_URL: ${ATLAS_FLOODS_URL:-}
+      ATLAS_FLOODS_TOKEN: ${ATLAS_FLOODS_TOKEN:-}
+      ATLAS_WEATHER_URL: ${ATLAS_WEATHER_URL:-}
+      ATLAS_WEATHER_TOKEN: ${ATLAS_WEATHER_TOKEN:-}
+      ATLAS_ROAD_STATUS_URL: ${ATLAS_ROAD_STATUS_URL:-}
+      ATLAS_ROAD_STATUS_TOKEN: ${ATLAS_ROAD_STATUS_TOKEN:-}
+      ATLAS_TRANSIT_URL: ${ATLAS_TRANSIT_URL:-}
+      ATLAS_TRANSIT_TOKEN: ${ATLAS_TRANSIT_TOKEN:-}
+      ATLAS_MARITIME_URL: ${ATLAS_MARITIME_URL:-}
+      ATLAS_MARITIME_TOKEN: ${ATLAS_MARITIME_TOKEN:-}
+      ATLAS_AVIATION_URL: ${ATLAS_AVIATION_URL:-}
+      ATLAS_AVIATION_TOKEN: ${ATLAS_AVIATION_TOKEN:-}
+    volumes:
+      - ./offline/manifest.json:/app/offline/manifest.json:ro
+      - ./config:/app/config:ro
+    ports:
+      - "4280:4280"
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgis:
+        condition: service_healthy
+
+  postgis:
+    image: ${ATLAS_POSTGIS_IMAGE:-postgis/postgis:16-3.4}
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: atlas_gps
+      POSTGRES_USER: atlas_gps
+      POSTGRES_PASSWORD: ${ATLAS_POSTGRES_PASSWORD:-replace-me}
+    volumes:
+      - atlas-postgis:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U atlas_gps -d atlas_gps"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  redis:
+    image: ${ATLAS_REDIS_IMAGE:-redis:7-alpine}
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - atlas-redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  minio:
+    image: ${ATLAS_MINIO_IMAGE:-minio/minio:latest}
+    restart: unless-stopped
+    command: server /data --console-address :9001
+    environment:
+      MINIO_ROOT_USER: ${ATLAS_OBJECT_STORAGE_ACCESS_KEY:-atlas}
+      MINIO_ROOT_PASSWORD: ${ATLAS_OBJECT_STORAGE_SECRET_KEY:-replace-me-now}
+    volumes:
+      - atlas-offline:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+
+  martin:
+    image: ${ATLAS_MARTIN_IMAGE:-ghcr.io/maplibre/martin:latest}
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://atlas_gps:${ATLAS_POSTGRES_PASSWORD:-replace-me}@postgis:5432/atlas_gps
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgis:
+        condition: service_healthy
+
+  valhalla:
+    image: ${ATLAS_VALHALLA_IMAGE:-ghcr.io/gis-ops/docker-valhalla/valhalla:latest}
+    restart: unless-stopped
+    environment:
+      tile_urls: ${ATLAS_OSM_PBF_URL:-}
+      build_elevation: "True"
+      build_admins: "True"
+      build_time_zones: "True"
+      force_rebuild: ${ATLAS_FORCE_ROUTING_REBUILD:-False}
+      serve_tiles: "True"
+    volumes:
+      - atlas-valhalla:/custom_files
+    ports:
+      - "8002:8002"
+
+  nominatim:
+    image: ${ATLAS_NOMINATIM_IMAGE:-mediagis/nominatim:4.5}
+    restart: unless-stopped
+    environment:
+      PBF_URL: ${ATLAS_OSM_PBF_URL:-}
+      REPLICATION_URL: ${ATLAS_OSM_REPLICATION_URL:-}
+      NOMINATIM_PASSWORD: ${ATLAS_NOMINATIM_PASSWORD:-replace-me}
+      IMPORT_WIKIPEDIA: "false"
+      THREADS: ${ATLAS_IMPORT_THREADS:-4}
+    shm_size: 1gb
+    volumes:
+      - atlas-nominatim:/var/lib/postgresql/14/main
+    ports:
+      - "8080:8080"
+
+volumes:
+  atlas-postgis:
+  atlas-redis:
+  atlas-offline:
+  atlas-valhalla:
+  atlas-nominatim:
