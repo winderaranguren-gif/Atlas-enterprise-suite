@@ -1,11 +1,14 @@
-const VERSION = 'atlas-core-v3';
+const VERSION = 'atlas-core-v4-wallet-suite';
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 const APP_SHELL = [
   '/',
   '/index.html',
   '/styles.css',
+  '/atlas-suite.css',
   '/app.js',
+  '/atlas-legacy-migrate.js',
+  '/atlas-suite.js',
   '/manifest.webmanifest',
   '/offline.html',
   '/public/icons/atlas-icon.svg'
@@ -43,13 +46,12 @@ self.addEventListener('fetch', event => {
 
   if (url.origin === self.location.origin) {
     event.respondWith(
-      caches.match(request).then(cached => {
-        const network = fetch(request).then(response => {
+      fetch(request)
+        .then(response => {
           if (response.ok) caches.open(RUNTIME_CACHE).then(cache => cache.put(request, response.clone()));
           return response;
-        });
-        return cached || network;
-      })
+        })
+        .catch(() => caches.match(request))
     );
   }
 });
