@@ -2,7 +2,7 @@
   "id": "/",
   "name": "ATLAS Enterprise Suite",
   "short_name": "ATLAS",
-  "description": "Plataforma empresarial multiempresa para operaciones, finanzas, clientes, inventario, recursos humanos y reportes.",
+  "description": "Plataforma empresarial multiempresa para operaciones, finanzas, clientes, inventario, recursos humanos, calendario y reportes.",
   "lang": "es-US",
   "dir": "ltr",
   "start_url": "/?source=pwa",
@@ -22,6 +22,12 @@
     }
   ],
   "shortcuts": [
+    {
+      "name": "ATLAS Calendar",
+      "short_name": "Calendar",
+      "url": "/atlas-calendar.html",
+      "icons": [{"src": "/public/icons/atlas-icon.svg", "sizes": "any", "type": "image/svg+xml"}]
+    },
     {
       "name": "Dashboard",
       "short_name": "Dashboard",
