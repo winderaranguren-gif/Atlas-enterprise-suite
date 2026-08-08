@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "serve": "node server.js",
-    "check:js": "node --check app.js && node --check atlas-legacy-migrate.js && node --check atlas-suite.js && node --check atlas-calendar.js && node --check server.js && node --check service-worker.js && node --check cloud-auth.js && node --check private-beta.js && node --check private-beta-recovery.js && node --check atlas-config.js && node --check scripts/build-cloudflare.js",
+    "check:js": "node --check app.js && node --check atlas-legacy-migrate.js && node --check atlas-suite.js && node --check atlas-calendar.js && node --check atlas-cars.js && node --check server.js && node --check service-worker.js && node --check cloud-auth.js && node --check private-beta.js && node --check private-beta-recovery.js && node --check atlas-config.js && node --check scripts/build-cloudflare.js",
     "check:db": "node scripts/validate-database-package.js",
     "validate": "npm run check:js && npm run check:db",
     "build": "npm run validate && npm run build:cloudflare",
