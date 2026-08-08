@@ -8,7 +8,8 @@ const SECURITY_HEADERS = Object.freeze({
 });
 
 const APP_VERSION='0.5.0';
-const SUPPORT_VERSION='1.0.0';
+const SUPPORT_VERSION='1.1.0';
+const RUNBOOK_VERSION='1.0.0';
 
 function applySecurityHeaders(response, requestUrl) {
   const headers = new Headers(response.headers);
@@ -82,28 +83,82 @@ function supportAnalysis(body={}){
   };
 }
 
+function buildRunbook(body={}){
+  const diagnostics=Array.isArray(body.diagnostics)?body.diagnostics:[];
+  const failures=diagnostics.filter(item=>item&&item.ok===false);
+  const classification=classifyIssue(body.summary);
+  const steps=[{
+    id:'capture-state',
+    label:'Capturar estado técnico',
+    mode:'observe',
+    status:'ready',
+    detail:'Preservar diagnóstico, entorno y evidencia antes de modificar el sistema.'
+  }];
+
+  for(const item of failures){
+    const id=String(item.id||'unknown');
+    if(id==='service-worker')steps.push({id:'repair-service-worker',action:'repair-service-worker',label:'Reparar Service Worker',mode:'auto-safe',status:'ready',detail:'Registrar o actualizar el Service Worker sin borrar datos y verificar nuevamente.'});
+    else if(id==='quota')steps.push({id:'request-persistence',action:'request-persistence',label:'Reforzar persistencia',mode:'auto-safe',status:'ready',detail:'Solicitar almacenamiento persistente sin eliminar información existente.'});
+    else if(id==='network')steps.push({id:'network-access',label:'Restablecer conectividad',mode:'blocked-access',status:'blocked',detail:'Requiere acceso al dispositivo, Wi-Fi, router o proveedor de red.'});
+    else if(id==='origin')steps.push({id:'https-required',label:'Corregir origen seguro',mode:'deployment',status:'blocked',detail:'Requiere servir ATLAS mediante HTTPS o localhost.'});
+    else if(id==='api-version')steps.push({id:'backend-route',label:'Restaurar backend ATLAS',mode:'deployment',status:'blocked',detail:'Requiere una ruta /api/version válida en el entorno desplegado.'});
+    else if(id==='assets')steps.push({id:'asset-review',label:'Revisar recursos web',mode:'diagnostic',status:'ready',detail:'Identificar recursos fallidos antes de invalidar caches o modificar datos.'});
+    else if(id.startsWith('adapter:'))steps.push({id,label:item.label||id,mode:'adapter',status:'ready',detail:item.detail||'Ejecutar el adaptador empresarial autorizado y verificar el resultado.'});
+    else steps.push({id:`diagnose-${id}`,label:`Profundizar ${item.label||id}`,mode:'diagnostic',status:'ready',detail:item.detail||'Recolectar evidencia adicional antes de aplicar cambios.'});
+  }
+
+  steps.push({id:'verify-final',label:'Verificación posterior',mode:'verify',status:'ready',detail:'Volver a ejecutar diagnóstico y no cerrar el caso hasta comprobar el estado final.'});
+
+  return {
+    ok:true,
+    service:'ATLAS Technical Operations',
+    source:'cloudflare-worker',
+    supportVersion:SUPPORT_VERSION,
+    runbookVersion:RUNBOOK_VERSION,
+    classification,
+    policy:{autoExecute:'safe-reversible-only',verifyAfterRepair:true,escalateOnlyOnRealBlocker:true},
+    summary:{failures:failures.length,steps:steps.length,autoExecutable:steps.filter(step=>step.mode==='auto-safe').length,blocked:steps.filter(step=>step.status==='blocked').length},
+    steps
+  };
+}
+
+async function readJsonBody(request,base){
+  const length=Number(request.headers.get('content-length')||0);
+  if(length>65536)return {error:json({...base,ok:false,error:'payload_too_large'},413)};
+  try{return {body:await request.json()};}
+  catch{return {error:json({...base,ok:false,error:'invalid_json'},400)};}
+}
+
 async function handleApi(request,url){
   const requestId=crypto.randomUUID();
   const base={requestId,at:new Date().toISOString()};
 
   if(request.method==='GET'&&url.pathname==='/healthz'){
-    return json({...base,ok:true,app:'ATLAS Enterprise Suite',version:APP_VERSION,support:SUPPORT_VERSION,runtime:'cloudflare-worker'});
+    return json({...base,ok:true,app:'ATLAS Enterprise Suite',version:APP_VERSION,support:SUPPORT_VERSION,runbookVersion:RUNBOOK_VERSION,runtime:'cloudflare-worker'});
   }
 
   if(request.method==='GET'&&url.pathname==='/api/version'){
-    return json({...base,ok:true,name:'ATLAS Enterprise Suite',version:APP_VERSION,supportVersion:SUPPORT_VERSION});
+    return json({...base,ok:true,name:'ATLAS Enterprise Suite',version:APP_VERSION,supportVersion:SUPPORT_VERSION,runbookVersion:RUNBOOK_VERSION});
   }
 
   if(request.method==='GET'&&url.pathname==='/api/support/capabilities'){
-    return json({...base,ok:true,service:'ATLAS Technical Operations',capabilities:['diagnostics','safe-auto-repair','post-repair-verification','dynamic-adapters','case-audit-log','exact-blocker-escalation']});
+    return json({...base,ok:true,service:'ATLAS Technical Operations',capabilities:['diagnostics','safe-auto-repair','post-repair-verification','dynamic-adapters','case-audit-log','exact-blocker-escalation','runbook-planning','backend-advisory']});
+  }
+
+  if(request.method==='GET'&&url.pathname==='/api/support/runbooks'){
+    return json({...base,ok:true,service:'ATLAS Technical Operations',runbookVersion:RUNBOOK_VERSION,classifications:['general','identity-access','deployment','network','performance','data-storage'],executionPolicy:'safe-reversible-only'});
   }
 
   if(request.method==='POST'&&url.pathname==='/api/support/analyze'){
-    const length=Number(request.headers.get('content-length')||0);
-    if(length>65536)return json({...base,ok:false,error:'payload_too_large'},413);
-    let body;
-    try{body=await request.json();}catch{return json({...base,ok:false,error:'invalid_json'},400);}
-    return json({...base,...supportAnalysis(body)});
+    const parsed=await readJsonBody(request,base);
+    if(parsed.error)return parsed.error;
+    return json({...base,...supportAnalysis(parsed.body)});
+  }
+
+  if(request.method==='POST'&&url.pathname==='/api/support/plan'){
+    const parsed=await readJsonBody(request,base);
+    if(parsed.error)return parsed.error;
+    return json({...base,...buildRunbook(parsed.body)});
   }
 
   return json({...base,ok:false,error:'api_not_found',path:url.pathname},404);
