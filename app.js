@@ -14,10 +14,19 @@
   supportCss.href='atlas-technical-support.css?v=1';
   document.head.append(supportCss);
 
+  const loadRunbooks=()=>{
+    const runbooks=document.createElement('script');
+    runbooks.src='atlas-support-runbooks.js?v=1';
+    runbooks.async=false;
+    document.body.append(runbooks);
+  };
+
   const loadSupport=()=>{
     const support=document.createElement('script');
     support.src='atlas-technical-support.js?v=1';
     support.async=false;
+    support.onload=loadRunbooks;
+    support.onerror=loadRunbooks;
     document.body.append(support);
   };
 
