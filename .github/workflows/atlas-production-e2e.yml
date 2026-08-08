@@ -16,9 +16,15 @@ concurrency:
 
 jobs:
   production-e2e:
-    name: production-e2e
+    name: production-e2e (${{ matrix.origin }})
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        origin:
+          - https://atlasenterprisesuite.com
+          - https://www.atlasenterprisesuite.com
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,5 +34,5 @@ jobs:
           node-version: '24'
       - name: Validate production website
         env:
-          ATLAS_PRODUCTION_URL: https://atlasenterprisesuite.com
+          ATLAS_PRODUCTION_URL: ${{ matrix.origin }}
         run: node scripts/production-remote-e2e.js
