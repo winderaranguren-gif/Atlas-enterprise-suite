@@ -1,13 +1,13 @@
 {
   "name": "atlas-enterprise-suite",
-  "version": "0.4.3",
+  "version": "0.5.0",
   "private": true,
   "description": "ATLAS Enterprise Suite production-ready web, PWA and mobile foundation",
   "scripts": {
     "start": "node server.js",
     "serve": "node server.js",
-    "check:js": "node --check app.js && node --check atlas-legacy-migrate.js && node --check atlas-suite.js && node --check atlas-os-operational.js && node --check atlas-technical-support.js && node --check atlas-calendar.js && node --check server.js && node --check service-worker.js && node --check cloud-auth.js && node --check private-beta.js && node --check private-beta-recovery.js && node --check atlas-config.js && node --check scripts/build-cloudflare.js",
-    "check:db": "node scripts/validate-database-package.js",
+    "check:js": "node --check app.js && node --check atlas-legacy-migrate.js && node --check atlas-suite.js && node --check atlas-os-operational.js && node --check atlas-technical-support.js && node --check atlas-calendar.js && node --check server.js && node --check service-worker.js && node --check cloud-auth.js && node --check private-beta.js && node --check private-beta-recovery.js && node --check atlas-config.js && node --check scripts/build-cloudflare.js && node --check scripts/validate-database-package.js && node --check scripts/validate-personal-intelligence-package.js",
+    "check:db": "node scripts/validate-database-package.js && node scripts/validate-personal-intelligence-package.js",
     "validate": "npm run check:js && npm run check:db",
     "build": "npm run validate && npm run build:cloudflare",
     "build:cloudflare": "node scripts/build-cloudflare.js",
