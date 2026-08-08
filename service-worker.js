@@ -1,4 +1,4 @@
-const VERSION = 'atlas-core-v5-calendar-notifications';
+const VERSION = 'atlas-core-v6-autonomous-support';
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 const APP_SHELL = [
@@ -6,9 +6,13 @@ const APP_SHELL = [
   '/index.html',
   '/styles.css',
   '/atlas-suite.css',
+  '/atlas-os-modules.css',
+  '/atlas-technical-support.css',
   '/app.js',
   '/atlas-legacy-migrate.js',
   '/atlas-suite.js',
+  '/atlas-os-operational.js',
+  '/atlas-technical-support.js',
   '/atlas-calendar.html',
   '/atlas-calendar.js',
   '/manifest.webmanifest',
