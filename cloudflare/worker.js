@@ -7,7 +7,7 @@ const SECURITY_HEADERS = Object.freeze({
   'Content-Security-Policy': "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://*.supabase.co wss://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' blob:; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
 });
 
-const APP_VERSION='0.4.3';
+const APP_VERSION='0.5.0';
 const SUPPORT_VERSION='1.0.0';
 
 function applySecurityHeaders(response, requestUrl) {
