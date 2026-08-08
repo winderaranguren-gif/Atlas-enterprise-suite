@@ -11,9 +11,11 @@
     "validate": "npm run check:js && npm run check:db",
     "build": "npm run validate && npm run build:cloudflare",
     "build:cloudflare": "node scripts/build-cloudflare.js",
-    "deploy": "npm run build && npx wrangler@4 deploy",
+    "predeploy": "npm run build",
+    "deploy": "npx wrangler@4 deploy",
     "cloudflare:dev": "npm run build:cloudflare && npx wrangler@4 dev",
-    "cloudflare:deploy": "npm run build && npx wrangler@4 deploy",
+    "precloudflare:deploy": "npm run build",
+    "cloudflare:deploy": "npx wrangler@4 deploy",
     "mobile:add:ios": "npx cap add ios",
     "mobile:add:android": "npx cap add android",
     "mobile:sync": "npx cap sync",
@@ -27,7 +29,8 @@
     "@capacitor/local-notifications": "^7.0.2"
   },
   "devDependencies": {
-    "@capacitor/cli": "^7.4.3"
+    "@capacitor/cli": "^7.4.3",
+    "wrangler": "^4.120.0"
   },
   "engines": {
     "node": ">=22"
