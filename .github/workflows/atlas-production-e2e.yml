@@ -1,0 +1,30 @@
+name: ATLAS Production E2E
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: atlas-production-e2e
+  cancel-in-progress: true
+
+jobs:
+  production-e2e:
+    name: production-e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate production domain
+        env:
+          ATLAS_PRODUCTION_URL: https://atlasenterprisesuite.com
+        run: node scripts/production-remote-e2e.js
