@@ -26,14 +26,20 @@ jobs:
         run: npm install
       - name: Validate and build ATLAS web assets
         run: npm run build
+      - name: Generate clean iOS project in CI workspace
+        run: |
+          rm -rf ios
+          npx cap add ios
       - name: Sync Capacitor plugins and assets
         run: npx cap sync ios
       - name: Verify native Xcode project
-        run: test -f ios/App/App.xcodeproj/project.pbxproj
+        run: |
+          test -f ios/App/App.xcodeproj/project.pbxproj
+          test -f ios/App/Podfile
       - name: Build iOS Simulator app without signing
         run: |
           xcodebuild \
-            -project ios/App/App.xcodeproj \
+            -workspace ios/App/App.xcworkspace \
             -scheme App \
             -configuration Debug \
             -sdk iphonesimulator \
