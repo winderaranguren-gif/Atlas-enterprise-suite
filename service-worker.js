@@ -1,4 +1,4 @@
-const VERSION = 'atlas-core-v7-personal-intelligence';
+const VERSION = 'atlas-core-v8-fleet-intelligence';
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 const APP_SHELL = [
@@ -13,6 +13,9 @@ const APP_SHELL = [
   '/atlas-suite.js',
   '/atlas-os-operational.js',
   '/atlas-technical-support.js',
+  '/atlas-fleet-intelligence.html',
+  '/atlas-fleet-intelligence.css',
+  '/atlas-fleet-intelligence.js',
   '/atlas-calendar.html',
   '/atlas-config.js',
   '/atlas-calendar-system-events.js',
