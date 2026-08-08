@@ -1,4 +1,4 @@
-const VERSION = 'atlas-core-v6-autonomous-support';
+const VERSION = 'atlas-core-v7-personal-intelligence';
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 const APP_SHELL = [
@@ -14,6 +14,8 @@ const APP_SHELL = [
   '/atlas-os-operational.js',
   '/atlas-technical-support.js',
   '/atlas-calendar.html',
+  '/atlas-config.js',
+  '/atlas-calendar-system-events.js',
   '/atlas-calendar.js',
   '/manifest.webmanifest',
   '/offline.html',
