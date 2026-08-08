@@ -34,6 +34,14 @@ export default {
       });
     }
 
+    if (url.pathname === '/api' || url.pathname.startsWith('/api/')) {
+      return json({
+        ok: false,
+        error: 'API route not found',
+        path: url.pathname
+      }, { status: 404 });
+    }
+
     if (!env.ASSETS) {
       return json({ ok: false, error: 'ASSETS binding unavailable' }, { status: 503 });
     }
