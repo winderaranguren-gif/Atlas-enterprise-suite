@@ -26,10 +26,10 @@ jobs:
         run: npm install
       - name: Validate and build ATLAS web assets
         run: npm run build
-      - name: Generate iOS project
-        run: npx cap add ios
       - name: Sync Capacitor plugins and assets
         run: npx cap sync ios
+      - name: Verify native Xcode project
+        run: test -f ios/App/App.xcodeproj/project.pbxproj
       - name: Build iOS Simulator app without signing
         run: |
           xcodebuild \
