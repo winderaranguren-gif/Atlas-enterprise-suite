@@ -1,4 +1,4 @@
-const VERSION = 'atlas-core-v8-fleet-intelligence';
+const VERSION = 'atlas-core-v9-support-runbooks';
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 const APP_SHELL = [
@@ -13,6 +13,7 @@ const APP_SHELL = [
   '/atlas-suite.js',
   '/atlas-os-operational.js',
   '/atlas-technical-support.js',
+  '/atlas-support-runbooks.js',
   '/atlas-fleet-intelligence.html',
   '/atlas-fleet-intelligence.css',
   '/atlas-fleet-intelligence.js',
