@@ -9,10 +9,24 @@
   operationalCss.href='atlas-os-modules.css?v=1';
   document.head.append(operationalCss);
 
+  const supportCss=document.createElement('link');
+  supportCss.rel='stylesheet';
+  supportCss.href='atlas-technical-support.css?v=1';
+  document.head.append(supportCss);
+
+  const loadSupport=()=>{
+    const support=document.createElement('script');
+    support.src='atlas-technical-support.js?v=1';
+    support.async=false;
+    document.body.append(support);
+  };
+
   const loadOperational=()=>{
     const operational=document.createElement('script');
     operational.src='atlas-os-operational.js?v=1';
     operational.async=false;
+    operational.onload=loadSupport;
+    operational.onerror=loadSupport;
     document.body.append(operational);
   };
 
