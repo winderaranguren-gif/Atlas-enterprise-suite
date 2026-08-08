@@ -39,18 +39,48 @@ async function main() {
   const health = await healthResponse.json();
   assert.equal(health.ok, true);
   assert.equal(health.version, '0.5.0');
+  assert.equal(health.support, '1.1.0');
+  assert.equal(health.runbookVersion, '1.0.0');
   assert.equal(health.runtime, 'node-local');
 
   const versionResponse = await request('/api/version');
   assert.equal(versionResponse.status, 200);
   const version = await versionResponse.json();
   assert.equal(version.version, '0.5.0');
+  assert.equal(version.supportVersion, '1.1.0');
 
   const capabilitiesResponse = await request('/api/support/capabilities');
   assert.equal(capabilitiesResponse.status, 200);
   const capabilities = await capabilitiesResponse.json();
   assert.equal(capabilities.ok, true);
   assert.ok(capabilities.capabilities.includes('safe-auto-repair'));
+  assert.ok(capabilities.capabilities.includes('runbook-planning'));
+
+  const runbooksResponse = await request('/api/support/runbooks');
+  assert.equal(runbooksResponse.status, 200);
+  const runbooks = await runbooksResponse.json();
+  assert.equal(runbooks.ok, true);
+  assert.equal(runbooks.runbookVersion, '1.0.0');
+  assert.ok(runbooks.classifications.includes('deployment'));
+
+  const planResponse = await request('/api/support/plan', {
+    method:'POST',
+    headers:{'content-type':'application/json'},
+    body:JSON.stringify({
+      summary:'Cloudflare deploy is offline and the Service Worker is missing',
+      diagnostics:[
+        {id:'service-worker',label:'Service Worker / PWA',ok:false,detail:'No registration'},
+        {id:'network',label:'Connectivity',ok:false,detail:'Offline'}
+      ]
+    })
+  });
+  assert.equal(planResponse.status, 200);
+  const plan = await planResponse.json();
+  assert.equal(plan.ok, true);
+  assert.equal(plan.classification, 'deployment');
+  assert.ok(plan.steps.some(step => step.id === 'repair-service-worker' && step.mode === 'auto-safe'));
+  assert.ok(plan.steps.some(step => step.id === 'network-access' && step.status === 'blocked'));
+  assert.equal(plan.steps.at(-1).id, 'verify-final');
 
   const calendarResponse = await request('/atlas-calendar.html');
   assert.equal(calendarResponse.status, 200);
