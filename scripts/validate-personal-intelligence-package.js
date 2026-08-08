@@ -23,6 +23,11 @@ const required = {
     'create schema if not exists atlas_private',
     'security invoker',
     'revoke all on schema atlas_private from anon'
+  ],
+  'supabase/migrations/202608080008_atlas_calendar_owner_isolation.sql': [
+    'using (owner_user_id = auth.uid())',
+    'calendar_events_owner_external_ref_uidx',
+    'create policy calendar_events_update'
   ]
 };
 
