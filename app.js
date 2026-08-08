@@ -4,10 +4,24 @@
   css.href='atlas-suite.css?v=4';
   document.head.append(css);
 
+  const operationalCss=document.createElement('link');
+  operationalCss.rel='stylesheet';
+  operationalCss.href='atlas-os-modules.css?v=1';
+  document.head.append(operationalCss);
+
+  const loadOperational=()=>{
+    const operational=document.createElement('script');
+    operational.src='atlas-os-operational.js?v=1';
+    operational.async=false;
+    document.body.append(operational);
+  };
+
   const loadSuite=()=>{
     const script=document.createElement('script');
     script.src='atlas-suite.js?v=4';
     script.async=false;
+    script.onload=loadOperational;
+    script.onerror=loadOperational;
     document.body.append(script);
   };
 
