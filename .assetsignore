@@ -1,0 +1,44 @@
+# ATLAS Cloudflare static-asset boundary.
+# Only browser-facing web files are uploaded by Wrangler.
+.git/
+.github/
+node_modules/
+supabase/
+scripts/
+cloudflare/
+ios/
+android/
+
+# Build/deployment metadata.
+package.json
+package-lock.json
+bun.lock
+bun.lockb
+wrangler.jsonc
+vercel.json
+capacitor.config.json
+capacitor.config.ts
+
+# Server entrypoints and environment files.
+server.js
+.env
+.env.*
+.env.example
+
+# Repository/admin documentation and temporary material.
+*.md
+.gitignore
+.gitattributes
+.DS_Store
+*.log
+*.bak
+*.backup
+backups/
+.tmp/
+tmp/
+
+# Generated directories are not required by Cloudflare when serving the web shell directly.
+dist/
+cloudflare-assets/
+build/
+coverage/
