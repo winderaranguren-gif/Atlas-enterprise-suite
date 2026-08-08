@@ -8,6 +8,10 @@
     {
       "pattern": "atlasenterprisesuite.com",
       "custom_domain": true
+    },
+    {
+      "pattern": "www.atlasenterprisesuite.com",
+      "custom_domain": true
     }
   ],
   "assets": {
