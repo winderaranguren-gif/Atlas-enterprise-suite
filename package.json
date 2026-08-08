@@ -1,19 +1,19 @@
 {
   "name": "atlas-enterprise-suite",
-  "version": "0.4.2",
+  "version": "1.0.0",
   "private": true,
-  "description": "ATLAS Enterprise Suite production-ready web, PWA and mobile foundation",
+  "description": "ATLAS Enterprise Suite — clean Cloudflare Workers deployment foundation",
   "scripts": {
     "start": "node server.js",
     "serve": "node server.js",
-    "check:js": "node --check app.js && node --check atlas-legacy-migrate.js && node --check atlas-suite.js && node --check atlas-calendar.js && node --check server.js && node --check service-worker.js && node --check cloud-auth.js && node --check private-beta.js && node --check private-beta-recovery.js && node --check atlas-config.js && node --check scripts/build-cloudflare.js",
+    "check:js": "node --check app.js && node --check atlas-legacy-migrate.js && node --check atlas-suite.js && node --check atlas-calendar.js && node --check server.js && node --check service-worker.js && node --check cloud-auth.js && node --check private-beta.js && node --check private-beta-recovery.js && node --check atlas-config.js && node --check scripts/build-cloudflare.js && node --check src/worker.js",
     "check:db": "node scripts/validate-database-package.js",
     "validate": "npm run check:js && npm run check:db",
     "build": "npm run validate && npm run build:cloudflare",
     "build:cloudflare": "node scripts/build-cloudflare.js",
-    "deploy": "npm run build && npx wrangler@4 deploy",
-    "cloudflare:dev": "npm run build:cloudflare && npx wrangler@4 dev",
-    "cloudflare:deploy": "npm run build && npx wrangler@4 deploy",
+    "deploy": "npm run build && wrangler deploy",
+    "cloudflare:dev": "npm run build && wrangler dev",
+    "cloudflare:deploy": "npm run build && wrangler deploy",
     "mobile:add:ios": "npx cap add ios",
     "mobile:add:android": "npx cap add android",
     "mobile:sync": "npx cap sync",
@@ -27,7 +27,8 @@
     "@capacitor/local-notifications": "^7.0.2"
   },
   "devDependencies": {
-    "@capacitor/cli": "^7.4.3"
+    "@capacitor/cli": "^7.4.3",
+    "wrangler": "^4.28.1"
   },
   "engines": {
     "node": ">=22"
