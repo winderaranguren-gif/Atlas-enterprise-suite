@@ -5,6 +5,7 @@ const path = require('path');
 
 const root = path.resolve(__dirname, '..');
 const output = path.join(root, 'dist');
+const cloudflareOutput = path.join(root, 'cloudflare-assets');
 const publicExtensions = new Set([
   '.html', '.css', '.js', '.mjs', '.webmanifest', '.png', '.jpg', '.jpeg',
   '.webp', '.svg', '.ico', '.gif', '.woff', '.woff2', '.ttf', '.mp3', '.mp4'
@@ -17,9 +18,9 @@ const excludedRootFiles = new Set([
 ]);
 const publicDirectories = ['assets', 'icons', 'images', 'fonts', 'media'];
 
-function resetOutput() {
-  fs.rmSync(output, { recursive: true, force: true });
-  fs.mkdirSync(output, { recursive: true });
+function resetDirectory(directory) {
+  fs.rmSync(directory, { recursive: true, force: true });
+  fs.mkdirSync(directory, { recursive: true });
 }
 
 function copyFile(source, destination) {
@@ -61,20 +62,21 @@ function writePagesCompatibilityFiles() {
   fs.writeFileSync(path.join(output, '_redirects'), redirects, 'utf8');
 }
 
-function verifyRequiredFiles() {
+function verifyRequiredFiles(directory, label) {
   const required = ['index.html', 'styles.css', 'app.js', 'manifest.webmanifest', 'service-worker.js'];
-  const missing = required.filter((name) => !fs.existsSync(path.join(output, name)));
-  if (missing.length) {
-    throw new Error(`Cloudflare build is missing required assets: ${missing.join(', ')}`);
-  }
+  const missing = required.filter((name) => !fs.existsSync(path.join(directory, name)));
+  if (missing.length) throw new Error(`${label} is missing required assets: ${missing.join(', ')}`);
 }
 
-resetOutput();
+resetDirectory(output);
 copyPublicRootFiles();
-for (const directory of publicDirectories) {
-  copyDirectory(path.join(root, directory), path.join(output, directory));
-}
+for (const directory of publicDirectories) copyDirectory(path.join(root, directory), path.join(output, directory));
 writePagesCompatibilityFiles();
-verifyRequiredFiles();
+verifyRequiredFiles(output, 'ATLAS build');
 
-console.log(`ATLAS Cloudflare build created at ${output}`);
+resetDirectory(cloudflareOutput);
+copyDirectory(output, cloudflareOutput);
+verifyRequiredFiles(cloudflareOutput, 'Cloudflare asset mirror');
+
+console.log(`ATLAS web build created at ${output}`);
+console.log(`ATLAS Cloudflare asset mirror created at ${cloudflareOutput}`);
