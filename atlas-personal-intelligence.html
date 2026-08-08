@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#07131f">
+  <meta name="robots" content="noindex,nofollow">
+  <title>ATLAS Personal Intelligence</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body{min-height:100vh;background:var(--bg);color:var(--text)}
+    .pi-shell{max-width:1080px;margin:0 auto;padding:24px}.pi-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}.pi-brand{display:flex;gap:12px;align-items:center}.pi-brand h1{margin:0;font-size:1.5rem}.pi-brand p{margin:4px 0 0;color:var(--muted);font-size:.78rem}.pi-grid{display:grid;grid-template-columns:1fr 320px;gap:18px}.pi-card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px}.pi-card textarea{width:100%;min-height:160px;resize:vertical}.pi-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.pi-status{padding:12px;border-radius:12px;background:rgba(71,215,208,.08);border:1px solid rgba(71,215,208,.16);font-size:.76rem;line-height:1.5;color:var(--muted)}.pi-status[data-kind="ok"]{color:var(--green)}.pi-status[data-kind="error"]{color:var(--red)}.pi-output{white-space:pre-wrap;line-height:1.6;min-height:180px}.pi-meta{display:grid;gap:10px}.pi-meta div{padding:12px;border:1px solid var(--line);border-radius:12px}.pi-meta small{display:block;color:var(--muted);margin-bottom:4px}.pi-meta strong{word-break:break-word}.hidden{display:none!important}@media(max-width:800px){.pi-grid{grid-template-columns:1fr}.pi-shell{padding:16px}.pi-head{align-items:flex-start;flex-direction:column}}
+  </style>
+</head>
+<body>
+  <main class="pi-shell">
+    <header class="pi-head">
+      <div class="pi-brand"><span class="atlas-logo">A</span><div><h1>ATLAS Personal Intelligence</h1><p>Inteligencia privada, autenticada y conectada al contexto de ATLAS OS.</p></div></div>
+      <a class="button ghost" href="index.html" style="text-decoration:none">← ATLAS OS</a>
+    </header>
+
+    <div id="auth-required" class="pi-card hidden">
+      <h2>Acceso seguro requerido</h2>
+      <p class="muted">Personal Intelligence utiliza tu sesión ATLAS Core para aislar memoria, calendario y ejecuciones.</p>
+      <a class="button primary" href="cloud-auth.html" style="text-decoration:none">Iniciar sesión en ATLAS Core</a>
+    </div>
+
+    <section id="pi-app" class="pi-grid hidden">
+      <article class="pi-card">
+        <h2>Consulta a ATLAS</h2>
+        <form id="pi-form">
+          <label>Solicitud<textarea id="pi-input" maxlength="32000" required placeholder="Pregunta, analiza o solicita una acción dentro del contexto de ATLAS…"></textarea></label>
+          <div class="pi-actions"><button id="pi-submit" class="button primary" type="submit">Ejecutar</button><button id="pi-clear" class="button ghost" type="button">Limpiar</button></div>
+        </form>
+        <div id="pi-status" class="pi-status" style="margin-top:14px">Inicializando Personal Intelligence…</div>
+        <div id="pi-output" class="pi-output" style="margin-top:16px"></div>
+      </article>
+
+      <aside class="pi-card">
+        <h2>Estado</h2>
+        <div class="pi-meta">
+          <div><small>Sesión</small><strong id="pi-user">—</strong></div>
+          <div><small>Proveedor</small><strong id="pi-provider">OpenAI · server-side</strong></div>
+          <div><small>Modelo</small><strong id="pi-model">gpt-5.6</strong></div>
+          <div><small>Privacidad</small><strong>JWT + RLS + store:false</strong></div>
+          <div><small>Última ejecución</small><strong id="pi-last-run">—</strong></div>
+        </div>
+      </aside>
+    </section>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.1"></script>
+  <script src="atlas-config.js"></script>
+  <script src="atlas-personal-intelligence.js"></script>
+</body>
+</html>
