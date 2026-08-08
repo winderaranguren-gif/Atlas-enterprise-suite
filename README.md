@@ -1,8 +1,41 @@
-# ATLAS Enterprise Suite — Functional Local MVP v0.4.0
+# ATLAS Enterprise Suite — Production Foundation v0.5.0
 
-Private repository for the controlled ATLAS Enterprise Suite foundation.
+Private repository for the controlled ATLAS Enterprise Suite foundation across web, PWA and mobile targets.
 
-## Local functional MVP
+## Current architecture
+
+ATLAS uses one global product core rather than cloned applications by geography.
+
+Resolution hierarchy:
+
+`ATLAS Global Core -> Region -> Country -> Organization -> User`
+
+The regional runtime is exposed through `window.ATLASRegionalNavigation`, persists the selected context locally and emits `atlas:region-changed` so modules can adapt dynamically.
+
+Initial regional layers:
+
+- ATLAS Global
+- North America
+- Central America
+- Caribbean
+- South America
+- Europe
+- Africa
+- Asia
+- Oceania
+- Antarctica / Research
+
+Regional and country differences should be implemented as configuration, policy, language, currency, compliance, public-sector, design and integration overrides. Do not fork the application into disconnected regional copies.
+
+## Interface rules
+
+- Navigation and module availability must be driven by the ATLAS runtime/registry, not fixed duplicated menus.
+- Modules may be shown or hidden according to available capabilities, organization, user and regional context.
+- The shell must remain responsive between desktop and mobile layouts.
+- North America keeps the original ATLAS futuristic identity.
+- Regional experiences may add their own visual layer without breaking the shared core or navigation model.
+
+## Functional local foundation
 
 Run:
 
@@ -12,13 +45,9 @@ npm start
 
 Open `http://127.0.0.1:4173`.
 
-Demo access:
+Use only non-production test accounts in the local environment.
 
-- Email: `demo@atlas.local`
-- Password: `Atlas2026!`
-- Verification code: `246810`
-
-The local application now includes functional navigation, local persistence, record creation/editing/deletion, search, audit logging, CSV export and JSON backup/restore for:
+The local application includes functional navigation, local persistence, record creation/editing/deletion, search, audit logging, CSV export and JSON backup/restore for:
 
 - ATLAS Core and multi-company workspaces
 - CRM & Sales
@@ -29,51 +58,68 @@ The local application now includes functional navigation, local persistence, rec
 - HR & Payroll
 - Reports & Intelligence
 - Freight Network
-- **ATLAS Fleet Intelligence** for GPS/telematics-style asset tracking, mixed fleets, live operational status, geofences, utilization, fuel, maintenance, route history, alerts, CSV/JSON export and provider-adapter readiness
+- ATLAS Fleet Intelligence
 - Documents & Sign
-- **ATLAS Wallet** for masked identity, legal, professional, employment, membership, insurance and financial credentials
-- **ATLAS Ride** for gig platforms, trips, deliveries, shopping activity, earnings, tips, mileage, costs and reconciliation
-- **ATLAS Marketplace** for orders, merchants, operational cards, receipts and delivery status
-- **ATLAS Rewards** for points, tiers, bonuses and redemptions
+- ATLAS Wallet
+- ATLAS Ride
+- ATLAS Marketplace
+- ATLAS Rewards
 - ATLAS Cars
 - ATLAS Health administrative tracking
 - Public Safety
 - Community Hub
 - Module Center, Audit Trail and Settings
 
+## ATLAS Technical Operations
+
+ATLAS Technical Support includes autonomous diagnostics, safe reversible repair actions, exact blocker reporting, post-repair verification and a runbook planning engine.
+
+ATLAS may execute allowlisted safe/reversible actions automatically, but it must not bypass access controls, deployment permissions, physical-access requirements or irreversible-action boundaries. It must report the exact blocker instead of claiming success.
+
 ## ATLAS Fleet Intelligence boundary
 
-`atlas-fleet-intelligence.html` provides an ATLAS-native fleet operations module with local demo telemetry. It supports vehicles, heavy equipment, trailers and tools, including geofence entry/exit event processing, utilization and maintenance indicators, route/event history and local exports. The connector layer is intentionally provider-agnostic so authorized GPS, OBD-II, CAN/J1939, BLE and video-telematics feeds can be normalized later without making a third-party dashboard the ATLAS user experience.
+`atlas-fleet-intelligence.html` provides an ATLAS-native fleet operations module with local demo telemetry. It supports vehicles, heavy equipment, trailers and tools, including geofence processing, utilization and maintenance indicators, route/event history and local exports.
 
-Live production tracking requires an authorized telematics device/provider data feed and secure server-side credentials. Do not embed provider secrets, device tokens or customer location credentials in client-side code.
+Live production tracking requires an authorized telematics data feed and secure server-side configuration.
 
-## ATLAS Wallet privacy boundary
+## Cloud foundation
 
-The local MVP intentionally accepts only masked identifiers and limits locally stored credential images to small image files. Do not commit real identity documents, full card numbers, expiration security codes, immigration identifiers, medical records or other sensitive user data to this repository.
+Open `/private-beta.html` after configuring the environment-specific ATLAS configuration. The cloud foundation includes:
 
-Browser data and uploaded previews are stored in local browser storage for demonstration. Production use requires encrypted private object storage, tenant isolation, row-level security, access logging, retention controls and verified recovery procedures.
-
-## Supabase Private Beta Cloud
-
-Open `/private-beta.html` after configuring `atlas-config.js`. The cloud foundation includes:
-
-- Supabase Auth sign-in, signup, recovery and sign-out
-- RLS-protected organization memberships and company switching
+- authenticated sign-in and recovery flows
+- organization memberships and company switching
 - PostgreSQL persistence for core financial and operational records
-- Transactional invoice payments and balanced journal entries through protected RPC functions
-- Automatic invoice balances, audit records and private document-storage policies
-- Operation-specific write permissions and cross-organization integrity guards
+- protected transactional functions for financial operations
+- audit records and private document-storage policies
+- operation-specific write permissions and cross-organization integrity guards
 
-The local functional module suite does not imply that every new module is already connected to the production cloud schema. Cloud activation and sensitive-document storage remain gated by migrations, security review and acceptance testing.
+The local functional module suite does not imply that every module is already connected to the production cloud schema. Cloud activation remains gated by migrations, security review and acceptance testing.
+
+## Production and deployment
+
+Primary production hostnames are configured for:
+
+- `https://atlasenterprisesuite.com`
+- `https://www.atlasenterprisesuite.com`
+
+Cloudflare deployment uses the repository build lifecycle so the distribution package is generated and validated before deployment.
 
 ## Validation
+
+Run the complete repository validation pipeline with:
 
 ```bash
 npm run validate
 ```
 
-## Activation boundary
+This validates JavaScript syntax, database/personal-intelligence packages, regional navigation structure and the production smoke suite.
 
-Never commit a secret/service-role key, database password, provider token, full payment-card number, CVV, government identification number or unredacted personal document.
+For the production package:
 
-No real customer, financial, employee, health, banking or identity information should be entered into the cloud environment until tenant isolation, role controls, backup, recovery, encryption and pilot acceptance tests pass.
+```bash
+npm run build
+```
+
+## Security boundary
+
+Do not commit production secrets or unredacted sensitive personal, financial, health or identity information to this repository. Production data activation requires tenant isolation, role controls, backup, recovery, encryption and acceptance testing.
