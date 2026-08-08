@@ -1,9 +1,23 @@
 'use strict';
 
 const assert = require('node:assert/strict');
+const dns = require('node:dns').promises;
+const { URL } = require('node:url');
 
 const origin = (process.env.ATLAS_PRODUCTION_URL || 'https://atlasenterprisesuite.com').replace(/\/$/, '');
 const timeoutMs = Number(process.env.ATLAS_E2E_TIMEOUT_MS || 15000);
+const hostname = new URL(origin).hostname;
+
+async function diagnoseDns() {
+  try {
+    const addresses = await dns.lookup(hostname, { all: true });
+    assert.ok(addresses.length > 0, `DNS returned no addresses for ${hostname}`);
+    console.log(`ATLAS DNS: PASS — ${hostname} → ${addresses.map(a => a.address).join(', ')}`);
+  } catch (error) {
+    const code = error?.code || error?.cause?.code || 'DNS_ERROR';
+    throw new Error(`DNS ${code} for ${hostname}: ${error?.message || error}`);
+  }
+}
 
 async function fetchWithTimeout(path, options = {}) {
   const controller = new AbortController();
@@ -15,6 +29,10 @@ async function fetchWithTimeout(path, options = {}) {
       signal: controller.signal,
       headers: { 'User-Agent': 'ATLAS-Production-E2E/0.5.0', ...(options.headers || {}) }
     });
+  } catch (error) {
+    const cause = error?.cause;
+    const detail = cause ? `${cause.code || cause.name || 'network'}: ${cause.message || cause}` : (error?.message || error);
+    throw new Error(`network failure on ${path}: ${detail}`);
   } finally {
     clearTimeout(timer);
   }
@@ -27,6 +45,8 @@ async function requireOk(path) {
 }
 
 async function main() {
+  await diagnoseDns();
+
   const root = await requireOk('/');
   const html = await root.text();
   assert.match(html, /ATLAS/i, 'root page does not identify ATLAS');
