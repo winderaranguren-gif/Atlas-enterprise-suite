@@ -1,0 +1,44 @@
+# Server-side and infrastructure files must never be published as static assets.
+.git/
+.github/
+node_modules/
+supabase/
+scripts/
+cloudflare/
+ios/
+android/
+
+# Build/deployment metadata.
+package.json
+package-lock.json
+bun.lock
+bun.lockb
+wrangler.jsonc
+vercel.json
+capacitor.config.json
+capacitor.config.ts
+
+# Server entrypoints and environment files.
+server.js
+.env
+.env.*
+!.env.example
+.env.example
+
+# Repository/admin documentation and temporary probes.
+*.md
+.gitignore
+.gitattributes
+.DS_Store
+*.log
+*.bak
+*.backup
+backups/
+.tmp/
+tmp/
+
+# Generated directories are unnecessary when the root web shell is served directly.
+dist/
+cloudflare-assets/
+build/
+coverage/
