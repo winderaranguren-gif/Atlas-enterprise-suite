@@ -9,6 +9,7 @@ const corePath = path.join(root, 'supabase/migrations/202607270001_atlas_core_sc
 const storagePath = path.join(root, 'supabase/migrations/202607270002_atlas_storage.sql');
 const operationsPath = path.join(root, 'supabase/migrations/202607270003_atlas_cloud_operations.sql');
 const securityPatchPath = path.join(root, 'supabase/migrations/202607270004_atlas_security_patch.sql');
+const hardeningPath = path.join(root, 'supabase/migrations/202608080005_atlas_production_function_hardening.sql');
 const envPath = path.join(root, '.env.example');
 
 function fail(message) {
@@ -131,6 +132,7 @@ const core = read(corePath);
 const storage = read(storagePath);
 const operations = read(operationsPath);
 const securityPatch = read(securityPatchPath);
+const hardening = read(hardeningPath);
 const env = read(envPath);
 
 if (core) {
@@ -190,6 +192,15 @@ if (securityPatch) {
   assertIncludes(securityPatch, 'create or replace function public.refresh_invoice_from_payments', 'safe payment refresh');
   assertIncludes(securityPatch, 'expense_categories_insert', 'expense-category policy');
   assertIncludes(securityPatch, 'commit;', 'security patch migration');
+}
+
+if (hardening) {
+  validateLexicalBalance(hardening, 'production hardening migration');
+  assertIncludes(hardening, 'revoke execute on all functions in schema public from public', 'PUBLIC function revoke');
+  assertIncludes(hardening, 'revoke execute on all functions in schema public from anon', 'anonymous function revoke');
+  assertIncludes(hardening, 'alter function public.try_uuid(text) set search_path', 'search path hardening');
+  assertIncludes(hardening, 'grant execute on function public.create_organization', 'authenticated organization RPC');
+  assertIncludes(hardening, 'commit;', 'production hardening migration');
 }
 
 if (env) {
