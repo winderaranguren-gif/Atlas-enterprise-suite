@@ -29,6 +29,7 @@ The local application now includes functional navigation, local persistence, rec
 - HR & Payroll
 - Reports & Intelligence
 - Freight Network
+- **ATLAS Fleet Intelligence** for GPS/telematics-style asset tracking, mixed fleets, live operational status, geofences, utilization, fuel, maintenance, route history, alerts, CSV/JSON export and provider-adapter readiness
 - Documents & Sign
 - **ATLAS Wallet** for masked identity, legal, professional, employment, membership, insurance and financial credentials
 - **ATLAS Ride** for gig platforms, trips, deliveries, shopping activity, earnings, tips, mileage, costs and reconciliation
@@ -39,6 +40,12 @@ The local application now includes functional navigation, local persistence, rec
 - Public Safety
 - Community Hub
 - Module Center, Audit Trail and Settings
+
+## ATLAS Fleet Intelligence boundary
+
+`atlas-fleet-intelligence.html` provides an ATLAS-native fleet operations module with local demo telemetry. It supports vehicles, heavy equipment, trailers and tools, including geofence entry/exit event processing, utilization and maintenance indicators, route/event history and local exports. The connector layer is intentionally provider-agnostic so authorized GPS, OBD-II, CAN/J1939, BLE and video-telematics feeds can be normalized later without making a third-party dashboard the ATLAS user experience.
+
+Live production tracking requires an authorized telematics device/provider data feed and secure server-side credentials. Do not embed provider secrets, device tokens or customer location credentials in client-side code.
 
 ## ATLAS Wallet privacy boundary
 
