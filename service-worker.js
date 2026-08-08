@@ -1,4 +1,4 @@
-const VERSION = 'atlas-core-v9-support-runbooks';
+const VERSION = 'atlas-core-v10-regional-navigation';
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 const APP_SHELL = [
@@ -9,6 +9,7 @@ const APP_SHELL = [
   '/atlas-os-modules.css',
   '/atlas-technical-support.css',
   '/app.js',
+  '/atlas-regional-navigation.js',
   '/atlas-legacy-migrate.js',
   '/atlas-suite.js',
   '/atlas-os-operational.js',
