@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#07131f" />
+  <meta name="description" content="ATLAS Fleet Intelligence — GPS, telemática, geocercas, utilización, mantenimiento y alertas." />
+  <title>ATLAS Fleet Intelligence</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="atlas-suite.css" />
+  <link rel="stylesheet" href="atlas-fleet-intelligence.css" />
+</head>
+<body class="fleet-body">
+  <div id="fleet-toast-root" aria-live="polite"></div>
+  <main class="fleet-shell">
+    <header class="fleet-topbar">
+      <a class="fleet-back" href="index.html">← ATLAS Enterprise</a>
+      <div class="fleet-brand">
+        <span class="fleet-orb">A</span>
+        <div><strong>ATLAS Fleet Intelligence</strong><small>GPS · Telematics · Equipment · Vehicles</small></div>
+      </div>
+      <div class="fleet-actions">
+        <button id="fleet-export" class="button ghost">Exportar JSON</button>
+        <button id="fleet-add-asset" class="button primary">＋ Activo</button>
+      </div>
+    </header>
+
+    <section class="fleet-hero">
+      <div>
+        <p class="eyebrow">ATLAS MOBILITY & ASSET CONTROL</p>
+        <h1>Control total de flota y equipos en tiempo real.</h1>
+        <p>Arquitectura nativa de ATLAS para vehículos, maquinaria, remolques, herramientas y activos mixtos: ubicación, ignición, velocidad, combustible, utilización, geocercas, mantenimiento, rutas y alertas.</p>
+      </div>
+      <div class="fleet-live-pill"><span></span> Telemetría local activa</div>
+    </section>
+
+    <section id="fleet-kpis" class="fleet-kpis"></section>
+
+    <section class="fleet-layout">
+      <article class="fleet-panel fleet-map-panel">
+        <div class="fleet-panel-head">
+          <div><p class="eyebrow">LIVE OPERATIONS</p><h2>Mapa operativo</h2></div>
+          <div class="fleet-map-tools">
+            <select id="fleet-status-filter" aria-label="Filtrar estado">
+              <option value="all">Todos</option>
+              <option value="moving">En movimiento</option>
+              <option value="idle">En ralentí</option>
+              <option value="parked">Estacionado</option>
+              <option value="offline">Offline</option>
+            </select>
+            <button id="fleet-simulate" class="button ghost">Simular telemetría</button>
+          </div>
+        </div>
+        <div id="fleet-map" class="fleet-map" aria-label="Mapa esquemático de activos"></div>
+        <div class="fleet-map-legend">
+          <span><i class="dot moving"></i>Movimiento</span><span><i class="dot idle"></i>Ralentí</span><span><i class="dot parked"></i>Estacionado</span><span><i class="dot offline"></i>Offline</span>
+        </div>
+      </article>
+
+      <aside class="fleet-panel fleet-alert-panel">
+        <div class="fleet-panel-head"><div><p class="eyebrow">EVENT ENGINE</p><h2>Alertas</h2></div><button id="fleet-clear-alerts" class="button small ghost">Limpiar</button></div>
+        <div id="fleet-alerts" class="fleet-alerts"></div>
+      </aside>
+    </section>
+
+    <section class="fleet-tabs" role="tablist">
+      <button class="fleet-tab active" data-tab="assets">Activos</button>
+      <button class="fleet-tab" data-tab="geofences">Geocercas</button>
+      <button class="fleet-tab" data-tab="maintenance">Mantenimiento</button>
+      <button class="fleet-tab" data-tab="routes">Rutas & Historial</button>
+      <button class="fleet-tab" data-tab="integrations">Integraciones</button>
+    </section>
+
+    <section id="fleet-tab-assets" class="fleet-tab-panel active">
+      <div class="fleet-toolbar">
+        <input id="fleet-search" placeholder="Buscar por activo, placa, proyecto o tracker…" />
+        <div class="fleet-toolbar-actions"><button id="fleet-export-csv" class="button ghost">CSV</button><button id="fleet-add-asset-2" class="button primary">＋ Nuevo activo</button></div>
+      </div>
+      <div class="fleet-panel fleet-table-wrap"><table class="fleet-table"><thead><tr><th>Activo</th><th>Tipo</th><th>Estado</th><th>Ubicación / Sitio</th><th>Velocidad</th><th>Combustible</th><th>Utilización</th><th>Tracker</th><th>Última señal</th><th></th></tr></thead><tbody id="fleet-assets-body"></tbody></table></div>
+    </section>
+
+    <section id="fleet-tab-geofences" class="fleet-tab-panel">
+      <div class="fleet-grid-two">
+        <article class="fleet-panel fleet-pad">
+          <p class="eyebrow">VIRTUAL BOUNDARIES</p><h2>Nueva geocerca</h2>
+          <form id="fleet-geofence-form" class="fleet-form-grid">
+            <label>Nombre<input name="name" required placeholder="Yard Orlando" /></label>
+            <label>Tipo<select name="type"><option>jobsite</option><option>yard</option><option>office</option><option>restricted</option><option>service</option></select></label>
+            <label>Latitud<input name="lat" type="number" step="0.000001" required /></label>
+            <label>Longitud<input name="lng" type="number" step="0.000001" required /></label>
+            <label>Radio (m)<input name="radius" type="number" min="25" value="500" required /></label>
+            <label>Horario permitido<input name="schedule" value="06:00–20:00" /></label>
+            <label class="full-span">Acción<select name="action"><option value="alert">Alertar entrada/salida</option><option value="assign">Asignar activo al sitio</option><option value="security">Alerta de seguridad</option></select></label>
+            <button class="button primary full-span">Crear geocerca</button>
+          </form>
+        </article>
+        <article class="fleet-panel fleet-pad"><p class="eyebrow">ACTIVE ZONES</p><h2>Geocercas configuradas</h2><div id="fleet-geofence-list" class="fleet-card-list"></div></article>
+      </div>
+    </section>
+
+    <section id="fleet-tab-maintenance" class="fleet-tab-panel">
+      <div id="fleet-maintenance-cards" class="fleet-maintenance-grid"></div>
+    </section>
+
+    <section id="fleet-tab-routes" class="fleet-tab-panel">
+      <article class="fleet-panel fleet-pad"><div class="fleet-panel-head"><div><p class="eyebrow">TRIP FINDER</p><h2>Movimiento e historial</h2></div><select id="fleet-route-asset"></select></div><div id="fleet-route-timeline" class="fleet-timeline"></div></article>
+    </section>
+
+    <section id="fleet-tab-integrations" class="fleet-tab-panel">
+      <div class="fleet-integrations-grid">
+        <article class="fleet-panel fleet-pad"><p class="eyebrow">DEVICE LAYER</p><h3>Hardware agnóstico</h3><p>Adaptadores para GPS, OBD-II, J1939/CAN, BLE, cámaras y trackers solares o alimentados por el activo.</p><span class="status active">Adapter-ready</span></article>
+        <article class="fleet-panel fleet-pad"><p class="eyebrow">ERP / ACCOUNTING</p><h3>Costeo automático por sitio</h3><p>Los cruces de geocerca pueden asignar activos a proyectos y alimentar utilización, costos, alquileres y mantenimiento.</p><span class="status active">ATLAS-native</span></article>
+        <article class="fleet-panel fleet-pad"><p class="eyebrow">OPEN TELEMATICS</p><h3>API & Webhooks</h3><p>Contrato normalizado para recibir pings de ubicación, ignición, DTC, velocidad, combustible y eventos desde proveedores autorizados.</p><span class="status pending">Provider credentials required</span></article>
+        <article class="fleet-panel fleet-pad"><p class="eyebrow">WHITE LABEL</p><h3>Marca ATLAS</h3><p>La experiencia permanece bajo ATLAS; los proveedores externos se tratan como conectores de datos, no como interfaz principal.</p><span class="status active">Enabled</span></article>
+      </div>
+    </section>
+  </main>
+
+  <div id="fleet-modal-root"></div>
+  <script src="atlas-fleet-intelligence.js"></script>
+</body>
+</html>
