@@ -1,0 +1,81 @@
+{
+  "name": "ATLAS Cars Vehicle Platform",
+  "version": "1.0.0",
+  "status": "software architecture prototype",
+  "principles": [
+    "vendor-neutral compute and sensor interfaces",
+    "local-first safety-critical processing",
+    "independent safety supervision",
+    "signed OTA with rollback",
+    "segmented critical and infotainment networks",
+    "digital twin for lifecycle observability",
+    "no cloud dependency for critical driving functions"
+  ],
+  "domains": {
+    "perception": {
+      "inputs": ["lidar", "4d-radar", "hd-cameras", "ultrasonic"],
+      "outputs": ["fused-object-model", "free-space", "lane-model", "confidence-map"],
+      "degradation": "continue only with validated redundant sensing; otherwise request safe-state"
+    },
+    "ai_drive_compute": {
+      "responsibilities": ["perception", "prediction", "planning"],
+      "provider_strategy": "replaceable compute module through stable ATLAS interfaces",
+      "cloud_dependency": false
+    },
+    "safety_supervisor": {
+      "independent": true,
+      "responsibilities": ["health-monitoring", "fault-containment", "degraded-mode", "safe-state-request"],
+      "authority": "supervisory only in this prototype"
+    },
+    "vehicle_control_gateway": {
+      "responsibilities": ["validated logical command boundary", "rate-limiting", "domain isolation", "audit logging"],
+      "physical_actuation": false,
+      "note": "No steering, braking, acceleration or high-voltage hardware commands are implemented in this repository."
+    },
+    "energy": {
+      "target_class": "800V+ EV platform",
+      "responsibilities": ["battery-state-model", "thermal-state-model", "charging-session-model", "energy-forecasting"],
+      "physical_high_voltage_control": false
+    },
+    "smart_chassis": {
+      "responsibilities": ["state-observation", "ride-model", "brake-health-model", "steering-health-model", "suspension-health-model"],
+      "physical_control": false
+    },
+    "cockpit": {
+      "responsibilities": ["driver-display", "navigation", "voice", "seat-profiles", "accessibility", "camera-views"],
+      "isolation": "separate from safety-critical compute"
+    },
+    "cybersecurity": {
+      "controls": ["secure-boot", "hardware-root-of-trust", "signed-software", "encrypted-communications", "ecu-identity", "network-segmentation", "ota-rollback"]
+    },
+    "vehicle_cloud": {
+      "responsibilities": ["telemetry", "fleet-observability", "ota-metadata", "digital-twin-sync", "api-gateway"],
+      "critical_control_from_cloud": false
+    },
+    "digital_twin": {
+      "models": ["battery", "powertrain", "tires", "brakes", "suspension", "sensors", "software", "maintenance"],
+      "persistence": ["event-log", "health-snapshots", "version-history"]
+    },
+    "ecosystem": {
+      "connections": ["ATLAS-app", "home", "chargers", "parking", "road-infrastructure", "ATLAS-Pay"],
+      "policy": "least-privilege capability tokens"
+    }
+  },
+  "data_flow": [
+    "sensors",
+    "time-sync",
+    "perception",
+    "sensor-fusion",
+    "prediction",
+    "planning",
+    "safety-supervision",
+    "validated-control-boundary",
+    "digital-twin-observability"
+  ],
+  "standards_targets": [
+    "ISO 26262 safety lifecycle alignment",
+    "ISO/SAE 21434 cybersecurity lifecycle alignment",
+    "UNECE R155/R156 readiness where applicable",
+    "ASPICE-compatible software engineering evidence"
+  ]
+}
