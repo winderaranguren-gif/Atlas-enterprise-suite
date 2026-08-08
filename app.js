@@ -14,10 +14,24 @@
   supportCss.href='atlas-technical-support.css?v=1';
   document.head.append(supportCss);
 
+  const dragDropCss=document.createElement('link');
+  dragDropCss.rel='stylesheet';
+  dragDropCss.href='atlas-dragdrop.css?v=1';
+  document.head.append(dragDropCss);
+
+  const loadDragDrop=()=>{
+    const dragDrop=document.createElement('script');
+    dragDrop.src='atlas-dragdrop.js?v=1';
+    dragDrop.async=false;
+    document.body.append(dragDrop);
+  };
+
   const loadRunbooks=()=>{
     const runbooks=document.createElement('script');
     runbooks.src='atlas-support-runbooks.js?v=1';
     runbooks.async=false;
+    runbooks.onload=loadDragDrop;
+    runbooks.onerror=loadDragDrop;
     document.body.append(runbooks);
   };
 
