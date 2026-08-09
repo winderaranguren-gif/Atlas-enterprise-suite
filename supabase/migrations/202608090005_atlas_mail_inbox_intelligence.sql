@@ -35,8 +35,8 @@ set enabled=true,launch_status='active',updated_at=now();
 -- organization policies: mail rows must belong to the authenticated subject.
 drop policy if exists atlas_mail_records_subject_only on public.atlas_module_records;
 create policy atlas_mail_records_subject_only
-as restrictive
 on public.atlas_module_records
+as restrictive
 for all
 to authenticated
 using(module_code <> 'mail' or subject_user_id=auth.uid())
