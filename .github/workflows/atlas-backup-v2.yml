@@ -1,27 +1,36 @@
-name: ATLAS Sovereign Backup
+name: ATLAS Backup v2
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 10 * * *' # 06:00 America/New_York during EDT
+    - cron: '0 10 * * *'
   push:
     branches: [main]
     paths:
       - 'atlas-sovereign-vault/**'
       - 'scripts/atlas-backup.sh'
       - 'scripts/atlas-verify.sh'
-      - '.github/workflows/atlas-sovereign-backup.yml'
+      - '.github/workflows/atlas-backup-v2.yml'
 
 permissions:
   contents: read
 
 concurrency:
-  group: atlas-sovereign-backup
+  group: atlas-backup-v2
   cancel-in-progress: false
 
 jobs:
+  runner-probe:
+    name: Backup Runner Probe
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Confirm runner can execute steps
+        run: echo "ATLAS backup runner probe passed"
+
   backup-and-verify:
-    name: Build and verify ATLAS backup
+    name: Build and Verify Backup
+    needs: runner-probe
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -30,19 +39,27 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Verify backup tools exist
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f scripts/atlas-backup.sh
+          test -f scripts/atlas-verify.sh
+          chmod +x scripts/atlas-backup.sh scripts/atlas-verify.sh
+
       - name: Build sovereign snapshot
         shell: bash
-        run: |
-          chmod +x scripts/atlas-backup.sh scripts/atlas-verify.sh
-          scripts/atlas-backup.sh .
+        run: scripts/atlas-backup.sh .
 
-      - name: Verify latest snapshot
+      - name: Verify latest snapshot integrity
         shell: bash
         run: |
+          set -euo pipefail
           ARCHIVE="$(ls -1t .atlas-backups/atlas-backup-*.tar.gz | head -n1)"
           scripts/atlas-verify.sh "$ARCHIVE" "${ARCHIVE}.sha256"
+          echo "ATLAS backup integrity verified"
 
-      - name: Publish encrypted-boundary backup artifact
+      - name: Publish backup artifact
         uses: actions/upload-artifact@v4
         with:
           name: atlas-sovereign-backup-${{ github.run_id }}
@@ -51,17 +68,3 @@ jobs:
             .atlas-backups/*.sha256
           if-no-files-found: error
           retention-days: 90
-
-      - name: Write recovery summary
-        shell: bash
-        run: |
-          ARCHIVE="$(basename "$(ls -1t .atlas-backups/atlas-backup-*.tar.gz | head -n1)")"
-          {
-            echo '## ATLAS Sovereign Backup'
-            echo ''
-            echo "- Snapshot: \`$ARCHIVE\`"
-            echo '- Integrity: SHA-256 verified'
-            echo '- Secrets: excluded by policy'
-            echo '- Retention: 90 days'
-            echo '- Recovery manifest: present'
-          } >> "$GITHUB_STEP_SUMMARY"

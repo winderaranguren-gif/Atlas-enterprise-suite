@@ -1,0 +1,96 @@
+name: ATLAS iOS v2
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'package.json'
+      - 'capacitor.config.*'
+      - 'app.js'
+      - 'atlas-*.js'
+      - 'atlas-*.css'
+      - 'service-worker.js'
+      - 'ios/**'
+      - '.github/workflows/atlas-ios-v2.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'package.json'
+      - 'capacitor.config.*'
+      - 'app.js'
+      - 'atlas-*.js'
+      - 'atlas-*.css'
+      - 'service-worker.js'
+      - 'ios/**'
+      - '.github/workflows/atlas-ios-v2.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: atlas-ios-v2-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  runner-probe:
+    name: macOS Runner Probe
+    runs-on: macos-latest
+    timeout-minutes: 5
+    steps:
+      - name: Confirm macOS runner can execute steps
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "ATLAS macOS runner probe started"
+          sw_vers
+          xcodebuild -version
+          echo "ATLAS macOS runner probe passed"
+
+  simulator-build:
+    name: iOS Simulator Build
+    needs: runner-probe
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Validate and build web assets
+        run: npm run build:dev
+
+      - name: Generate clean native iOS project
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf ios
+          npx cap add ios
+          npx cap sync ios
+
+      - name: Verify generated Xcode project
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f ios/App/App.xcodeproj/project.pbxproj
+          test -f ios/App/Podfile
+          test -d ios/App/App.xcworkspace
+          echo "ATLAS iOS project structure verified"
+
+      - name: Build simulator app without signing
+        run: |
+          xcodebuild \
+            -workspace ios/App/App.xcworkspace \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            build
