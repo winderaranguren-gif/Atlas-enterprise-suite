@@ -19,10 +19,19 @@
   dragDropCss.href='atlas-dragdrop.css?v=1';
   document.head.append(dragDropCss);
 
+  const loadCarsEntry=()=>{
+    const carsEntry=document.createElement('script');
+    carsEntry.src='atlas-cars-entry.js?v=1';
+    carsEntry.async=false;
+    document.body.append(carsEntry);
+  };
+
   const loadDragDrop=()=>{
     const dragDrop=document.createElement('script');
     dragDrop.src='atlas-dragdrop.js?v=1';
     dragDrop.async=false;
+    dragDrop.onload=loadCarsEntry;
+    dragDrop.onerror=loadCarsEntry;
     document.body.append(dragDrop);
   };
 
