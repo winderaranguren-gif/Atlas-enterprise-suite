@@ -5,6 +5,47 @@ const root = path.resolve(__dirname, '..');
 const controlsPath = path.join(root, 'governance', 'atlas-module-constitutional-controls.json');
 const productionMode = process.argv.includes('--production');
 
+const MANDATORY_HIGH_IMPACT_PROFILES = [
+  'employment',
+  'finance',
+  'identity',
+  'health',
+  'public_safety',
+  'education',
+  'security_access',
+  'democracy',
+  'autonomous_robotics'
+];
+
+const MANDATORY_HIGH_IMPACT_PATTERNS = [
+  'health',
+  'medical',
+  'clinical',
+  'hr',
+  'employment',
+  'payroll',
+  'finance',
+  'bank',
+  'wallet',
+  'identity',
+  'background',
+  'credit',
+  'insurance',
+  'education',
+  'student',
+  'security',
+  'safety',
+  'police',
+  'surveillance',
+  'biometric',
+  'democracy',
+  'election',
+  'voting',
+  'robot',
+  'robotics',
+  'autonomous'
+];
+
 function fail(message) {
   console.error(`ATLAS module constitutional gate failed: ${message}`);
   process.exit(1);
@@ -101,7 +142,8 @@ const controls = readJson(controlsPath, 'module constitutional controls');
 const profiles = controls.profiles || {};
 const registries = controls.registries || {};
 const releaseStatuses = new Set(controls.approvalEvidenceSchema?.releaseStatuses || ['blocked', 'approved']);
-const reservedPatterns = (controls.reservedHighImpactPatterns || []).map(value => String(value).toLowerCase());
+const policyPatterns = (controls.reservedHighImpactPatterns || []).map(value => String(value).toLowerCase());
+const reservedPatterns = [...new Set([...MANDATORY_HIGH_IMPACT_PATTERNS, ...policyPatterns])];
 
 if (controls.defaultPolicy !== 'explicit-classification-required') {
   fail('default policy must require explicit classification for every registered module');
@@ -111,6 +153,15 @@ if (controls.productionRule !== 'high-impact-modules-require-approved-evidence')
 }
 if (!profiles.standard || profiles.standard.highImpact !== false) {
   fail('standard profile is missing or invalid');
+}
+
+for (const profileId of MANDATORY_HIGH_IMPACT_PROFILES) {
+  const profile = profiles[profileId];
+  if (!profile) fail(`mandatory high-impact profile is missing: ${profileId}`);
+  if (profile.highImpact !== true) fail(`mandatory high-impact profile was downgraded: ${profileId}`);
+  if (!Array.isArray(profile.requiredControls) || profile.requiredControls.length === 0) {
+    fail(`mandatory high-impact profile lost its control set: ${profileId}`);
+  }
 }
 
 for (const [profileId, profile] of Object.entries(profiles)) {
@@ -150,7 +201,7 @@ for (const [source, registry] of Object.entries(registries)) {
     const searchable = `${module.id} ${module.name}`.toLowerCase();
     const reservedHit = reservedPatterns.find(pattern => searchable.includes(pattern));
     if (reservedHit && profile.highImpact !== true) {
-      fail(`${source}/${module.id}: module matches reserved high-impact pattern "${reservedHit}" but is classified as standard`);
+      fail(`${source}/${module.id}: module matches mandatory high-impact pattern "${reservedHit}" but is classified as standard`);
     }
 
     if (profile.highImpact) {
