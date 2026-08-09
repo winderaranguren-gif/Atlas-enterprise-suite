@@ -4,6 +4,9 @@
   "main": "cloudflare/worker.js",
   "compatibility_date": "2026-07-30",
   "workers_dev": true,
+  "build": {
+    "command": "node scripts/cloudflare-build-router.js"
+  },
   "routes": [
     {
       "pattern": "atlasenterprisesuite.com",
