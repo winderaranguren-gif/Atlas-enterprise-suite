@@ -115,4 +115,8 @@
     elements.section?.classList.add('hidden');
     if (elements.list) elements.list.innerHTML = '';
   });
+
+  // The core auth controller may have resolved the session before this module loaded.
+  // Hydrate immediately so the audit panel does not depend on event ordering.
+  void loadSecurityEvents();
 })();
