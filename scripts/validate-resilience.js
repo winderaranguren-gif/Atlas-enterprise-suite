@@ -1,0 +1,34 @@
+'use strict';
+const fs=require('fs');
+const path=require('path');
+const root=path.resolve(__dirname,'..');
+const read=name=>fs.readFileSync(path.join(root,name),'utf8');
+const required=(condition,message)=>{if(!condition)throw new Error(message);};
+
+const resilience=read('atlas-resilience.js');
+const app=read('app.js');
+const sw=read('service-worker.js');
+const pkg=JSON.parse(read('package.json'));
+
+for(const token of [
+  'noBlindRetry:true',
+  'changeStrategyAfterFailure:true',
+  'verificationRequiredForMutations:true',
+  'circuitBreaker:true',
+  'registerStrategy',
+  'eligibleStrategies',
+  'recordFailure',
+  'strategy-cooldown',
+  'strategies-exhausted',
+  'installTechnicalSupportIntegration'
+]) required(resilience.includes(token),`ATLAS resilience invariant missing: ${token}`);
+
+required(app.includes("resilience.src='atlas-resilience.js?v=1'"),'app.js does not load ATLAS resilience runtime.');
+required(app.indexOf('loadResilience')<app.indexOf("support.src='atlas-technical-support.js?v=1'"),'ATLAS resilience must be wired before Technical Support.');
+required(sw.includes("'/atlas-resilience.js'"),'Service Worker app shell is missing atlas-resilience.js.');
+required(/atlas-core-v\d+-resilience/.test(sw),'Service Worker cache version was not advanced for resilience.');
+required(pkg.scripts?.['check:resilience']==='node scripts/validate-resilience.js','package.json is missing check:resilience.');
+required(pkg.scripts?.['check:js']?.includes('node --check atlas-resilience.js'),'check:js does not syntax-check atlas-resilience.js.');
+required(pkg.scripts?.validate?.includes('npm run check:resilience'),'Repository validation does not enforce ATLAS resilience.');
+
+console.log('ATLAS resilience contract verified.');
