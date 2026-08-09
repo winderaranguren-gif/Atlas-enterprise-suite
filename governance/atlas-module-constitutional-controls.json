@@ -103,7 +103,11 @@
   },
   "protectedAssets": {
     "atlas-health-frontiers.html": {"profile": "health", "releaseStatus": "blocked", "reason": "Standalone health research and laboratory functionality requires health privacy, evidence, and human-authority review before production release."},
-    "atlas-holographic-health-twin.html": {"profile": "health", "releaseStatus": "blocked", "reason": "Standalone health twin functionality handles sensitive health concepts and requires health governance evidence before production release."}
+    "atlas-holographic-health-twin.html": {"profile": "health", "releaseStatus": "blocked", "reason": "Standalone health twin functionality handles sensitive health concepts and requires health governance evidence before production release."},
+    "atlas-holographic-health-twin.js": {"profile": "health", "releaseStatus": "blocked", "reason": "Health twin runtime handles sensitive health concepts and requires health governance evidence before production release."},
+    "atlas-device-identity.html": {"profile": "identity", "releaseStatus": "blocked", "reason": "Device Continuity identity UI handles biometric verification and requires identity governance evidence before production release."},
+    "atlas-device-identity.js": {"profile": "identity", "releaseStatus": "blocked", "reason": "Device Continuity browser runtime handles biometric verification and requires identity governance evidence before production release."},
+    "atlas-device-identity-server.js": {"profile": "identity", "releaseStatus": "blocked", "reason": "Device Continuity relay handles short-lived biometric verification challenges and requires identity governance evidence before production release."}
   },
   "approvalEvidenceSchema": {
     "requiredForApprovedHighImpactModule": ["controls","evidenceFiles","testCommands","reviewedBy","reviewDate","rollbackPlan","humanApprover","reviewedDigest"],
