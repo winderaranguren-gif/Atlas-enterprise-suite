@@ -1,0 +1,225 @@
+/* ATLAS-WU-0300 · Open Design layer
+   Purpose: desktop-first horizontal composition and consistent accessible interaction.
+   This file contains presentation only. Runtime/privacy logic remains in atlas-accessibility.js. */
+
+#atlas-a11y-root {
+  --atlas-a11y-space-1: 6px;
+  --atlas-a11y-space-2: 10px;
+  --atlas-a11y-space-3: 14px;
+  --atlas-a11y-space-4: 18px;
+  --atlas-a11y-radius-control: 12px;
+  --atlas-a11y-radius-card: 18px;
+  --atlas-a11y-focus: #ffffff;
+}
+
+.atlas-a11y-launcher,
+.atlas-a11y-panel button,
+.atlas-a11y-panel select,
+.atlas-a11y-panel textarea,
+.atlas-a11y-panel input {
+  min-height: 44px;
+}
+
+.atlas-a11y-panel button,
+.atlas-a11y-panel select,
+.atlas-a11y-panel textarea,
+.atlas-a11y-panel input,
+.atlas-a11y-cloud-link {
+  touch-action: manipulation;
+}
+
+.atlas-a11y-status {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  font-weight: 700;
+}
+
+.atlas-a11y-status::before {
+  content: '';
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
+  margin-right: 9px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+}
+
+.atlas-a11y-section {
+  min-width: 0;
+}
+
+.atlas-a11y-section-head h3 {
+  line-height: 1.15;
+}
+
+.atlas-a11y-output {
+  overflow-wrap: anywhere;
+}
+
+.atlas-a11y-video-wrap {
+  isolation: isolate;
+}
+
+.atlas-a11y-video-guide {
+  max-width: calc(100% - 24px);
+  margin-inline: auto;
+}
+
+.atlas-a11y-actions button.primary {
+  min-width: 148px;
+}
+
+.atlas-a11y-check-grid label,
+.atlas-a11y-switch {
+  min-height: 44px;
+}
+
+.atlas-a11y-history-row {
+  contain: content;
+}
+
+/* Desktop / laptop is the reference ATLAS composition. */
+@media (min-width: 980px) {
+  .atlas-a11y-launcher {
+    right: 28px;
+    bottom: 24px;
+  }
+
+  .atlas-a11y-panel {
+    top: 24px;
+    right: 24px;
+    bottom: 24px;
+    width: min(1120px, calc(100vw - 72px));
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(330px, .85fr);
+    grid-auto-rows: max-content;
+    align-content: start;
+    gap: 12px 14px;
+    padding: 22px;
+    overflow: auto;
+    border-radius: 26px;
+  }
+
+  .atlas-a11y-panel > .atlas-a11y-head,
+  .atlas-a11y-panel > .atlas-a11y-lead,
+  .atlas-a11y-panel > .atlas-a11y-status {
+    grid-column: 1 / -1;
+  }
+
+  .atlas-a11y-panel > .atlas-a11y-head {
+    position: sticky;
+    top: -22px;
+    z-index: 3;
+    margin: -22px -22px 0;
+    padding: 20px 22px 14px;
+    background: linear-gradient(180deg, rgba(3,14,24,.995), rgba(3,14,24,.93));
+    backdrop-filter: blur(18px);
+    border-bottom: 1px solid rgba(255,255,255,.08);
+  }
+
+  .atlas-a11y-panel > .atlas-a11y-lead {
+    margin: 0;
+    max-width: 900px;
+    font-size: .92rem;
+  }
+
+  .atlas-a11y-panel > .atlas-a11y-status {
+    margin: 0 0 2px;
+  }
+
+  .atlas-a11y-panel > .atlas-a11y-section {
+    margin: 0;
+  }
+
+  .atlas-a11y-panel > .atlas-a11y-section:nth-of-type(1) {
+    grid-column: 1;
+    grid-row: 4 / span 4;
+    min-height: 100%;
+    padding: 18px;
+  }
+
+  .atlas-a11y-panel > .atlas-a11y-section:nth-of-type(2) {
+    grid-column: 2;
+    grid-row: 4;
+  }
+
+  .atlas-a11y-panel > .atlas-a11y-section:nth-of-type(3) {
+    grid-column: 2;
+    grid-row: 5;
+  }
+
+  .atlas-a11y-panel > .atlas-a11y-section:nth-of-type(4) {
+    grid-column: 2;
+    grid-row: 6;
+  }
+
+  .atlas-a11y-panel > .atlas-a11y-section:nth-of-type(5) {
+    grid-column: 2;
+    grid-row: 7;
+  }
+
+  .atlas-a11y-video-wrap,
+  #atlas-a11y-video {
+    min-height: 300px;
+  }
+
+  #atlas-a11y-video {
+    max-height: 430px;
+  }
+
+  .atlas-a11y-row {
+    gap: 14px;
+  }
+
+  .atlas-a11y-output.captions {
+    min-height: 78px;
+    font-size: 1.16rem;
+  }
+
+  #atlas-a11y-speech-text {
+    min-height: 96px;
+    resize: vertical;
+  }
+}
+
+/* Mid-size tablets keep a wide drawer but avoid compressed two-column content. */
+@media (min-width: 721px) and (max-width: 979px) {
+  .atlas-a11y-panel {
+    width: min(720px, calc(100vw - 24px));
+  }
+}
+
+/* Small screens preserve the same information architecture in one column. */
+@media (max-width: 720px) {
+  .atlas-a11y-status {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    backdrop-filter: blur(14px);
+  }
+
+  .atlas-a11y-actions > button {
+    flex: 1 1 150px;
+  }
+}
+
+/* High contrast must preserve hierarchy and visible controls. */
+html.atlas-a11y-high-contrast .atlas-a11y-panel,
+html.atlas-a11y-high-contrast .atlas-a11y-panel > .atlas-a11y-head,
+html.atlas-a11y-high-contrast .atlas-a11y-section {
+  background: #000 !important;
+  border-color: rgba(255,255,255,.82) !important;
+}
+
+html.atlas-a11y-high-contrast .atlas-a11y-panel :where(button, select, textarea, input, .atlas-a11y-output) {
+  border-color: rgba(255,255,255,.78) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .atlas-a11y-launcher,
+  .atlas-a11y-panel,
+  .atlas-a11y-alert {
+    scroll-behavior: auto;
+  }
+}
