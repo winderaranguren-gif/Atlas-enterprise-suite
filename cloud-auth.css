@@ -29,6 +29,9 @@ input:focus { border-color: #63caff; box-shadow: 0 0 0 3px rgba(99,202,255,.12);
 .primary { border: 0; border-radius: 12px; padding: 14px 18px; font-weight: 800; color: #06101e; background: linear-gradient(135deg, #78dfff, #65efbd); }
 .primary:disabled, .secondary:disabled { opacity: .5; cursor: not-allowed; }
 .help { line-height: 1.5; }
+#federated-auth { display: grid; gap: 10px; margin-top: 18px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,.1); }
+#federated-auth .secondary { width: 100%; padding: 14px 18px; font-weight: 750; }
+#federated-auth .help { margin: 0; }
 .hidden { display: none !important; }
 .account-head { padding: 18px; border-radius: 16px; background: rgba(255,255,255,.05); margin-bottom: 26px; }
 .section-title { margin: 8px 0 14px; }
