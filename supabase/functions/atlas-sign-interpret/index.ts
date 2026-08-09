@@ -73,7 +73,7 @@ Deno.serve(async (req: Request) => {
     ? String(payload.signed_language).toUpperCase()
     : 'AUTO';
   const locale = String(payload?.locale || 'es-VE').slice(0, 12);
-  const model = Deno.env.get('OPENAI_VISION_MODEL') || Deno.env.get('OPENAI_MODEL') || DEFAULT_MODEL;
+  const model = Deno.env.get('OPENAI_VISION_MODEL') || DEFAULT_MODEL;
 
   const instruction = [
     'You are ATLAS Sign, an accessibility interpreter for signed communication.',
