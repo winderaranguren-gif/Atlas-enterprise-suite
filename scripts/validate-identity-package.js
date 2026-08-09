@@ -9,6 +9,7 @@ const foundationPath = path.join(root, 'supabase/migrations/202608082250_atlas_i
 const hardeningPath = path.join(root, 'supabase/migrations/202608082251_atlas_identity_audit_hardening.sql');
 const invokerHardeningPath = path.join(root, 'supabase/migrations/202608082252_atlas_identity_invoker_hardening.sql');
 const indexesPath = path.join(root, 'supabase/migrations/202608082253_atlas_identity_indexes.sql');
+const mfaStepupPath = path.join(root, 'supabase/migrations/202608082254_atlas_identity_mfa_stepup.sql');
 const clientPath = path.join(root, 'atlas-identity.js');
 const authHtmlPath = path.join(root, 'cloud-auth.html');
 const authClientPath = path.join(root, 'cloud-auth.js');
@@ -81,6 +82,7 @@ const foundation = read(foundationPath);
 const hardening = read(hardeningPath);
 const invokerHardening = read(invokerHardeningPath);
 const indexes = read(indexesPath);
+const mfaStepup = read(mfaStepupPath);
 const client = read(clientPath);
 const authHtml = read(authHtmlPath);
 const authClient = read(authClientPath);
@@ -126,6 +128,16 @@ if (indexes) {
   mustInclude(indexes, 'commit;', 'identity index transaction');
 }
 
+if (mfaStepup) {
+  balancedSql(mfaStepup, 'identity MFA step-up migration');
+  mustInclude(mfaStepup, "coalesce(auth.jwt() ->> 'aal', 'aal1') <> 'aal2'", 'AAL2 backend guard');
+  mustInclude(mfaStepup, 'Identity administration permission required', 'owner/admin authorization guard');
+  mustInclude(mfaStepup, "'aal', coalesce(auth.jwt() ->> 'aal', 'aal1')", 'audited AAL metadata');
+  mustInclude(mfaStepup, 'revoke execute on function public.set_identity_role_permission(uuid,text,text,boolean) from public, anon', 'MFA RPC anonymous revoke');
+  mustInclude(mfaStepup, 'grant execute on function public.set_identity_role_permission(uuid,text,text,boolean) to authenticated', 'MFA RPC authenticated grant');
+  mustInclude(mfaStepup, 'commit;', 'identity MFA step-up transaction');
+}
+
 if (client) {
   mustInclude(client, 'window.ATLAS_IDENTITY', 'browser identity API');
   mustInclude(client, 'function connect(supabaseClient)', 'pre-session identity connection');
@@ -133,17 +145,29 @@ if (client) {
   mustInclude(client, "client.rpc('get_identity_context')", 'identity context client');
   mustInclude(client, "client.rpc('set_identity_role_permission'", 'audited permission client');
   mustInclude(client, 'getAuthenticatorAssuranceLevel', 'MFA assurance surface');
+  mustInclude(client, 'listFactors', 'MFA factor discovery');
+  mustInclude(client, 'enrollTotp', 'TOTP enrollment surface');
+  mustInclude(client, 'challengeAndVerifyFactor', 'MFA challenge verification surface');
+  mustInclude(client, 'unenrollFactor', 'MFA factor removal surface');
+  mustInclude(client, 'requireAal2', 'client-side AAL2 gate');
+  mustInclude(client, 'await requireAal2();', 'permission mutation step-up gate');
   mustInclude(client, 'signInWithProvider', 'federated sign-in surface');
 }
 
 if (authHtml) {
   mustInclude(authHtml, '<script src="atlas-identity.js"></script>', 'cloud-auth identity loader');
   mustInclude(authHtml, 'id="federated-signin"', 'federated sign-in control');
+  mustInclude(authHtml, 'id="mfa-section"', 'MFA account security panel');
+  mustInclude(authHtml, 'id="mfa-enroll-button"', 'MFA enrollment control');
+  mustInclude(authHtml, 'id="mfa-stepup-panel"', 'MFA step-up panel');
 }
 
 if (authClient) {
   mustInclude(authClient, 'identity.connect(state.client)', 'single Supabase client binding');
   mustInclude(authClient, 'identity.signInWithProvider', 'federated redirect wiring');
+  mustInclude(authClient, 'identity.getMfaState()', 'MFA state rendering');
+  mustInclude(authClient, 'identity.enrollTotp', 'MFA enrollment wiring');
+  mustInclude(authClient, 'identity.challengeAndVerifyFactor', 'MFA verification wiring');
   mustInclude(authClient, 'identity?.clear()', 'session context cleanup');
 }
 
