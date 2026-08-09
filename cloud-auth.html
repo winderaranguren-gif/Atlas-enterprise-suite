@@ -16,7 +16,7 @@
       <p class="lead">Una sola sesión controla qué empresas, módulos y acciones puede utilizar cada persona, manteniendo el aislamiento por organización.</p>
       <div class="notice">
         <strong>Zero-trust por módulo</strong>
-        <span>Supabase Auth mantiene la sesión y las RLS; ATLAS Identity resuelve membresías, roles, módulos, permisos y federación SSO sin duplicar contraseñas.</span>
+        <span>Supabase Auth mantiene la sesión y las RLS; ATLAS Identity resuelve membresías, roles, módulos, permisos, MFA y federación SSO sin duplicar contraseñas.</span>
       </div>
       <a class="back-link" href="./">← Volver a ATLAS</a>
     </section>
@@ -53,6 +53,39 @@
           <div><small>Sesión autenticada</small><strong id="user-email">—</strong></div>
           <button id="signout-button" type="button" class="secondary">Cerrar sesión</button>
         </div>
+
+        <section id="mfa-section" class="security-panel" aria-labelledby="mfa-title">
+          <div class="section-title">
+            <div><small>Protección de sesión</small><h2 id="mfa-title">Verificación en dos pasos</h2></div>
+            <button id="mfa-refresh" type="button" class="secondary">Revisar</button>
+          </div>
+          <div class="security-state">
+            <span id="mfa-badge" class="security-badge">AAL1</span>
+            <div><strong id="mfa-status">Revisando MFA…</strong><small id="mfa-detail">Cargando factores de seguridad.</small></div>
+          </div>
+          <div class="security-actions">
+            <button id="mfa-enroll-button" type="button" class="secondary">Agregar autenticador</button>
+          </div>
+
+          <div id="mfa-enroll-panel" class="mfa-flow hidden">
+            <h3>Activar autenticador TOTP</h3>
+            <p class="help">Escanea el código con una aplicación de autenticación. Si no puedes escanearlo, usa la clave manual.</p>
+            <img id="mfa-qr" class="mfa-qr" alt="Código QR para configurar el segundo factor" />
+            <div class="secret-box"><small>Clave manual</small><code id="mfa-secret">—</code></div>
+            <label>Código de verificación<input id="mfa-enroll-code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" /></label>
+            <div class="button-row">
+              <button id="mfa-enroll-verify" type="button" class="primary">Verificar y activar</button>
+              <button id="mfa-enroll-cancel" type="button" class="secondary">Cancelar</button>
+            </div>
+          </div>
+
+          <div id="mfa-stepup-panel" class="mfa-flow hidden">
+            <h3>Verificación adicional requerida</h3>
+            <p class="help">Introduce el código actual de tu autenticador para elevar esta sesión a AAL2.</p>
+            <label>Código de autenticación<input id="mfa-stepup-code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" /></label>
+            <button id="mfa-stepup-verify" type="button" class="primary">Verificar sesión</button>
+          </div>
+        </section>
 
         <div class="section-title"><div><small>Empresas autorizadas</small><h2>Tu acceso en ATLAS</h2></div><button id="refresh-orgs" type="button" class="secondary">Actualizar</button></div>
         <div id="organization-list" class="organization-list"></div>
