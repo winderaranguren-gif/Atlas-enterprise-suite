@@ -1,4 +1,4 @@
-const VERSION = 'atlas-core-v15-gps-accessibility-kernel';
+const VERSION = 'atlas-core-v16-agent-fabric';
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 const APP_SHELL = [
@@ -28,6 +28,10 @@ const APP_SHELL = [
   '/atlas-legacy-migrate.js',
   '/atlas-suite.js',
   '/atlas-os-operational.js',
+  '/atlas-skill-registry.js',
+  '/atlas-skill-registry.js?v=1',
+  '/atlas-agent-fabric.js',
+  '/atlas-agent-fabric.js?v=1',
   '/atlas-technical-support.js',
   '/atlas-support-runbooks.js',
   '/atlas-fleet-intelligence.html',
@@ -124,10 +128,7 @@ self.addEventListener('notificationclick', event => {
         return client.focus();
       }
     }
-    return self.clients.openWindow ? self.clients.openWindow(target) : undefined;
+    if (self.clients.openWindow) return self.clients.openWindow(target);
+    return null;
   })());
-});
-
-self.addEventListener('message', event => {
-  if (event.data === 'SKIP_WAITING') self.skipWaiting();
 });
