@@ -69,53 +69,95 @@
     /^1\.3\./.test(String(window.ATLASAccessibility?.version||''))
   );
 
-  const appendAccessibilityV4=()=>{
+  let accessibilityAdvanced=false;
+  const advanceAfterAccessibility=()=>{
+    if(accessibilityAdvanced)return;
+    accessibilityAdvanced=true;
+    loadDragDrop();
+  };
+
+  const teardownAccessibilityRuntime=()=>{
+    try{window.ATLASAccessibility?.stopCamera?.({silent:true});}catch(_){}
+    try{window.ATLASAccessibility?.stopCaptions?.({silent:true});}catch(_){}
+    try{window.ATLASAccessibility?.close?.({restoreFocus:false});}catch(_){}
+    document.getElementById('atlas-a11y-root')?.remove();
+    try{delete window.ATLASAccessibility;}catch(_){window.ATLASAccessibility=undefined;}
+    try{delete window.__ATLAS_WU_0300_ACCESS_INSTALLED__;}catch(_){window.__ATLAS_WU_0300_ACCESS_INSTALLED__=false;}
+  };
+
+  const appendAccessibilityV4=({replaceRuntime=false,onSettled=advanceAfterAccessibility}={})=>{
+    if(replaceRuntime)teardownAccessibilityRuntime();
     const accessibility=document.createElement('script');
     accessibility.src='atlas-accessibility.js?v=4';
     accessibility.dataset.atlasWu='0300';
     accessibility.async=false;
-    accessibility.onload=loadDragDrop;
-    accessibility.onerror=loadDragDrop;
+    accessibility.onload=onSettled;
+    accessibility.onerror=onSettled;
     document.body.append(accessibility);
   };
 
-  let reconciliationScheduled=false;
-  const reconcileAfterDocumentLoad=()=>{
-    if(reconciliationScheduled)return;
-    reconciliationScheduled=true;
-    const reconcile=()=>{
-      reconciliationScheduled=false;
-      const scripts=accessibilityScripts();
-      const legacy=scripts.filter((script)=>!isV4Accessibility(script));
+  const RECONCILE_TIMEOUT_MS=1500;
+  let reconciliationActive=false;
+  const reconcileLegacyAccessibility=(legacyScripts)=>{
+    if(reconciliationActive)return;
+    reconciliationActive=true;
+    const pending=new Set(legacyScripts);
+    let finalized=false;
+    let timer=null;
 
-      // By the window load boundary, scripts that existed before it have settled.
-      // If any legacy runtime existed, execute a fresh v4 last so legacy code can
-      // never remain the final ATLAS Accessibility implementation.
-      if(legacy.length)return appendAccessibilityV4();
-      if(hasInstalledV4())return loadDragDrop();
-      return appendAccessibilityV4();
+    const finalize=()=>{
+      if(finalized)return;
+      finalized=true;
+      if(timer)clearTimeout(timer);
+      // Remove any shell/API installed by cached v3 before v4 gets a chance to bind.
+      appendAccessibilityV4({replaceRuntime:true,onSettled:advanceAfterAccessibility});
     };
 
-    if(document.readyState==='complete')return reconcile();
-    window.addEventListener('load',reconcile,{once:true});
+    const settleKnownLegacy=(script,loaded)=>{
+      if(finalized){
+        // A script that was genuinely stalled past the bounded wait must never be
+        // allowed to become the final runtime. If it eventually executes, replace
+        // its shell/API immediately with a fresh v4 instance.
+        if(loaded)appendAccessibilityV4({replaceRuntime:true,onSettled:()=>{}});
+        return;
+      }
+      pending.delete(script);
+      if(!pending.size)finalize();
+    };
+
+    for(const script of pending){
+      script.addEventListener('load',()=>settleKnownLegacy(script,true),{once:true});
+      script.addEventListener('error',()=>settleKnownLegacy(script,false),{once:true});
+    }
+
+    // Never wait on the global window load event. A broken image/iframe/stylesheet
+    // must not deadlock Accessibility or the downstream DragDrop/Cars/GPS chain.
+    timer=setTimeout(finalize,RECONCILE_TIMEOUT_MS);
+  };
+
+  const waitForExistingV4=(script)=>{
+    let settled=false;
+    const finish=()=>{
+      if(settled)return;
+      settled=true;
+      clearTimeout(timer);
+      if(hasInstalledV4())return advanceAfterAccessibility();
+      appendAccessibilityV4();
+    };
+    script.addEventListener('load',finish,{once:true});
+    script.addEventListener('error',finish,{once:true});
+    const timer=setTimeout(finish,RECONCILE_TIMEOUT_MS);
   };
 
   const loadAccessibility=()=>{
     const scripts=accessibilityScripts();
     const legacy=scripts.filter((script)=>!isV4Accessibility(script));
 
-    // Never accept an installed-v4 marker while a legacy script can still be in
-    // flight. Wait for the document load boundary, then force v4 to execute last.
-    if(legacy.length)return reconcileAfterDocumentLoad();
-
-    if(hasInstalledV4())return loadDragDrop();
+    if(legacy.length)return reconcileLegacyAccessibility(legacy);
+    if(hasInstalledV4())return advanceAfterAccessibility();
 
     const existingV4=scripts.find(isV4Accessibility);
-    if(existingV4){
-      // A pre-injected v4 may already have settled before this loader attached
-      // handlers. Do not depend on Resource Timing; reconcile at window load.
-      return reconcileAfterDocumentLoad();
-    }
+    if(existingV4)return waitForExistingV4(existingV4);
 
     appendAccessibilityV4();
   };
