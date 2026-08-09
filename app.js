@@ -19,10 +19,13 @@
   dragDropCss.href='atlas-dragdrop.css?v=1';
   document.head.append(dragDropCss);
 
-  const accessibilityCss=document.createElement('link');
-  accessibilityCss.rel='stylesheet';
-  accessibilityCss.href='atlas-accessibility.css?v=3';
-  document.head.append(accessibilityCss);
+  if(!document.querySelector('link[href*="atlas-accessibility.css"]')){
+    const accessibilityCss=document.createElement('link');
+    accessibilityCss.rel='stylesheet';
+    accessibilityCss.href='atlas-accessibility.css?v=4';
+    accessibilityCss.dataset.atlasWu='0300';
+    document.head.append(accessibilityCss);
+  }
 
   navigator.serviceWorker?.addEventListener('message',(event)=>{
     const detail=event.data;
@@ -57,8 +60,10 @@
   };
 
   const loadAccessibility=()=>{
+    if(window.__ATLAS_WU_0300_ACCESS_INSTALLED__||document.querySelector('script[src*="atlas-accessibility.js"]'))return loadDragDrop();
     const accessibility=document.createElement('script');
-    accessibility.src='atlas-accessibility.js?v=3';
+    accessibility.src='atlas-accessibility.js?v=4';
+    accessibility.dataset.atlasWu='0300';
     accessibility.async=false;
     accessibility.onload=loadDragDrop;
     accessibility.onerror=loadDragDrop;
