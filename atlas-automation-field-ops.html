@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#07131f" />
+  <title>ATLAS Automation & Field Ops</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="atlas-automation-field-ops.css" />
+</head>
+<body>
+  <div class="afo-shell">
+    <aside class="afo-sidebar">
+      <a class="afo-brand" href="index.html"><span class="afo-mark">A</span><span><strong>ATLAS</strong><small>Automation & Field Ops</small></span></a>
+      <nav id="afo-nav" class="afo-nav">
+        <button data-view="command" class="active">Command Center</button>
+        <button data-view="workflow">Automation Studio</button>
+        <button data-view="forms">Dynamic Forms</button>
+        <button data-view="integrations">Integration Hub</button>
+        <button data-view="sales">Field Sales</button>
+        <button data-view="reports">Analytics 360</button>
+      </nav>
+      <div class="afo-side-foot"><span>Local-first ready</span><a href="index.html">← ATLAS Core</a></div>
+    </aside>
+    <main class="afo-main">
+      <header class="afo-topbar"><div><p class="afo-eyebrow">ATLAS CORE EXTENSION</p><h1 id="afo-title">Command Center</h1></div><div class="afo-actions"><button id="gps-btn" class="afo-btn">Capture GPS</button><button id="export-btn" class="afo-btn primary">Export Snapshot</button></div></header>
+      <div id="afo-toast" class="afo-toast" aria-live="polite"></div>
+      <section id="afo-content" class="afo-content"></section>
+    </main>
+  </div>
+  <script src="atlas-automation-field-ops.js"></script>
+</body>
+</html>
