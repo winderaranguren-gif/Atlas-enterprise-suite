@@ -1,0 +1,11 @@
+{
+  "name": "atlas-cloudflare-github-bridge",
+  "main": "cloudflare/github-bridge-worker.js",
+  "compatibility_date": "2026-08-09",
+  "workers_dev": true,
+  "vars": {
+    "GITHUB_OWNER": "winderaranguren-gif",
+    "GITHUB_REPO": "Atlas-enterprise-suite",
+    "GITHUB_BASE_BRANCH": "main"
+  }
+}
