@@ -1,4 +1,4 @@
-const VERSION = 'atlas-core-v13-gps-provider-gateway';
+const VERSION = 'atlas-core-v14-gps-accessibility';
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 const APP_SHELL = [
@@ -8,7 +8,10 @@ const APP_SHELL = [
   '/atlas-suite.css',
   '/atlas-os-modules.css',
   '/atlas-technical-support.css',
+  '/atlas-accessibility.css',
   '/app.js',
+  '/atlas-accessibility.js',
+  '/atlas-dragdrop.js',
   '/atlas-cars-entry.js',
   '/atlas-cars.html',
   '/atlas-cars.css',
@@ -90,7 +93,21 @@ self.addEventListener('push', event => {
     renotify: true,
     data: { url: payload.url || '/atlas-calendar.html', ...(payload.data || {}) }
   };
-  event.waitUntil(self.registration.showNotification(title, options));
+
+  const mirrorToOpenAtlasWindows = self.clients
+    .matchAll({ type: 'window', includeUncontrolled: true })
+    .then(clients => Promise.all(clients.map(client => client.postMessage({
+      type: 'atlas:alert',
+      title,
+      message: options.body,
+      tag: options.tag,
+      data: options.data
+    }))));
+
+  event.waitUntil(Promise.all([
+    self.registration.showNotification(title, options),
+    mirrorToOpenAtlasWindows
+  ]));
 });
 
 self.addEventListener('notificationclick', event => {

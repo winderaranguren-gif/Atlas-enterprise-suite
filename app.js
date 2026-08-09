@@ -19,6 +19,18 @@
   dragDropCss.href='atlas-dragdrop.css?v=1';
   document.head.append(dragDropCss);
 
+  const accessibilityCss=document.createElement('link');
+  accessibilityCss.rel='stylesheet';
+  accessibilityCss.href='atlas-accessibility.css?v=3';
+  document.head.append(accessibilityCss);
+
+  navigator.serviceWorker?.addEventListener('message',(event)=>{
+    const detail=event.data;
+    if(detail?.type!=='atlas:alert')return;
+    if(window.ATLASAccessibility?.visualAlert)window.ATLASAccessibility.visualAlert(detail);
+    else window.dispatchEvent(new CustomEvent('atlas:alert',{detail}));
+  });
+
   const loadGpsEntry=()=>{
     const gpsEntry=document.createElement('script');
     gpsEntry.src='atlas-gps-entry.js?v=1';
@@ -44,12 +56,21 @@
     document.body.append(dragDrop);
   };
 
+  const loadAccessibility=()=>{
+    const accessibility=document.createElement('script');
+    accessibility.src='atlas-accessibility.js?v=3';
+    accessibility.async=false;
+    accessibility.onload=loadDragDrop;
+    accessibility.onerror=loadDragDrop;
+    document.body.append(accessibility);
+  };
+
   const loadRunbooks=()=>{
     const runbooks=document.createElement('script');
     runbooks.src='atlas-support-runbooks.js?v=1';
     runbooks.async=false;
-    runbooks.onload=loadDragDrop;
-    runbooks.onerror=loadDragDrop;
+    runbooks.onload=loadAccessibility;
+    runbooks.onerror=loadAccessibility;
     document.body.append(runbooks);
   };
 
