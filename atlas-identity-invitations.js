@@ -240,7 +240,7 @@
   function handleIdentityContext(event) {
     const context = event?.detail || identity?.current?.() || {};
     updatePendingInviteUi(Boolean(context.user_id));
-    loadInvitations();
+    void loadInvitations();
   }
 
   captureInvitationFromUrl();
@@ -264,4 +264,8 @@
     elements.invitationAdmin?.classList.add('hidden');
     updatePendingInviteUi(false);
   });
+
+  // The core auth controller may have resolved the session before this module loaded.
+  // Hydrate from the current Identity context so UI state never depends on event timing.
+  void loadInvitations();
 })();
