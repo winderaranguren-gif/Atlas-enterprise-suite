@@ -25,6 +25,7 @@
     "predeploy": "npm run check:constitutional-release",
     "deploy": "npx wrangler@4 deploy",
     "cloudflare:dev": "npx wrangler@4 dev",
+    "cloudflare:preview": "npx wrangler@4 versions upload",
     "precloudflare:deploy": "npm run check:constitutional-release",
     "cloudflare:deploy": "npx wrangler@4 deploy",
     "mobile:release:check": "npm run check:constitutional-release",
