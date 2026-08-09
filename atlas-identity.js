@@ -41,15 +41,16 @@
     }
   }
 
-  async function refresh() {
+  async function requireSession() {
     if (!client) throw new Error('ATLAS Identity has not been connected.');
+    const { data, error } = await client.auth.getSession();
+    if (error) throw error;
+    if (!data?.session?.user) throw new Error('ATLAS Identity requires an authenticated session.');
+    return data.session;
+  }
 
-    const { data: sessionData, error: sessionError } = await client.auth.getSession();
-    if (sessionError) throw sessionError;
-    if (!sessionData?.session?.user) {
-      clear();
-      throw new Error('ATLAS Identity requires an authenticated session.');
-    }
+  async function refresh() {
+    await requireSession();
 
     const { data, error } = await client.rpc('get_identity_context');
     if (error) throw error;
@@ -112,8 +113,117 @@
     return [...(getOrganization(orgId)?.modules || [])];
   }
 
+  async function getAuthenticatorAssuranceLevel() {
+    await requireSession();
+    if (!client?.auth?.mfa?.getAuthenticatorAssuranceLevel) {
+      return { currentLevel: context?.aal || 'aal1', nextLevel: context?.aal || 'aal1' };
+    }
+
+    const { data, error } = await client.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (error) throw error;
+    return data;
+  }
+
+  async function listFactors() {
+    await requireSession();
+    const { data, error } = await client.auth.mfa.listFactors();
+    if (error) throw error;
+    return {
+      all: Array.isArray(data?.all) ? data.all : [],
+      totp: Array.isArray(data?.totp) ? data.totp : [],
+      phone: Array.isArray(data?.phone) ? data.phone : []
+    };
+  }
+
+  async function getMfaState() {
+    const [assurance, factors] = await Promise.all([
+      getAuthenticatorAssuranceLevel(),
+      listFactors()
+    ]);
+
+    return {
+      ...assurance,
+      factors,
+      requiresStepUp: assurance.currentLevel === 'aal1' && assurance.nextLevel === 'aal2',
+      verified: assurance.currentLevel === 'aal2'
+    };
+  }
+
+  async function enrollTotp(friendlyName = 'ATLAS Authenticator') {
+    await requireSession();
+    const { data, error } = await client.auth.mfa.enroll({
+      factorType: 'totp',
+      friendlyName
+    });
+    if (error) throw error;
+
+    return {
+      factorId: data.id,
+      type: data.type,
+      friendlyName: data.friendly_name || friendlyName,
+      qrCode: data.totp?.qr_code || '',
+      secret: data.totp?.secret || '',
+      uri: data.totp?.uri || ''
+    };
+  }
+
+  async function challengeAndVerifyFactor({ factorId, code }) {
+    await requireSession();
+    if (!factorId) throw new Error('An MFA factor is required.');
+    if (!code || !String(code).trim()) throw new Error('Enter the verification code.');
+
+    if (client.auth.mfa.challengeAndVerify) {
+      const { data, error } = await client.auth.mfa.challengeAndVerify({
+        factorId,
+        code: String(code).trim()
+      });
+      if (error) throw error;
+      await refresh();
+      return data;
+    }
+
+    const challenge = await client.auth.mfa.challenge({ factorId });
+    if (challenge.error) throw challenge.error;
+
+    const verification = await client.auth.mfa.verify({
+      factorId,
+      challengeId: challenge.data.id,
+      code: String(code).trim()
+    });
+    if (verification.error) throw verification.error;
+    await refresh();
+    return verification.data;
+  }
+
+  async function unenrollFactor(factorId) {
+    await requireSession();
+    if (!factorId) throw new Error('An MFA factor is required.');
+    const assurance = await getAuthenticatorAssuranceLevel();
+    if (assurance.currentLevel !== 'aal2') {
+      const error = new Error('ATLAS Identity requires MFA step-up before removing a verified factor.');
+      error.name = 'AtlasIdentityMfaRequiredError';
+      throw error;
+    }
+
+    const { data, error } = await client.auth.mfa.unenroll({ factorId });
+    if (error) throw error;
+    return data;
+  }
+
+  async function requireAal2() {
+    const assurance = await getAuthenticatorAssuranceLevel();
+    if (assurance.currentLevel !== 'aal2') {
+      const error = new Error('ATLAS Identity requires MFA step-up (AAL2) for this action.');
+      error.name = 'AtlasIdentityMfaRequiredError';
+      error.assurance = assurance;
+      throw error;
+    }
+    return assurance;
+  }
+
   async function setRolePermission({ orgId = activeOrganizationId, role: targetRole, permission, allowed }) {
     requirePermission('identity.manage', orgId);
+    await requireAal2();
     const { error } = await client.rpc('set_identity_role_permission', {
       organization_id: orgId,
       target_role: targetRole,
@@ -122,16 +232,6 @@
     });
     if (error) throw error;
     return refresh();
-  }
-
-  async function getAuthenticatorAssuranceLevel() {
-    if (!client?.auth?.mfa?.getAuthenticatorAssuranceLevel) {
-      return { currentLevel: context?.aal || 'aal1', nextLevel: context?.aal || 'aal1' };
-    }
-
-    const { data, error } = await client.auth.mfa.getAuthenticatorAssuranceLevel();
-    if (error) throw error;
-    return data;
   }
 
   async function signInWithProvider(provider, options = {}) {
@@ -161,6 +261,12 @@
     enabledModules,
     setRolePermission,
     getAuthenticatorAssuranceLevel,
+    listFactors,
+    getMfaState,
+    enrollTotp,
+    challengeAndVerifyFactor,
+    unenrollFactor,
+    requireAal2,
     signInWithProvider
   });
 })();
