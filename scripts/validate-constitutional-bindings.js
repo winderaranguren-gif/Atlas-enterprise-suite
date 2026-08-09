@@ -1,3 +1,5 @@
+'use strict';
+
 const fs = require('fs');
 const path = require('path');
 
@@ -19,15 +21,9 @@ try {
 }
 
 const mandatoryProfiles = [
-  'employment',
-  'finance',
-  'identity',
-  'health',
-  'public_safety',
-  'education',
-  'security_access',
-  'democracy',
-  'autonomous_robotics'
+  'employment', 'finance', 'identity', 'health', 'public_safety', 'education',
+  'security_access', 'democracy', 'autonomous_robotics', 'housing',
+  'child_protection', 'critical_infrastructure', 'ai_high_impact'
 ];
 
 const mandatoryBindings = {
@@ -51,6 +47,11 @@ const mandatoryBindings = {
   }
 };
 
+const mandatoryAssetBindings = {
+  'atlas-health-frontiers.html': 'health',
+  'atlas-holographic-health-twin.html': 'health'
+};
+
 for (const profileId of mandatoryProfiles) {
   const profile = policy.profiles?.[profileId];
   if (!profile) fail(`mandatory high-impact profile missing: ${profileId}`);
@@ -63,7 +64,6 @@ for (const profileId of mandatoryProfiles) {
 for (const [source, expected] of Object.entries(mandatoryBindings)) {
   const classifications = policy.registries?.[source]?.classifications;
   if (!classifications) fail(`protected registry missing: ${source}`);
-
   for (const [moduleId, expectedProfile] of Object.entries(expected)) {
     const classification = classifications[moduleId];
     if (!classification) fail(`${source}/${moduleId}: protected high-impact binding missing`);
@@ -73,22 +73,40 @@ for (const [source, expected] of Object.entries(mandatoryBindings)) {
   }
 }
 
-for (const [source, registry] of Object.entries(policy.registries || {})) {
-  for (const [moduleId, classification] of Object.entries(registry.classifications || {})) {
-    const profile = policy.profiles?.[classification.profile];
-    if (!profile?.highImpact || classification.releaseStatus !== 'approved') continue;
-
-    const approval = classification.approval || {};
-    if (typeof approval.humanApprover !== 'string' || approval.humanApprover.trim().length < 2) {
-      fail(`${source}/${moduleId}: approved high-impact module requires an identified humanApprover`);
-    }
-    if (typeof approval.reviewedCommit !== 'string' || !/^[0-9a-f]{7,40}$/i.test(approval.reviewedCommit)) {
-      fail(`${source}/${moduleId}: approved high-impact module requires reviewedCommit`);
-    }
-    if (approval.humanApprover.trim() === approval.reviewedBy?.trim()) {
-      fail(`${source}/${moduleId}: human approval and independent review must not be represented as the same control`);
-    }
+for (const [asset, expectedProfile] of Object.entries(mandatoryAssetBindings)) {
+  const classification = policy.protectedAssets?.[asset];
+  if (!classification) fail(`${asset}: protected production asset binding missing`);
+  if (classification.profile !== expectedProfile) {
+    fail(`${asset}: protected asset profile changed from ${expectedProfile} to ${classification.profile}`);
   }
 }
 
-console.log('ATLAS constitutional binding lock passed: protected high-impact profiles and module bindings remain intact.');
+function validateApprovalShape(target, classification) {
+  const profile = policy.profiles?.[classification.profile];
+  if (!profile?.highImpact || classification.releaseStatus !== 'approved') return;
+
+  const approval = classification.approval || {};
+  if (typeof approval.humanApprover !== 'string' || approval.humanApprover.trim().length < 2) {
+    fail(`${target}: approved high-impact target requires an identified humanApprover`);
+  }
+  if (typeof approval.reviewedBy !== 'string' || approval.reviewedBy.trim().length < 2) {
+    fail(`${target}: approved high-impact target requires an independent reviewer`);
+  }
+  if (approval.humanApprover.trim() === approval.reviewedBy.trim()) {
+    fail(`${target}: human approval and independent review must not be represented as the same control`);
+  }
+  if (typeof approval.reviewedDigest !== 'string' || !/^[0-9a-f]{64}$/i.test(approval.reviewedDigest)) {
+    fail(`${target}: approved high-impact target requires a SHA-256 reviewedDigest`);
+  }
+}
+
+for (const [source, registry] of Object.entries(policy.registries || {})) {
+  for (const [moduleId, classification] of Object.entries(registry.classifications || {})) {
+    validateApprovalShape(`${source}/${moduleId}`, classification);
+  }
+}
+for (const [asset, classification] of Object.entries(policy.protectedAssets || {})) {
+  validateApprovalShape(`asset/${asset}`, classification);
+}
+
+console.log('ATLAS constitutional binding lock passed: protected profiles, module bindings, production assets and approval shape remain intact.');
