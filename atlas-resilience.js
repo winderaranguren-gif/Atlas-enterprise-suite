@@ -20,7 +20,7 @@ function loadState(){
       history:Array.isArray(parsed.history)?parsed.history.slice(0,MAX_HISTORY):[],
       failures:parsed.failures&&typeof parsed.failures==='object'?parsed.failures:{},
       circuits:parsed.circuits&&typeof parsed.circuits==='object'?parsed.circuits:{},
-      installed:parsed.installed&&typeof parsed.installed==='object'?parsed.installed:{}
+      installed:{}
     };
   }catch{return emptyState();}
 }
@@ -233,6 +233,8 @@ function installTechnicalSupportIntegration(){
         status:caseItem?.status||'unknown',
         caseId:caseItem?.id||null,
         blockers:caseItem?.blockers||[],
+        diagnostics:caseItem?.diagnostics||[],
+        actions:caseItem?.actions||[],
         detail:caseItem?.status==='resolved'?'Technical Support resolved and verified the case.':`Technical Support ended with status ${caseItem?.status||'unknown'}.`
       };
     },
@@ -242,9 +244,26 @@ function installTechnicalSupportIntegration(){
     })
   });
 
-  support.diagnose=(summary='',company='ATLAS Client')=>execute(`technical-support:${summary||'diagnosis'}`,{
-    resilienceKind:'technical-support',summary,company,scope:'technical-support'
-  });
+  support.diagnose=async(summary='',company='ATLAS Client')=>{
+    const resilient=await execute(`technical-support:${summary||'diagnosis'}`,{
+      resilienceKind:'technical-support',summary,company,scope:'technical-support'
+    });
+    const inner=resilient.result||{};
+    const attemptedBlockers=(resilient.attempts||[]).flatMap(item=>item?.result?.blockers||[]);
+    const blockers=inner.blockers?.length?inner.blockers:attemptedBlockers;
+    return {
+      id:inner.caseId||null,
+      status:resilient.ok?'resolved':'blocked',
+      diagnostics:inner.diagnostics||[],
+      actions:inner.actions||[],
+      blockers:blockers.length?blockers:[{
+        code:resilient.status||'resilience-blocked',
+        message:resilient.detail||'ATLAS resilience blocked this repeated operation.',
+        required:resilient.required||'Use a materially different strategy or resolve the failing layer.'
+      }],
+      resilience:resilient
+    };
+  };
   support.__atlasResilienceWrapped=true;
   support.policy={...(support.policy||{}),resilience:'ATLASResilience',noBlindRetry:true,requireFreshVerification:true};
   state.installed.technicalSupport=true;
