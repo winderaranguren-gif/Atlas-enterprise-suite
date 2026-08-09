@@ -1,0 +1,112 @@
+{
+  "schemaVersion": "1.0.0",
+  "policy": "ATLAS-WORK-NOMENCLATURE-v1",
+  "rules": {
+    "workUnitIdPattern": "^ATLAS-WU-[0-9]{4}$",
+    "fileIdPattern": "^ATLAS-F-[0-9]{4}-[0-9]{4}$",
+    "branchPattern": "^wu/ATLAS-WU-[0-9]{4}-[a-z0-9-]+$",
+    "startFromLatestMain": true,
+    "forceUpdateMain": false,
+    "sharedFilesRequireDeclaration": true,
+    "duplicateOwnedPathsAllowed": false
+  },
+  "sharedCorePaths": [
+    "app.js",
+    "service-worker.js",
+    "index.html",
+    "package.json",
+    "wrangler.jsonc",
+    "scripts/build-cloudflare.js",
+    "scripts/cloudflare-build-router.js",
+    "governance/"
+  ],
+  "workUnits": [
+    {
+      "id": "ATLAS-WU-0000",
+      "name": "ATLAS Core Integration",
+      "status": "permanent",
+      "branch": null,
+      "ownedPaths": ["app.js", "service-worker.js", "index.html", "package.json", "wrangler.jsonc"],
+      "sharedTouches": [],
+      "dependencies": []
+    },
+    {
+      "id": "ATLAS-WU-0100",
+      "name": "Governance and Release Controls",
+      "status": "active",
+      "branch": "governance/atlas-work-nomenclature-v1",
+      "ownedPaths": ["governance/"],
+      "sharedTouches": [],
+      "dependencies": ["ATLAS-WU-0000"]
+    },
+    {
+      "id": "ATLAS-WU-0200",
+      "name": "ATLAS GPS and Navigation",
+      "status": "active-mainline",
+      "branch": null,
+      "ownedPaths": ["atlas-gps-", "gps-platform/", "cloudflare/gps-gateway.js"],
+      "sharedTouches": ["app.js", "service-worker.js", "package.json", "wrangler.jsonc"],
+      "dependencies": ["ATLAS-WU-0000"]
+    },
+    {
+      "id": "ATLAS-WU-0300",
+      "name": "ATLAS Access and ATLAS Sign",
+      "status": "active-pr",
+      "branch": "feature/atlas-accessibility-sign",
+      "ownedPaths": ["atlas-accessibility.js", "atlas-accessibility.css", "supabase/functions/atlas-sign-interpret/"],
+      "sharedTouches": ["app.js", "service-worker.js", "index.html", "package.json", "cloud-auth.html"],
+      "dependencies": ["ATLAS-WU-0000", "ATLAS-WU-0100"]
+    },
+    {
+      "id": "ATLAS-WU-0400",
+      "name": "ATLAS Cars",
+      "status": "active-mainline",
+      "branch": null,
+      "ownedPaths": ["atlas-cars-", "atlas-cars.html", "atlas-cars.css", "atlas-cars.js"],
+      "sharedTouches": ["app.js", "service-worker.js", "package.json"],
+      "dependencies": ["ATLAS-WU-0000"]
+    },
+    {
+      "id": "ATLAS-WU-0500",
+      "name": "ATLAS Technical Support",
+      "status": "active-mainline",
+      "branch": null,
+      "ownedPaths": ["atlas-technical-support", "atlas-support-runbooks"],
+      "sharedTouches": ["app.js", "package.json"],
+      "dependencies": ["ATLAS-WU-0000"]
+    },
+    {
+      "id": "ATLAS-WU-0600",
+      "name": "ATLAS Fleet Intelligence",
+      "status": "active-mainline",
+      "branch": null,
+      "ownedPaths": ["atlas-fleet-intelligence"],
+      "sharedTouches": ["service-worker.js"],
+      "dependencies": ["ATLAS-WU-0000"]
+    },
+    {
+      "id": "ATLAS-WU-0700",
+      "name": "ATLAS Calendar and Notifications",
+      "status": "active-mainline",
+      "branch": null,
+      "ownedPaths": ["atlas-calendar"],
+      "sharedTouches": ["service-worker.js"],
+      "dependencies": ["ATLAS-WU-0000"]
+    }
+  ],
+  "fileRegistry": [
+    {"id": "ATLAS-F-0000-0001", "path": "app.js", "owner": "ATLAS-WU-0000"},
+    {"id": "ATLAS-F-0000-0002", "path": "service-worker.js", "owner": "ATLAS-WU-0000"},
+    {"id": "ATLAS-F-0000-0003", "path": "index.html", "owner": "ATLAS-WU-0000"},
+    {"id": "ATLAS-F-0000-0004", "path": "package.json", "owner": "ATLAS-WU-0000"},
+    {"id": "ATLAS-F-0200-0001", "path": "atlas-gps-4d.js", "owner": "ATLAS-WU-0200"},
+    {"id": "ATLAS-F-0200-0002", "path": "atlas-gps-cloud-provider.js", "owner": "ATLAS-WU-0200"},
+    {"id": "ATLAS-F-0300-0001", "path": "atlas-accessibility.js", "owner": "ATLAS-WU-0300"},
+    {"id": "ATLAS-F-0300-0002", "path": "atlas-accessibility.css", "owner": "ATLAS-WU-0300"},
+    {"id": "ATLAS-F-0300-0003", "path": "supabase/functions/atlas-sign-interpret/index.ts", "owner": "ATLAS-WU-0300"},
+    {"id": "ATLAS-F-0400-0001", "path": "atlas-cars.js", "owner": "ATLAS-WU-0400"},
+    {"id": "ATLAS-F-0500-0001", "path": "atlas-technical-support.js", "owner": "ATLAS-WU-0500"},
+    {"id": "ATLAS-F-0600-0001", "path": "atlas-fleet-intelligence.js", "owner": "ATLAS-WU-0600"},
+    {"id": "ATLAS-F-0700-0001", "path": "atlas-calendar.js", "owner": "ATLAS-WU-0700"}
+  ]
+}
