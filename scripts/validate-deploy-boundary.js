@@ -34,7 +34,7 @@ const iosWorkflow = readText('.github/workflows/atlas-ios-build.yml');
 const productionWorkflow = readText('.github/workflows/deploy-production.yml');
 
 if (wrangler.assets?.directory !== 'dist') fail('Cloudflare assets.directory must remain "dist"');
-if (wrangler.build?.command !== 'node scripts/cloudflare-build-router.js') fail('Wrangler custom build must remain bound to the ATLAS build router');
+if (wrangler.build?.command !== 'node scripts/cloudflare-build-router.js') fail('Wrangler custom build must remain bound to the ATLAS build router for manual Wrangler execution');
 if (!/(^|\n)dist\/(\n|$)/.test(gitignore)) fail('dist/ must remain ignored');
 if (!buildScript.includes("const output = path.join(root, 'dist')")) fail('Cloudflare build script must continue generating dist');
 
@@ -42,6 +42,8 @@ const requiredRouterMarkers = [
   'WORKERS_CI_BRANCH',
   'WORKERS_CI',
   'WRANGLER_COMMAND',
+  'workersCi && branch && !command',
+  "branch === productionBranch ? 'build:prod' : 'build:dev'",
   'branch === productionBranch',
   "command === 'deploy' || command === 'versions deploy'",
   "command === 'versions upload' || command === 'dev' || command === 'types'",
@@ -83,4 +85,4 @@ if (/run:\s*npm run (?:build|build:dev|build:cloudflare)\s*(\n|$)/.test(producti
 if (!productionWorkflow.includes('run: npx wrangler@4 deploy')) fail('production workflow must retain the expected Cloudflare deploy step');
 if (!productionWorkflow.includes('path: dist')) fail('GitHub Pages fallback must publish only dist');
 
-console.log('ATLAS deployment boundary gate passed: generic CI/preview build is separated from explicit build:prod, Cloudflare previews use version upload, and every production deployment path remains constitutionally gated.');
+console.log('ATLAS deployment boundary gate passed: Workers Builds direct branch routing, Wrangler preview uploads, and explicit production deployments remain separated and constitutionally gated.');
