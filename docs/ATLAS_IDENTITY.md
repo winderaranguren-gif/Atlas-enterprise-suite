@@ -17,19 +17,13 @@ It is intentionally built on top of Supabase Auth instead of creating a second p
 
 ## Database layer
 
-Migration `202608082250_atlas_identity_foundation.sql` adds:
-
-- `identity_permissions`: canonical permission catalog.
-- `identity_role_permissions`: default permissions for owner, admin, accountant, manager, staff, and viewer.
-- `organization_role_permissions`: organization-specific allow/deny overrides.
-- `identity_security_events`: immutable identity-policy change records from trusted RPCs.
-- `has_identity_permission(org_id, permission)`: server-side authorization helper.
-- `get_identity_context()`: returns the signed-in user's organizations, role, effective permissions, enabled modules, and current Authenticator Assurance Level.
-- `set_identity_role_permission(...)`: owner/admin RPC for audited permission overrides.
+Migration `202608082250_atlas_identity_foundation.sql` adds the permission catalog, role mappings, organization overrides, security events, `has_identity_permission(...)`, `get_identity_context()`, and the audited `set_identity_role_permission(...)` RPC.
 
 Migration `202608082251_atlas_identity_audit_hardening.sql` removes direct browser mutation privileges from `organization_role_permissions`, forcing changes through the audited RPC.
 
 Migration `202608082252_atlas_identity_invoker_hardening.sql` changes the read-only identity helper/context functions to `SECURITY INVOKER`. The permission-mutation RPC intentionally remains `SECURITY DEFINER` because authenticated users have no direct write privilege to the overrides table and the RPC performs an owner/admin authorization check before each mutation.
+
+Migration `202608082253_atlas_identity_indexes.sql` adds covering indexes for Identity foreign keys and the common organization/security-event lookup path.
 
 ## Browser API
 
@@ -52,7 +46,7 @@ Core methods:
 - `getAuthenticatorAssuranceLevel()`
 - `signInWithProvider(provider, options)`
 
-`connect()` attaches the existing Supabase client without requiring an authenticated session. This is what makes it possible to start an OAuth/OIDC redirect before the user has a session. `refresh()` is fail-closed and requires a valid authenticated session before resolving organizations and permissions.
+`connect()` attaches the existing Supabase client without requiring an authenticated session. This makes it possible to start an OAuth/OIDC redirect before the user has a session. `refresh()` is fail-closed and requires a valid authenticated session before resolving organizations and permissions.
 
 The active organization is persisted locally only as a UI preference. Authorization still comes from the database on every protected operation through RLS/RPC rules. In-memory identity context is cleared on logout so one browser user cannot inherit another user's resolved organization data.
 
@@ -60,7 +54,7 @@ The active organization is persisted locally only as a UI preference. Authorizat
 
 The first catalog covers Core, organization administration, members, modules, Accounting, CRM, Inventory, HR, Documents, Audit, Identity administration, and security-event visibility.
 
-This is deliberately additive. Existing RLS policies continue to protect current ATLAS data while modules are progressively migrated from broad role checks to `has_identity_permission(...)`.
+Existing RLS policies continue to protect current ATLAS data while modules are progressively migrated from broad role checks to `has_identity_permission(...)`.
 
 ## Authentik federation
 
@@ -82,13 +76,13 @@ This preserves one application session and avoids synchronizing passwords or mai
 
 Create an OAuth2/OpenID Connect provider and associated application in Authentik. Use a signing key so tokens are asymmetrically signed and expose the provider's OIDC discovery/JWKS endpoints. Prefer the per-provider issuer mode.
 
-The issuer follows the provider/application slug, for example:
+Example issuer:
 
 ```text
 https://identity.example.com/application/o/atlas/
 ```
 
-The corresponding discovery document is:
+Example discovery document:
 
 ```text
 https://identity.example.com/application/o/atlas/.well-known/openid-configuration
@@ -118,17 +112,11 @@ federatedIdentity: {
 }
 ```
 
-`enabled` remains `false` in source control until the provider exists in the controlled Supabase project. This prevents a visible SSO button from pointing to an unconfigured provider.
+`enabled` remains `false` in source control until the provider exists in the controlled Supabase project.
 
-## What happens to a separate `atlas-identity` repository
+## Separate `atlas-identity` repository rule
 
-A separate identity repository must not own a second user/password/session database for ATLAS Enterprise Suite. Its valid roles are limited to specialized identity surfaces such as:
-
-- administration UI for identity policy;
-- Authentik deployment/configuration assets;
-- OIDC/SAML federation adapters;
-- identity observability and audit tooling;
-- shared SDK/package code consumed by ATLAS modules.
+A separate identity repository must not own a second user/password/session database for ATLAS Enterprise Suite. Its valid roles are limited to specialized identity administration UI, Authentik deployment/configuration, federation adapters, identity observability/audit tooling, or shared SDK/package code.
 
 The canonical authorization contract remains the ATLAS Identity context and server-side permission/RLS model in the main ATLAS platform.
 
@@ -138,18 +126,20 @@ The canonical authorization contract remains the ATLAS Identity context and serv
 2. Apply `202608082250_atlas_identity_foundation.sql`.
 3. Apply `202608082251_atlas_identity_audit_hardening.sql`.
 4. Apply `202608082252_atlas_identity_invoker_hardening.sql`.
-5. Deploy `atlas-identity.js` with `cloud-auth.html` and `cloud-auth.js`.
-6. Sign in with a real test account using the existing Supabase method.
-7. Verify that the account page lists authorized organizations, role, permission count, and enabled module count.
-8. Configure the optional Authentik custom OIDC provider in Authentik and Supabase.
-9. Test Authentik sign-in while `federatedIdentity.enabled` is still false by invoking the provider only in a controlled test surface.
+5. Apply `202608082253_atlas_identity_indexes.sql`.
+6. Deploy `atlas-identity.js` with `cloud-auth.html` and `cloud-auth.js`.
+7. Sign in with a real test account using the existing Supabase method.
+8. Verify that the account page lists authorized organizations, role, permission count, and enabled module count.
+9. Configure the optional Authentik custom OIDC provider in Authentik and Supabase.
 10. Confirm the returned user receives a normal Supabase session and the correct ATLAS organization context.
 11. Set `federatedIdentity.enabled` to true only after the complete redirect/logout/refresh flow succeeds.
 12. Test at least owner, staff, and viewer accounts in separate organizations before attaching additional production modules.
 
 ## Current backend deployment status
 
-The three ATLAS Identity migrations have been applied to Supabase project `ggmanzcgtlrvqfoccgsh` (`atlas-core`). Post-migration verification confirmed the permission catalog, role mappings, overrides table, security-event table, and all three Identity RPCs are present. Direct INSERT/UPDATE/DELETE privileges on `organization_role_permissions` are not available to the `authenticated` role.
+The four ATLAS Identity migrations have been applied to Supabase project `ggmanzcgtlrvqfoccgsh` (`atlas-core`). Post-migration verification confirmed 19 canonical permissions, 76 role-to-permission assignments, the overrides/security-event tables, and all three Identity RPCs. Direct INSERT/UPDATE/DELETE privileges on `organization_role_permissions` are not available to the `authenticated` role.
+
+The second security-advisor pass no longer flags `get_identity_context()` or `has_identity_permission()` as elevated functions. `set_identity_role_permission(...)` remains elevated intentionally because it is the audited write boundary.
 
 The Authentik custom OIDC provider is not enabled in browser configuration yet.
 
