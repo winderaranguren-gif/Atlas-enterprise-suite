@@ -47,6 +47,8 @@ assert(build.includes('atlas-local-inference-provider.js'),'Cloudflare build doe
 assert(sw.includes('/atlas-owned-core.js'),'PWA cache does not include ATLAS Owned Core');
 assert(sw.includes('/atlas-local-inference-provider.js'),'PWA cache does not include the self-hosted provider');
 assert(pkg.scripts?.['check:owned-core']==='node scripts/validate-owned-core.js','package.json is missing check:owned-core');
+assert(pkg.scripts?.['check:owned-ai-server']==='node scripts/validate-owned-ai-server.js','package.json is missing check:owned-ai-server');
 assert(pkg.scripts?.validate?.includes('check:owned-core'),'repository validate pipeline does not gate ATLAS Owned Core');
+assert(pkg.scripts?.validate?.includes('check:owned-ai-server'),'repository validate pipeline does not test the owned AI server endpoints');
 
-console.log('ATLAS Owned Core validation passed: local-first policy, same-origin inference server, PWA loading, mutation verification, and external-provider isolation are enforced.');
+console.log('ATLAS Owned Core validation passed: local-first policy, same-origin inference server, endpoint verification, PWA loading, mutation verification, and external-provider isolation are enforced.');
