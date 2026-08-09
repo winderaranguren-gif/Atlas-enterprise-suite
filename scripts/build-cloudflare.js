@@ -11,6 +11,7 @@ const publicExtensions = new Set([
 ]);
 const excludedRootFiles = new Set([
   'server.js',
+  'atlas-device-identity-server.js',
   'vercel.json',
   'capacitor.config.json',
   'capacitor.config.ts'
