@@ -180,12 +180,21 @@
     document.body.append(support);
   };
 
+  const loadResilience=()=>{
+    const resilience=document.createElement('script');
+    resilience.src='atlas-resilience.js?v=1';
+    resilience.async=false;
+    resilience.onload=loadSupport;
+    resilience.onerror=loadSupport;
+    document.body.append(resilience);
+  };
+
   const loadOperational=()=>{
     const operational=document.createElement('script');
     operational.src='atlas-os-operational.js?v=1';
     operational.async=false;
-    operational.onload=loadSupport;
-    operational.onerror=loadSupport;
+    operational.onload=loadResilience;
+    operational.onerror=loadResilience;
     document.body.append(operational);
   };
 
