@@ -95,7 +95,7 @@ create table if not exists public.gps_traffic_signs (
   source_confidence numeric(4,3) check (source_confidence between 0 and 1),
   created_by uuid default auth.uid(),
   constraint gps_traffic_signs_segment_org_fk foreign key (road_segment_id, org_id)
-    references public.gps_road_segments(id, org_id) on delete set null,
+    references public.gps_road_segments(id, org_id) on delete set null (road_segment_id),
   unique (org_id, external_source, external_id),
   unique (id, org_id)
 );
@@ -130,7 +130,7 @@ create table if not exists public.gps_speed_limits (
   constraint gps_speed_limits_segment_org_fk foreign key (road_segment_id, org_id)
     references public.gps_road_segments(id, org_id) on delete cascade,
   constraint gps_speed_limits_lane_org_fk foreign key (lane_id, org_id)
-    references public.gps_lanes(id, org_id) on delete cascade
+    references public.gps_lanes(id, org_id) on delete set null (lane_id)
 );
 
 create index if not exists gps_speed_limits_org_segment_idx on public.gps_speed_limits (org_id, road_segment_id, vehicle_class);
