@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="robots" content="noindex,nofollow" />
+  <meta name="robots" content="noindex,nofollow,noarchive" />
   <title>ATLAS Core — Cloud Auth Test</title>
   <link rel="stylesheet" href="cloud-auth.css" />
   <link rel="stylesheet" href="atlas-accessibility.css?v=3" />
@@ -13,10 +13,10 @@
     <section class="brand-panel">
       <p class="eyebrow">ATLAS CORE · PRIVATE BETA</p>
       <h1>Conexión segura de usuarios y empresas</h1>
-      <p class="lead">Esta superficie valida Supabase Auth, membresías y creación de empresas antes de conectar los datos operativos del dashboard.</p>
+      <p class="lead">Esta superficie valida Supabase Auth y membresías antes de conectar los datos operativos del dashboard.</p>
       <div class="notice">
         <strong>Control de lanzamiento</strong>
-        <span>Esta página no convierte todavía el dashboard local en un sistema de producción. Sirve para probar la conexión real sin mezclarla con el demo.</span>
+        <span>Private Beta es invite-only. No existe registro público y la creación inicial de organización requiere autorización de plataforma.</span>
       </div>
       <a class="back-link" href="./">← Volver al MVP local</a>
     </section>
@@ -30,7 +30,6 @@
       <section id="auth-section">
         <div class="tabs" role="tablist" aria-label="Opciones de acceso">
           <button class="tab active" type="button" data-auth-mode="signin">Entrar</button>
-          <button class="tab" type="button" data-auth-mode="signup">Crear cuenta</button>
           <button class="tab" type="button" data-auth-mode="recovery">Recuperar</button>
         </div>
 
@@ -40,7 +39,7 @@
           <label id="name-label" class="hidden">Nombre completo<input id="auth-name" type="text" autocomplete="name" /></label>
           <button id="auth-submit" class="primary" type="submit">Entrar de forma segura</button>
         </form>
-        <p id="auth-help" class="help">Usa un usuario creado en el proyecto privado de Supabase.</p>
+        <p id="auth-help" class="help">Usa una cuenta autorizada o una invitación emitida para ATLAS Private Beta.</p>
       </section>
 
       <section id="account-section" class="hidden">
@@ -53,11 +52,12 @@
         <div id="organization-list" class="organization-list"></div>
 
         <form id="organization-form" class="organization-form">
-          <h3>Crear primera empresa</h3>
+          <h3>Bootstrap de organización</h3>
+          <p class="help">Este formulario solo funciona para una cuenta administradora de plataforma. Las demás cuentas se incorporan mediante invitación.</p>
           <label>Nombre comercial<input id="org-name" required /></label>
           <label>Nombre legal<input id="org-legal-name" /></label>
           <label>Industria<input id="org-industry" /></label>
-          <button class="primary" type="submit">Crear empresa y asignarme como owner</button>
+          <button class="primary" type="submit">Crear organización autorizada</button>
         </form>
       </section>
 
