@@ -10,6 +10,7 @@ const hardeningPath = path.join(root, 'supabase/migrations/202608082251_atlas_id
 const invokerHardeningPath = path.join(root, 'supabase/migrations/202608082252_atlas_identity_invoker_hardening.sql');
 const indexesPath = path.join(root, 'supabase/migrations/202608082253_atlas_identity_indexes.sql');
 const mfaStepupPath = path.join(root, 'supabase/migrations/202608082254_atlas_identity_mfa_stepup.sql');
+const memberAdminPath = path.join(root, 'supabase/migrations/202608082255_atlas_identity_member_admin.sql');
 const clientPath = path.join(root, 'atlas-identity.js');
 const authHtmlPath = path.join(root, 'cloud-auth.html');
 const authClientPath = path.join(root, 'cloud-auth.js');
@@ -83,6 +84,7 @@ const hardening = read(hardeningPath);
 const invokerHardening = read(invokerHardeningPath);
 const indexes = read(indexesPath);
 const mfaStepup = read(mfaStepupPath);
+const memberAdmin = read(memberAdminPath);
 const client = read(clientPath);
 const authHtml = read(authHtmlPath);
 const authClient = read(authClientPath);
@@ -138,19 +140,36 @@ if (mfaStepup) {
   mustInclude(mfaStepup, 'commit;', 'identity MFA step-up transaction');
 }
 
+if (memberAdmin) {
+  balancedSql(memberAdmin, 'identity member administration migration');
+  mustInclude(memberAdmin, 'create or replace function public.list_identity_members', 'member listing RPC');
+  mustInclude(memberAdmin, 'create or replace function public.set_identity_member_role', 'member role RPC');
+  mustInclude(memberAdmin, 'create or replace function public.set_identity_member_status', 'member status RPC');
+  mustInclude(memberAdmin, "coalesce(auth.jwt() ->> 'aal', 'aal1') <> 'aal2'", 'member administration AAL2 guard');
+  mustInclude(memberAdmin, "actor_role = 'admin'", 'admin hierarchy restriction');
+  mustInclude(memberAdmin, 'The organization must retain at least one active owner', 'last-owner protection');
+  mustInclude(memberAdmin, 'drop policy if exists member_manage on public.organization_members', 'direct member mutation policy removal');
+  mustInclude(memberAdmin, 'revoke insert, update, delete on public.organization_members from authenticated', 'direct member mutation revoke');
+  mustInclude(memberAdmin, 'grant execute on function public.list_identity_members(uuid) to authenticated', 'member listing RPC grant');
+  mustInclude(memberAdmin, 'commit;', 'identity member administration transaction');
+}
+
 if (client) {
   mustInclude(client, 'window.ATLAS_IDENTITY', 'browser identity API');
   mustInclude(client, 'function connect(supabaseClient)', 'pre-session identity connection');
   mustInclude(client, 'function clear()', 'logout context clearing');
   mustInclude(client, "client.rpc('get_identity_context')", 'identity context client');
   mustInclude(client, "client.rpc('set_identity_role_permission'", 'audited permission client');
+  mustInclude(client, "client.rpc('list_identity_members'", 'member listing client');
+  mustInclude(client, "client.rpc('set_identity_member_role'", 'member role client');
+  mustInclude(client, "client.rpc('set_identity_member_status'", 'member status client');
   mustInclude(client, 'getAuthenticatorAssuranceLevel', 'MFA assurance surface');
   mustInclude(client, 'listFactors', 'MFA factor discovery');
   mustInclude(client, 'enrollTotp', 'TOTP enrollment surface');
   mustInclude(client, 'challengeAndVerifyFactor', 'MFA challenge verification surface');
   mustInclude(client, 'unenrollFactor', 'MFA factor removal surface');
   mustInclude(client, 'requireAal2', 'client-side AAL2 gate');
-  mustInclude(client, 'await requireAal2();', 'permission mutation step-up gate');
+  mustInclude(client, 'await requireAal2();', 'sensitive mutation step-up gate');
   mustInclude(client, 'signInWithProvider', 'federated sign-in surface');
 }
 
@@ -160,6 +179,8 @@ if (authHtml) {
   mustInclude(authHtml, 'id="mfa-section"', 'MFA account security panel');
   mustInclude(authHtml, 'id="mfa-enroll-button"', 'MFA enrollment control');
   mustInclude(authHtml, 'id="mfa-stepup-panel"', 'MFA step-up panel');
+  mustInclude(authHtml, 'id="member-admin-section"', 'member administration panel');
+  mustInclude(authHtml, 'id="member-list"', 'member list surface');
 }
 
 if (authClient) {
@@ -168,6 +189,10 @@ if (authClient) {
   mustInclude(authClient, 'identity.getMfaState()', 'MFA state rendering');
   mustInclude(authClient, 'identity.enrollTotp', 'MFA enrollment wiring');
   mustInclude(authClient, 'identity.challengeAndVerifyFactor', 'MFA verification wiring');
+  mustInclude(authClient, 'identity.listMembers', 'member list wiring');
+  mustInclude(authClient, 'identity.setMemberRole', 'member role wiring');
+  mustInclude(authClient, 'identity.setMemberStatus', 'member status wiring');
+  mustInclude(authClient, 'data-org-select', 'active organization selector');
   mustInclude(authClient, 'identity?.clear()', 'session context cleanup');
 }
 
