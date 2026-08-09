@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#06111d" />
+  <meta name="description" content="ATLAS Agent Workspace — sesiones de desarrollo, validación, automatizaciones y contexto de repositorio." />
+  <title>ATLAS Agent Workspace</title>
+  <link rel="stylesheet" href="atlas-agent-workspace.css" />
+</head>
+<body>
+  <div class="ambient-grid" aria-hidden="true"></div>
+  <div id="toast-root" class="toast-root" aria-live="polite"></div>
+
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Navegación del Agent Workspace">
+      <a class="brand" href="index.html" aria-label="Volver a ATLAS Enterprise Suite">
+        <span class="brand-mark">A</span>
+        <span><strong>ATLAS</strong><small>Agent Workspace</small></span>
+      </a>
+
+      <nav class="sidebar-nav" id="workspace-nav">
+        <button class="nav-item active" data-view="home"><span>⌂</span>Inicio</button>
+        <button class="nav-item" data-view="sessions"><span>◫</span>Sesiones</button>
+        <button class="nav-item" data-view="work"><span>◎</span>Mi trabajo</button>
+        <button class="nav-item" data-view="automations"><span>⟲</span>Automatizaciones</button>
+        <button class="nav-item" data-view="extensions"><span>⬡</span>Skills & MCP</button>
+      </nav>
+
+      <div class="sidebar-meta">
+        <div class="status-row"><span class="status-dot"></span><span>Workspace local activo</span></div>
+        <div class="repo-chip">winderaranguren-gif/<strong>Atlas-enterprise-suite</strong></div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">ATLAS DEVELOPMENT INTELLIGENCE</p>
+          <h1 id="view-title">Command Center</h1>
+        </div>
+        <div class="topbar-actions">
+          <button id="export-btn" class="button ghost">Exportar estado</button>
+          <a class="button ghost" href="https://github.com/winderaranguren-gif/Atlas-enterprise-suite" target="_blank" rel="noreferrer">Abrir GitHub</a>
+          <button id="new-session-btn" class="button primary">＋ Nueva sesión</button>
+        </div>
+      </header>
+
+      <section class="hero" data-view-panel="home">
+        <div>
+          <p class="eyebrow">FROM TASK TO VERIFIED CHANGE</p>
+          <h2>Un solo lugar para dirigir agentes, revisar cambios y proteger ATLAS.</h2>
+          <p class="hero-copy">Crea sesiones aisladas, organiza issues y PRs, ejecuta validaciones, activa rutinas repetibles y conecta skills o servidores MCP sin mezclar el trabajo entre tareas.</p>
+          <div class="hero-actions">
+            <button class="button primary" id="hero-new-session">Iniciar sesión de trabajo</button>
+            <button class="button ghost" data-jump="extensions">Ver extensiones</button>
+          </div>
+        </div>
+        <div class="hero-orbit" aria-label="Flujo de trabajo ATLAS">
+          <div class="orbit-core">ATLAS<br><small>AGENT</small></div>
+          <span class="orbit-node node-1">ISSUE</span>
+          <span class="orbit-node node-2">PLAN</span>
+          <span class="orbit-node node-3">CODE</span>
+          <span class="orbit-node node-4">TEST</span>
+          <span class="orbit-node node-5">PR</span>
+        </div>
+      </section>
+
+      <section class="metric-grid" data-view-panel="home">
+        <article class="metric-card"><span>Sesiones activas</span><strong id="metric-sessions">0</strong><small>Aisladas por tarea</small></article>
+        <article class="metric-card"><span>Validaciones</span><strong id="metric-checks">0</strong><small>Última ejecución local</small></article>
+        <article class="metric-card"><span>Automatizaciones</span><strong id="metric-automations">0</strong><small>Rutinas habilitadas</small></article>
+        <article class="metric-card"><span>Extensiones</span><strong id="metric-extensions">2</strong><small>Skill + GitHub bridge</small></article>
+      </section>
+
+      <section class="panel" data-view-panel="home">
+        <div class="panel-head">
+          <div><p class="eyebrow">PARALLEL WORK</p><h3>Sesiones recientes</h3></div>
+          <button class="text-button" data-jump="sessions">Ver todas →</button>
+        </div>
+        <div id="home-session-list" class="session-list"></div>
+      </section>
+
+      <section class="panel hidden" data-view-panel="sessions">
+        <div class="panel-head">
+          <div><p class="eyebrow">ISOLATED WORKSPACES</p><h3>Sesiones de agente</h3></div>
+          <div class="filters">
+            <button class="filter active" data-session-filter="all">Todas</button>
+            <button class="filter" data-session-filter="active">Activas</button>
+            <button class="filter" data-session-filter="review">Revisión</button>
+            <button class="filter" data-session-filter="done">Completadas</button>
+          </div>
+        </div>
+        <div id="session-list" class="session-list"></div>
+      </section>
+
+      <section class="panel hidden" data-view-panel="work">
+        <div class="panel-head"><div><p class="eyebrow">CENTRALIZED INBOX</p><h3>Mi trabajo</h3></div></div>
+        <div id="work-list" class="work-list"></div>
+      </section>
+
+      <section class="panel hidden" data-view-panel="automations">
+        <div class="panel-head"><div><p class="eyebrow">REPEATABLE OPERATIONS</p><h3>Automatizaciones</h3></div></div>
+        <div id="automation-list" class="automation-list"></div>
+      </section>
+
+      <section class="panel hidden" data-view-panel="extensions">
+        <div class="panel-head"><div><p class="eyebrow">EXTENSIBLE AGENTS</p><h3>Skills, MCP y contexto nativo</h3></div></div>
+        <div class="extension-grid">
+          <article class="extension-card"><span class="extension-icon">◆</span><div><strong>ATLAS Production Engineer Skill</strong><p>Reglas del repositorio para que el agente respete arquitectura, seguridad, validación y despliegue de ATLAS.</p><span class="badge success">Incluida en el repositorio</span></div></article>
+          <article class="extension-card"><span class="extension-icon">⌘</span><div><strong>GitHub Context Bridge</strong><p>Contrato preparado para conectar issues, PRs, diffs y checks mediante un backend autorizado sin exponer tokens en el navegador.</p><span class="badge" id="bridge-status">Modo local seguro</span></div></article>
+          <article class="extension-card"><span class="extension-icon">⬡</span><div><strong>MCP Registry</strong><p>Espacio para herramientas externas aprobadas por organización, con permisos mínimos y auditoría.</p><span class="badge">Configurable</span></div></article>
+          <article class="extension-card"><span class="extension-icon">✓</span><div><strong>Validation Loop</strong><p>Ejecuta la secuencia conceptual de sintaxis, pruebas, seguridad y build antes de marcar una sesión lista para PR.</p><button class="button small" id="run-validation-btn">Ejecutar validación</button></div></article>
+        </div>
+        <div id="validation-log" class="validation-log" aria-live="polite"></div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="session-dialog" class="dialog">
+    <form method="dialog" id="session-form">
+      <div class="dialog-head"><div><p class="eyebrow">NEW AGENT SESSION</p><h3>Nueva sesión</h3></div><button class="icon-button" value="cancel" aria-label="Cerrar">✕</button></div>
+      <label>Título<input id="session-title" maxlength="90" required placeholder="Ej. Corregir despliegue Cloudflare"></label>
+      <label>Origen<select id="session-source"><option>Prompt</option><option>Issue</option><option>Pull Request</option><option>Automation</option></select></label>
+      <label>Modo<select id="session-mode"><option>Plan</option><option>Interactive</option><option>Review</option></select></label>
+      <label>Objetivo<textarea id="session-goal" rows="4" required placeholder="Describe el resultado verificable que debe conseguir el agente."></textarea></label>
+      <div class="dialog-actions"><button class="button ghost" value="cancel">Cancelar</button><button class="button primary" id="create-session-submit" value="default">Crear sesión</button></div>
+    </form>
+  </dialog>
+
+  <script src="atlas-agent-workspace.js"></script>
+</body>
+</html>
