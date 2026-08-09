@@ -10,6 +10,7 @@ const SECURITY_HEADERS = Object.freeze({
 const APP_VERSION='0.5.0';
 const SUPPORT_VERSION='1.1.0';
 const RUNBOOK_VERSION='1.0.0';
+const MAX_JSON_BODY_BYTES=65536;
 
 function applySecurityHeaders(response, requestUrl) {
   const headers = new Headers(response.headers);
@@ -56,7 +57,12 @@ function classifyIssue(summary=''){
   return 'general';
 }
 
+function normalizeObject(body){
+  return body&&typeof body==='object'&&!Array.isArray(body)?body:{};
+}
+
 function supportAnalysis(body={}){
+  body=normalizeObject(body);
   const diagnostics=Array.isArray(body.diagnostics)?body.diagnostics:[];
   const failures=diagnostics.filter(item=>item&&item.ok===false);
   const recommendations=[];
@@ -84,6 +90,7 @@ function supportAnalysis(body={}){
 }
 
 function buildRunbook(body={}){
+  body=normalizeObject(body);
   const diagnostics=Array.isArray(body.diagnostics)?body.diagnostics:[];
   const failures=diagnostics.filter(item=>item&&item.ok===false);
   const classification=classifyIssue(body.summary);
@@ -97,14 +104,14 @@ function buildRunbook(body={}){
 
   for(const item of failures){
     const id=String(item.id||'unknown');
-    if(id==='service-worker')steps.push({id:'repair-service-worker',action:'repair-service-worker',label:'Reparar Service Worker',mode:'auto-safe',status:'ready',detail:'Registrar o actualizar el Service Worker sin borrar datos y verificar nuevamente.'});
-    else if(id==='quota')steps.push({id:'request-persistence',action:'request-persistence',label:'Reforzar persistencia',mode:'auto-safe',status:'ready',detail:'Solicitar almacenamiento persistente sin eliminar información existente.'});
-    else if(id==='network')steps.push({id:'network-access',label:'Restablecer conectividad',mode:'blocked-access',status:'blocked',detail:'Requiere acceso al dispositivo, Wi-Fi, router o proveedor de red.'});
-    else if(id==='origin')steps.push({id:'https-required',label:'Corregir origen seguro',mode:'deployment',status:'blocked',detail:'Requiere servir ATLAS mediante HTTPS o localhost.'});
-    else if(id==='api-version')steps.push({id:'backend-route',label:'Restaurar backend ATLAS',mode:'deployment',status:'blocked',detail:'Requiere una ruta /api/version válida en el entorno desplegado.'});
-    else if(id==='assets')steps.push({id:'asset-review',label:'Revisar recursos web',mode:'diagnostic',status:'ready',detail:'Identificar recursos fallidos antes de invalidar caches o modificar datos.'});
-    else if(id.startsWith('adapter:'))steps.push({id,label:item.label||id,mode:'adapter',status:'ready',detail:item.detail||'Ejecutar el adaptador empresarial autorizado y verificar el resultado.'});
-    else steps.push({id:`diagnose-${id}`,label:`Profundizar ${item.label||id}`,mode:'diagnostic',status:'ready',detail:item.detail||'Recolectar evidencia adicional antes de aplicar cambios.'});
+    if(id==='service-worker')steps.push({id:'repair-service-worker',diagnosticId:id,action:'repair-service-worker',label:'Reparar Service Worker',mode:'auto-safe',status:'ready',detail:'Registrar o actualizar el Service Worker sin borrar datos y verificar nuevamente.'});
+    else if(id==='quota')steps.push({id:'request-persistence',diagnosticId:id,action:'request-persistence',label:'Reforzar persistencia',mode:'auto-safe',status:'ready',detail:'Solicitar almacenamiento persistente sin eliminar información existente.'});
+    else if(id==='network')steps.push({id:'network-access',diagnosticId:id,label:'Restablecer conectividad',mode:'blocked-access',status:'blocked',detail:'Requiere acceso al dispositivo, Wi-Fi, router o proveedor de red.'});
+    else if(id==='origin')steps.push({id:'https-required',diagnosticId:id,label:'Corregir origen seguro',mode:'deployment',status:'blocked',detail:'Requiere servir ATLAS mediante HTTPS o localhost.'});
+    else if(id==='api-version')steps.push({id:'backend-route',diagnosticId:id,label:'Restaurar backend ATLAS',mode:'deployment',status:'blocked',detail:'Requiere una ruta /api/version válida en el entorno desplegado.'});
+    else if(id==='assets')steps.push({id:'asset-review',diagnosticId:id,label:'Revisar recursos web',mode:'diagnostic',status:'ready',detail:'Identificar recursos fallidos antes de invalidar caches o modificar datos.'});
+    else if(id.startsWith('adapter:'))steps.push({id,diagnosticId:id,label:item.label||id,mode:'adapter',status:'ready',detail:item.detail||'Ejecutar el adaptador empresarial autorizado y verificar el resultado.'});
+    else steps.push({id:`diagnose-${id}`,diagnosticId:id,label:`Profundizar ${item.label||id}`,mode:'diagnostic',status:'ready',detail:item.detail||'Recolectar evidencia adicional antes de aplicar cambios.'});
   }
 
   steps.push({id:'verify-final',label:'Verificación posterior',mode:'verify',status:'ready',detail:'Volver a ejecutar diagnóstico y no cerrar el caso hasta comprobar el estado final.'});
@@ -122,11 +129,42 @@ function buildRunbook(body={}){
   };
 }
 
+function invalidBody(base){
+  return {error:json({...base,ok:false,error:'invalid_payload'},400)};
+}
+
 async function readJsonBody(request,base){
-  const length=Number(request.headers.get('content-length')||0);
-  if(length>65536)return {error:json({...base,ok:false,error:'payload_too_large'},413)};
-  try{return {body:await request.json()};}
-  catch{return {error:json({...base,ok:false,error:'invalid_json'},400)};}
+  const declared=request.headers.get('content-length');
+  if(declared!==null){
+    const length=Number(declared);
+    if(Number.isFinite(length)&&length>MAX_JSON_BODY_BYTES){
+      return {error:json({...base,ok:false,error:'payload_too_large'},413)};
+    }
+  }
+
+  if(!request.body)return {error:json({...base,ok:false,error:'invalid_json'},400)};
+
+  const reader=request.body.getReader();
+  const decoder=new TextDecoder();
+  let bytes=0;
+  let text='';
+
+  try{
+    while(true){
+      const {done,value}=await reader.read();
+      if(done)break;
+      bytes+=value?.byteLength||0;
+      if(bytes>MAX_JSON_BODY_BYTES){
+        try{await reader.cancel();}catch{}
+        return {error:json({...base,ok:false,error:'payload_too_large'},413)};
+      }
+      text+=decoder.decode(value,{stream:true});
+    }
+    text+=decoder.decode();
+    return {body:JSON.parse(text)};
+  }catch{
+    return {error:json({...base,ok:false,error:'invalid_json'},400)};
+  }
 }
 
 async function handleApi(request,url){
@@ -152,12 +190,14 @@ async function handleApi(request,url){
   if(request.method==='POST'&&url.pathname==='/api/support/analyze'){
     const parsed=await readJsonBody(request,base);
     if(parsed.error)return parsed.error;
+    if(!parsed.body||typeof parsed.body!=='object'||Array.isArray(parsed.body))return invalidBody(base).error;
     return json({...base,...supportAnalysis(parsed.body)});
   }
 
   if(request.method==='POST'&&url.pathname==='/api/support/plan'){
     const parsed=await readJsonBody(request,base);
     if(parsed.error)return parsed.error;
+    if(!parsed.body||typeof parsed.body!=='object'||Array.isArray(parsed.body))return invalidBody(base).error;
     return json({...base,...buildRunbook(parsed.body)});
   }
 
