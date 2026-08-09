@@ -1,4 +1,4 @@
-const VERSION = 'atlas-core-v12-accessibility-sign';
+const VERSION = 'atlas-core-v13-accessibility-hardening';
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 const APP_SHELL = [
@@ -88,7 +88,21 @@ self.addEventListener('push', event => {
     renotify: true,
     data: { url: payload.url || '/atlas-calendar.html', ...(payload.data || {}) }
   };
-  event.waitUntil(self.registration.showNotification(title, options));
+
+  const mirrorToOpenAtlasWindows = self.clients
+    .matchAll({ type: 'window', includeUncontrolled: true })
+    .then(clients => Promise.all(clients.map(client => client.postMessage({
+      type: 'atlas:alert',
+      title,
+      message: options.body,
+      tag: options.tag,
+      data: options.data
+    }))));
+
+  event.waitUntil(Promise.all([
+    self.registration.showNotification(title, options),
+    mirrorToOpenAtlasWindows
+  ]));
 });
 
 self.addEventListener('notificationclick', event => {
