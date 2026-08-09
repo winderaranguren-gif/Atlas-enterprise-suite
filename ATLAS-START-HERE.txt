@@ -1,43 +1,53 @@
-ATLAS ENTERPRISE SUITE — START HERE
-Version: 0.2.5 Private Beta Cloud
+ATLAS — START HERE
+Version: 0.5.0 Private Production
 
-LOCAL TEST
-1. Install Node.js 18 or newer.
-2. Run start-atlas.bat on Windows or ./start-atlas.sh on macOS/Linux.
-3. Open http://127.0.0.1:4173
+PRODUCTION ACCESS
+1. Open the deployed ATLAS origin or run the local Node server only for development validation.
+2. Sign in with a real authorized ATLAS account.
+3. ATLAS loads only organizations in which that authenticated user has an active membership.
+4. There are no demo credentials, fake OTPs or browser-local production identities.
 
-LOCAL DEMO LOGIN
-Email: demo@atlas.local
-Password: Atlas2026!
-Verification code: 246810
+PRODUCTION DATA
+- Supabase Auth provides real sessions.
+- Row Level Security isolates each organization.
+- CRM, finance/accounting, inventory, HR and documents use dedicated relational production tables.
+- Specialized modules use the organization-scoped ATLAS production record fabric until a dedicated schema is justified.
+- ATLAS Event Fabric connects module state changes.
+- ATLAS Intelligence processes signals and workflows across modules.
+- IndexedDB is used only as an offline operation queue; it is not the production source of truth.
+- Private documents are stored in the protected atlas-documents storage bucket.
 
-LOCAL FUNCTIONAL MVP
-- Multi-company dashboard.
-- Customers, invoices, expenses, inventory, employees, accounting and reports.
-- CSV export, browser PDF printing, audit and module center.
-- Data is stored only in browser localStorage. Do not enter real information.
+CURRENT PRODUCTION MIGRATION ORDER
+Apply the existing historical migrations in timestamp order, followed by:
+- supabase/migrations/202608090001_atlas_horizontal_production_fabric.sql
+- supabase/migrations/202608090002_bootstrap_atlas_production_tenant.sql
+- supabase/migrations/202608090003_atlas_horizontal_fabric_hardening.sql
 
-PRIVATE BETA CLOUD
-- Open: http://127.0.0.1:4173/private-beta.html
+The connected ATLAS Supabase project already has these production migrations applied.
+
+IDENTITY
+- Production identity surface: /cloud-auth.html
+- Main application: /
 - Configuration: atlas-config.js
-- Real Supabase Auth, memberships, cloud CRUD, payments, balanced journals and audit.
-- The cloud surface remains inactive until the founder-owned Supabase project is configured.
+- Browser configuration may contain only the Supabase project URL and publishable key.
+- Never place service-role keys, database passwords, OAuth client secrets, payment secrets or provider credentials in browser code or GitHub.
 
-SUPABASE ACTIVATION ORDER
-1. Apply supabase/migrations/202607270001_atlas_core_schema.sql
-2. Apply supabase/migrations/202607270002_atlas_storage.sql
-3. Apply supabase/migrations/202607270003_atlas_cloud_operations.sql
-4. Apply supabase/migrations/202607270004_atlas_security_patch.sql
-5. Configure only the project URL and publishable browser key in atlas-config.js
-6. Add /private-beta.html to Supabase Auth Redirect URLs
-7. Test with two users and two organizations before entering real data
+EXTERNAL CONNECTORS
+Provider-dependent integrations remain explicitly DISCONNECTED until credentials, supported hardware or jurisdiction-specific compliance are configured. ATLAS must not fake provider success.
+
+VALIDATION
+- npm run check:production-fabric
+- npm run validate
+- npm run build:prod
+
+GitHub Actions is the release gate when GitHub-hosted runners are available. Do not bypass a failed or unavailable validation gate by claiming a deployment succeeded.
 
 DOCUMENTATION
-- Spanish database guide: docs/DATABASE_SETUP_ES.md
-- English database guide: docs/DATABASE_SETUP_EN.md
-- Auth guides: docs/AUTH_SETUP_ES.md and docs/AUTH_SETUP_EN.md
-- Deployment guides: docs/DEPLOYMENT_ES.md and docs/DEPLOYMENT_EN.md
-- Acceptance tests: docs/SUPABASE_TEST_PLAN.md
-
-SECURITY
-Never place a Supabase secret key, service-role key, database password or provider token in browser files or GitHub.
+- docs/ATLAS_PRODUCTION_HORIZONTAL_ROADMAP.md
+- docs/DATABASE_SETUP_ES.md
+- docs/DATABASE_SETUP_EN.md
+- docs/AUTH_SETUP_ES.md
+- docs/AUTH_SETUP_EN.md
+- docs/DEPLOYMENT_ES.md
+- docs/DEPLOYMENT_EN.md
+- docs/SUPABASE_TEST_PLAN.md
