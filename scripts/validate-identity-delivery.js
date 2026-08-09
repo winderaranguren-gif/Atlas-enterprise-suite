@@ -28,6 +28,7 @@ function requireAll(text, label, needles) {
 const invitationIndexes = read('supabase/migrations/202608082300_atlas_identity_invitation_indexes.sql');
 const invitationRls = read('supabase/migrations/202608082301_atlas_identity_invitation_rls.sql');
 const securityHistory = read('supabase/migrations/202608082302_atlas_identity_security_history.sql');
+const securityPrivileges = read('supabase/migrations/202608082303_atlas_identity_security_event_privileges.sql');
 const invitationClient = read('atlas-identity-invitations.js');
 const auditClient = read('atlas-identity-audit.js');
 const authHtml = read('cloud-auth.html');
@@ -58,6 +59,13 @@ requireAll(securityHistory, 'security event history boundary', [
   'create policy identity_security_events_deny_direct',
   'using (false)',
   'grant execute on function public.list_identity_security_events(uuid,integer) to authenticated',
+  'commit;'
+]);
+
+requireAll(securityPrivileges, 'security event privilege hardening', [
+  'revoke all on public.identity_security_events from public, anon, authenticated',
+  'grant execute on function public.list_identity_security_events(uuid,integer) to authenticated',
+  'Direct public/anon/authenticated table access is revoked',
   'commit;'
 ]);
 
