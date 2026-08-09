@@ -79,14 +79,16 @@
   contain: content;
 }
 
-/* Desktop / laptop is the reference ATLAS composition. */
+/* Desktop / laptop is the reference ATLAS composition.
+   The root ID intentionally raises specificity so a legacy base link loaded later
+   cannot collapse the horizontal workspace back to the old narrow drawer. */
 @media (min-width: 980px) {
-  .atlas-a11y-launcher {
+  #atlas-a11y-root .atlas-a11y-launcher {
     right: 28px;
     bottom: 24px;
   }
 
-  .atlas-a11y-panel {
+  #atlas-a11y-root .atlas-a11y-panel {
     top: 24px;
     right: 24px;
     bottom: 24px;
@@ -101,13 +103,13 @@
     border-radius: 26px;
   }
 
-  .atlas-a11y-panel > .atlas-a11y-head,
-  .atlas-a11y-panel > .atlas-a11y-lead,
-  .atlas-a11y-panel > .atlas-a11y-status {
+  #atlas-a11y-root .atlas-a11y-panel > .atlas-a11y-head,
+  #atlas-a11y-root .atlas-a11y-panel > .atlas-a11y-lead,
+  #atlas-a11y-root .atlas-a11y-panel > .atlas-a11y-status {
     grid-column: 1 / -1;
   }
 
-  .atlas-a11y-panel > .atlas-a11y-head {
+  #atlas-a11y-root .atlas-a11y-panel > .atlas-a11y-head {
     position: sticky;
     top: -22px;
     z-index: 3;
@@ -118,43 +120,43 @@
     border-bottom: 1px solid rgba(255,255,255,.08);
   }
 
-  .atlas-a11y-panel > .atlas-a11y-lead {
+  #atlas-a11y-root .atlas-a11y-panel > .atlas-a11y-lead {
     margin: 0;
     max-width: 900px;
     font-size: .92rem;
   }
 
-  .atlas-a11y-panel > .atlas-a11y-status {
+  #atlas-a11y-root .atlas-a11y-panel > .atlas-a11y-status {
     margin: 0 0 2px;
   }
 
-  .atlas-a11y-panel > .atlas-a11y-section {
+  #atlas-a11y-root .atlas-a11y-panel > .atlas-a11y-section {
     margin: 0;
   }
 
-  .atlas-a11y-panel > .atlas-a11y-section:nth-of-type(1) {
+  #atlas-a11y-root .atlas-a11y-panel > .atlas-a11y-section:nth-of-type(1) {
     grid-column: 1;
     grid-row: 4 / span 4;
     min-height: 100%;
     padding: 18px;
   }
 
-  .atlas-a11y-panel > .atlas-a11y-section:nth-of-type(2) {
+  #atlas-a11y-root .atlas-a11y-panel > .atlas-a11y-section:nth-of-type(2) {
     grid-column: 2;
     grid-row: 4;
   }
 
-  .atlas-a11y-panel > .atlas-a11y-section:nth-of-type(3) {
+  #atlas-a11y-root .atlas-a11y-panel > .atlas-a11y-section:nth-of-type(3) {
     grid-column: 2;
     grid-row: 5;
   }
 
-  .atlas-a11y-panel > .atlas-a11y-section:nth-of-type(4) {
+  #atlas-a11y-root .atlas-a11y-panel > .atlas-a11y-section:nth-of-type(4) {
     grid-column: 2;
     grid-row: 6;
   }
 
-  .atlas-a11y-panel > .atlas-a11y-section:nth-of-type(5) {
+  #atlas-a11y-root .atlas-a11y-panel > .atlas-a11y-section:nth-of-type(5) {
     grid-column: 2;
     grid-row: 7;
   }
