@@ -253,9 +253,9 @@
       target_role: targetRole
     });
     if (error) throw error;
-    await refresh();
+    const nextContext = await refresh();
     emit('atlas:identity-members-changed', { orgId, userId, action: 'role' });
-    return listMembers(orgId);
+    return nextContext;
   }
 
   async function setMemberStatus({ orgId = activeOrganizationId, userId, status }) {
@@ -268,9 +268,9 @@
       target_status: status
     });
     if (error) throw error;
-    await refresh();
+    const nextContext = await refresh();
     emit('atlas:identity-members-changed', { orgId, userId, action: 'status' });
-    return listMembers(orgId);
+    return nextContext;
   }
 
   async function signInWithProvider(provider, options = {}) {
