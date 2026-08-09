@@ -40,12 +40,15 @@ if (!buildScript.includes("const output = path.join(root, 'dist')")) fail('Cloud
 
 const requiredRouterMarkers = [
   'WORKERS_CI_BRANCH',
+  'WORKERS_CI',
   'WRANGLER_COMMAND',
   'branch === productionBranch',
   "command === 'deploy' || command === 'versions deploy'",
   "command === 'versions upload' || command === 'dev' || command === 'types'",
   "run('build:prod')",
-  "run('build:dev')"
+  "run('build:dev')",
+  'Non-production branch deploy command',
+  'npx wrangler versions upload'
 ];
 for (const marker of requiredRouterMarkers) {
   if (!routerScript.includes(marker)) fail(`Cloudflare build router lost required safeguard: ${marker}`);
@@ -64,6 +67,9 @@ if (typeof scripts['build:dev'] !== 'string' || scripts['build:dev'].includes('c
   fail('build:dev must remain separate from production release approval');
 }
 if (typeof scripts.predeploy !== 'string' || !scripts.predeploy.includes('check:constitutional-release')) fail('predeploy must fail early on the production gate');
+if (typeof scripts['cloudflare:preview'] !== 'string' || !scripts['cloudflare:preview'].includes('wrangler@4 versions upload')) {
+  fail('cloudflare:preview must remain an explicit Wrangler preview upload command');
+}
 if (typeof scripts['precloudflare:deploy'] !== 'string' || !scripts['precloudflare:deploy'].includes('check:constitutional-release')) fail('cloudflare deploy must fail early on the production gate');
 if (typeof scripts['mobile:release:check'] !== 'string' || !scripts['mobile:release:check'].includes('check:constitutional-release')) fail('mobile release check must retain the production gate');
 if (typeof scripts['mobile:release:build'] !== 'string' || !scripts['mobile:release:build'].includes('build:prod')) fail('mobile release build must use build:prod');
@@ -77,4 +83,4 @@ if (/run:\s*npm run (?:build|build:dev|build:cloudflare)\s*(\n|$)/.test(producti
 if (!productionWorkflow.includes('run: npx wrangler@4 deploy')) fail('production workflow must retain the expected Cloudflare deploy step');
 if (!productionWorkflow.includes('path: dist')) fail('GitHub Pages fallback must publish only dist');
 
-console.log('ATLAS deployment boundary gate passed: generic CI/preview build is separated from explicit build:prod, and every production deployment path remains constitutionally gated.');
+console.log('ATLAS deployment boundary gate passed: generic CI/preview build is separated from explicit build:prod, Cloudflare previews use version upload, and every production deployment path remains constitutionally gated.');
