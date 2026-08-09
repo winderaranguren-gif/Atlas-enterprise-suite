@@ -11,6 +11,18 @@
     window.dispatchEvent(new CustomEvent(name, { detail }));
   }
 
+  function connect(supabaseClient) {
+    if (!supabaseClient) throw new Error('A Supabase client is required.');
+    client = supabaseClient;
+    return true;
+  }
+
+  function clear() {
+    context = null;
+    activeOrganizationId = null;
+    emit('atlas:identity-context-cleared', { activeOrganizationId: null });
+  }
+
   function getOrganization(orgId = activeOrganizationId) {
     const organizations = context?.organizations || [];
     return organizations.find((org) => org.id === orgId) || null;
@@ -30,7 +42,14 @@
   }
 
   async function refresh() {
-    if (!client) throw new Error('ATLAS Identity has not been initialized.');
+    if (!client) throw new Error('ATLAS Identity has not been connected.');
+
+    const { data: sessionData, error: sessionError } = await client.auth.getSession();
+    if (sessionError) throw sessionError;
+    if (!sessionData?.session?.user) {
+      clear();
+      throw new Error('ATLAS Identity requires an authenticated session.');
+    }
 
     const { data, error } = await client.rpc('get_identity_context');
     if (error) throw error;
@@ -44,8 +63,7 @@
   }
 
   async function initialize(supabaseClient) {
-    if (!supabaseClient) throw new Error('A Supabase client is required.');
-    client = supabaseClient;
+    connect(supabaseClient);
     return refresh();
   }
 
@@ -117,7 +135,9 @@
   }
 
   async function signInWithProvider(provider, options = {}) {
-    if (!client) throw new Error('ATLAS Identity has not been initialized.');
+    if (!client) throw new Error('ATLAS Identity has not been connected.');
+    if (!provider || typeof provider !== 'string') throw new Error('A federated identity provider is required.');
+
     const redirectTo = window.ATLAS_CONFIG?.authRedirectUrl || window.location.href;
     const { data, error } = await client.auth.signInWithOAuth({
       provider,
@@ -128,7 +148,9 @@
   }
 
   window.ATLAS_IDENTITY = Object.freeze({
+    connect,
     init: initialize,
+    clear,
     refresh,
     current,
     organizations,
