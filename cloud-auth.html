@@ -153,6 +153,15 @@
           </section>
         </section>
 
+        <section id="identity-audit-section" class="security-panel hidden" aria-labelledby="identity-audit-title">
+          <div class="section-title">
+            <div><small id="identity-audit-org">Empresa activa</small><h2 id="identity-audit-title">Historial de seguridad</h2></div>
+            <button id="identity-audit-refresh" type="button" class="secondary">Actualizar</button>
+          </div>
+          <p class="help">Eventos auditados de permisos, miembros e invitaciones. La vista aparece únicamente cuando `security.events.read` es efectivo para la empresa activa.</p>
+          <div id="identity-audit-list" class="audit-list"></div>
+        </section>
+
         <form id="organization-form" class="organization-form">
           <h3>Crear primera empresa</h3>
           <label>Nombre comercial<input id="org-name" required /></label>
@@ -171,6 +180,7 @@
   <script src="atlas-identity.js"></script>
   <script src="cloud-auth.js"></script>
   <script src="atlas-identity-invitations.js"></script>
+  <script src="atlas-identity-audit.js"></script>
   <script src="atlas-accessibility.js?v=3"></script>
 </body>
 </html>
