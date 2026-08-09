@@ -63,9 +63,11 @@
   const isV4Accessibility=(script)=>{
     try{return new URL(script.src,location.href).searchParams.get('v')==='4';}catch(_){return false;}
   };
-  const resourceFinished=(script)=>{
-    try{return performance.getEntriesByName(script.src).length>0;}catch(_){return false;}
-  };
+  const hasInstalledV4=()=>Boolean(
+    window.__ATLAS_WU_0300_ACCESS_INSTALLED__&&
+    window.ATLASAccessibility?.workUnit==='ATLAS-WU-0300'&&
+    /^1\.3\./.test(String(window.ATLASAccessibility?.version||''))
+  );
 
   const appendAccessibilityV4=()=>{
     const accessibility=document.createElement('script');
@@ -77,30 +79,42 @@
     document.body.append(accessibility);
   };
 
-  const loadAccessibility=()=>{
-    if(window.__ATLAS_WU_0300_ACCESS_INSTALLED__)return loadDragDrop();
+  let reconciliationScheduled=false;
+  const reconcileAfterDocumentLoad=()=>{
+    if(reconciliationScheduled)return;
+    reconciliationScheduled=true;
+    const reconcile=()=>{
+      reconciliationScheduled=false;
+      const scripts=accessibilityScripts();
+      const legacy=scripts.filter((script)=>!isV4Accessibility(script));
 
+      // By the window load boundary, scripts that existed before it have settled.
+      // If any legacy runtime existed, execute a fresh v4 last so legacy code can
+      // never remain the final ATLAS Accessibility implementation.
+      if(legacy.length)return appendAccessibilityV4();
+      if(hasInstalledV4())return loadDragDrop();
+      return appendAccessibilityV4();
+    };
+
+    if(document.readyState==='complete')return reconcile();
+    window.addEventListener('load',reconcile,{once:true});
+  };
+
+  const loadAccessibility=()=>{
     const scripts=accessibilityScripts();
+    const legacy=scripts.filter((script)=>!isV4Accessibility(script));
+
+    // Never accept an installed-v4 marker while a legacy script can still be in
+    // flight. Wait for the document load boundary, then force v4 to execute last.
+    if(legacy.length)return reconcileAfterDocumentLoad();
+
+    if(hasInstalledV4())return loadDragDrop();
+
     const existingV4=scripts.find(isV4Accessibility);
     if(existingV4){
-      if(resourceFinished(existingV4))return appendAccessibilityV4();
-      existingV4.addEventListener('load',loadDragDrop,{once:true});
-      existingV4.addEventListener('error',appendAccessibilityV4,{once:true});
-      return;
-    }
-
-    const pendingLegacy=scripts.filter((script)=>!isV4Accessibility(script)&&!resourceFinished(script));
-    if(pendingLegacy.length){
-      let remaining=pendingLegacy.length;
-      const settled=()=>{
-        remaining-=1;
-        if(remaining===0)appendAccessibilityV4();
-      };
-      pendingLegacy.forEach((script)=>{
-        script.addEventListener('load',settled,{once:true});
-        script.addEventListener('error',settled,{once:true});
-      });
-      return;
+      // A pre-injected v4 may already have settled before this loader attached
+      // handlers. Do not depend on Resource Timing; reconcile at window load.
+      return reconcileAfterDocumentLoad();
     }
 
     appendAccessibilityV4();
