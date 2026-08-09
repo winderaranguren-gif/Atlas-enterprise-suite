@@ -75,7 +75,8 @@ requireAll(invitationClient, 'invitation browser workflow', [
   'window.history.replaceState',
   'identity.createInvitation',
   'identity.revokeInvitation',
-  'identity.acceptInvitation'
+  'identity.acceptInvitation',
+  'void loadInvitations();'
 ]);
 
 if (invitationClient.includes('localStorage.setItem(PENDING_INVITE_KEY')) {
@@ -87,7 +88,8 @@ requireAll(auditClient, 'security audit browser workflow', [
   'identity.listSecurityEvents',
   'JSON.stringify(event.metadata || {}, null, 2)',
   'escapeHtml(metadata)',
-  'atlas:identity-context-cleared'
+  'atlas:identity-context-cleared',
+  'void loadSecurityEvents();'
 ]);
 
 requireAll(authHtml, 'cloud-auth delivery', [
