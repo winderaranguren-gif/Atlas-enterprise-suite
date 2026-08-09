@@ -27,7 +27,9 @@ function requireAll(text, label, needles) {
 
 const invitationIndexes = read('supabase/migrations/202608082300_atlas_identity_invitation_indexes.sql');
 const invitationRls = read('supabase/migrations/202608082301_atlas_identity_invitation_rls.sql');
+const securityHistory = read('supabase/migrations/202608082302_atlas_identity_security_history.sql');
 const invitationClient = read('atlas-identity-invitations.js');
+const auditClient = read('atlas-identity-audit.js');
 const authHtml = read('cloud-auth.html');
 const serviceWorker = read('service-worker.js');
 const cloudflareBuild = read('scripts/build-cloudflare.js');
@@ -48,6 +50,17 @@ requireAll(invitationRls, 'invitation deny-all RLS', [
   'commit;'
 ]);
 
+requireAll(securityHistory, 'security event history boundary', [
+  'create or replace function public.list_identity_security_events',
+  "has_identity_permission(organization_id, 'security.events.read')",
+  'drop policy if exists identity_security_events_read',
+  'revoke select on public.identity_security_events from authenticated',
+  'create policy identity_security_events_deny_direct',
+  'using (false)',
+  'grant execute on function public.list_identity_security_events(uuid,integer) to authenticated',
+  'commit;'
+]);
+
 requireAll(invitationClient, 'invitation browser workflow', [
   "const PENDING_INVITE_KEY = 'atlas.identity.pendingInvitation'",
   'window.sessionStorage.setItem(PENDING_INVITE_KEY',
@@ -61,20 +74,32 @@ if (invitationClient.includes('localStorage.setItem(PENDING_INVITE_KEY')) {
   fail('Invitation tokens must not be persisted in localStorage');
 }
 
+requireAll(auditClient, 'security audit browser workflow', [
+  "identity.can('security.events.read'",
+  'identity.listSecurityEvents',
+  'JSON.stringify(event.metadata || {}, null, 2)',
+  'escapeHtml(metadata)',
+  'atlas:identity-context-cleared'
+]);
+
 requireAll(authHtml, 'cloud-auth delivery', [
   '<script src="atlas-identity.js"></script>',
   '<script src="cloud-auth.js"></script>',
-  '<script src="atlas-identity-invitations.js"></script>'
+  '<script src="atlas-identity-invitations.js"></script>',
+  '<script src="atlas-identity-audit.js"></script>',
+  'id="identity-audit-section"',
+  'id="identity-audit-list"'
 ]);
 
 requireAll(serviceWorker, 'service worker Identity boundary', [
-  "const VERSION = 'atlas-core-v15-identity-hardening'",
+  "const VERSION = 'atlas-core-v16-identity-audit'",
   'const IDENTITY_NETWORK_ONLY = new Set([',
   "'/cloud-auth.html'",
   "'/cloud-auth.js'",
   "'/atlas-config.js'",
   "'/atlas-identity.js'",
   "'/atlas-identity-invitations.js'",
+  "'/atlas-identity-audit.js'",
   "fetch(request, { cache: 'no-store' })"
 ]);
 
@@ -83,13 +108,16 @@ requireAll(cloudflareBuild, 'Cloudflare Identity delivery', [
   '/atlas-config.js',
   '/atlas-identity.js',
   '/atlas-identity-invitations.js',
+  '/atlas-identity-audit.js',
   'Cache-Control: no-store, max-age=0',
   "'cloud-auth.html'",
-  "'atlas-identity-invitations.js'"
+  "'atlas-identity-invitations.js'",
+  "'atlas-identity-audit.js'"
 ]);
 
 requireAll(packageJson, 'package validation wiring', [
   'node --check atlas-identity-invitations.js',
+  'node --check atlas-identity-audit.js',
   'node --check scripts/validate-identity-delivery.js',
   'node scripts/validate-identity-delivery.js'
 ]);
