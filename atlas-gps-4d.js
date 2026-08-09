@@ -3,6 +3,8 @@
 
 const $=id=>document.getElementById(id);
 const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
+const MAX_ROUTE_POINTS=5000;
+const MAX_DESTINATION_CHARS=200;
 const state={language:localStorage.getItem('atlas-gps-language')==='en'?'en':'es',position:null,watchId:null,stream:null,route:[],destination:'',provider:null};
 
 const copy={
@@ -18,6 +20,18 @@ const copy={
   }
 };
 const c=()=>copy[state.language];
+
+function normalizeGeometry(geometry){
+  if(!Array.isArray(geometry))return [];
+  const normalized=[];
+  for(const point of geometry.slice(0,MAX_ROUTE_POINTS)){
+    if(!Array.isArray(point)||point.length<2)continue;
+    const lon=Number(point[0]),lat=Number(point[1]);
+    if(!Number.isFinite(lon)||!Number.isFinite(lat)||lon < -180||lon > 180||lat < -90||lat > 90)continue;
+    normalized.push([lon,lat]);
+  }
+  return normalized;
+}
 
 function applyLanguage(){
   const t=c();
@@ -87,7 +101,8 @@ function updatePosition(position){
 function enableLocation(){
   if(!navigator.geolocation){$('route-detail').textContent=c().permissionDenied;return}
   if(state.watchId!==null)return;
-  state.watchId=navigator.geolocation.watchPosition(updatePosition,error=>{$('route-detail').textContent=error?.message||c().permissionDenied;},{enableHighAccuracy:true,maximumAge:3000,timeout:10000});
+  const id=navigator.geolocation.watchPosition(updatePosition,error=>{if(error?.code===1&&state.watchId===id)state.watchId=null;$('route-detail').textContent=error?.message||c().permissionDenied;},{enableHighAccuracy:true,maximumAge:3000,timeout:10000});
+  state.watchId=id;
 }
 
 function stopLocation(){if(state.watchId!==null&&navigator.geolocation){navigator.geolocation.clearWatch(state.watchId);state.watchId=null}state.position=null;$('location-status').textContent=c().noLocation;$('speed-value').textContent='0';$('heading-value').textContent='—';$('accuracy-value').textContent='—';}
@@ -102,13 +117,14 @@ async function toggleCamera(){
 }
 
 async function prepareRoute(destination){
-  state.destination=destination.trim();
+  state.destination=String(destination||'').trim().slice(0,MAX_DESTINATION_CHARS);
   if(!state.destination){$('route-title').textContent=c().routeNeedDestination;return}
   if(state.provider?.route){
     try{
       const result=await state.provider.route({origin:state.position,destination:state.destination,language:state.language});
-      if(Array.isArray(result?.geometry)&&result.geometry.length>1){state.route=result.geometry;$('route-title').textContent=c().providerRoute;$('route-detail').textContent=result.summary||state.destination;draw();return}
-    }catch(error){$('route-detail').textContent=`${state.provider.name||'Provider'}: ${error?.message||error}`;}
+      const geometry=normalizeGeometry(result?.geometry);
+      if(geometry.length>1){state.route=geometry;$('route-title').textContent=c().providerRoute;$('route-detail').textContent=String(result?.summary||state.destination).slice(0,500);draw();return}
+    }catch(error){$('route-detail').textContent=`${state.provider.name||'Provider'}: ${error?.message||error}`.slice(0,500);}
   }
   state.route=localRoute(state.position);$('route-title').textContent=c().localPreview;$('route-detail').textContent=state.destination;draw();
 }
@@ -117,7 +133,7 @@ function demoRoute(){state.route=[[-81.469,28.431],[-81.432,28.448],[-81.405,28.
 
 function registerProvider(provider){
   if(!provider||typeof provider!=='object'||typeof provider.route!=='function')throw new TypeError('ATLAS GPS provider requires a route() function.');
-  state.provider=provider;$('provider-pill').textContent='PROVIDER READY';$('provider-name').textContent=provider.name||'ATLAS GPS Provider';$('external-provider-state').textContent='READY';window.dispatchEvent(new CustomEvent('atlas:gps:provider-ready',{detail:{name:provider.name||'provider'}}));return()=>{state.provider=null;$('provider-pill').textContent='LOCAL CORE';$('provider-name').textContent='ATLAS Local Core';$('external-provider-state').textContent='NONE';};
+  state.provider=provider;$('provider-pill').textContent='PROVIDER READY';$('provider-name').textContent=String(provider.name||'ATLAS GPS Provider').slice(0,120);$('external-provider-state').textContent='READY';window.dispatchEvent(new CustomEvent('atlas:gps:provider-ready',{detail:{name:String(provider.name||'provider').slice(0,120)}}));return()=>{state.provider=null;$('provider-pill').textContent='LOCAL CORE';$('provider-name').textContent='ATLAS Local Core';$('external-provider-state').textContent='NONE';};
 }
 
 function clearSession(){stopLocation();if(state.stream){state.stream.getTracks().forEach(track=>track.stop());state.stream=null;$('road-camera').srcObject=null}$('camera-placeholder').hidden=false;state.route=[];state.destination='';$('destination-input').value='';$('camera-status').textContent=c().cameraOffState;$('camera-button').textContent=c().cameraOn;$('route-title').textContent=c().localReady;$('route-detail').textContent=c().localDetail;draw();}
@@ -127,7 +143,7 @@ $('location-button').addEventListener('click',enableLocation);$('demo-button').a
 window.addEventListener('resize',resizeCanvas);
 window.addEventListener('pagehide',()=>{if(state.watchId!==null)stopLocation();if(state.stream)state.stream.getTracks().forEach(track=>track.stop())});
 
-window.ATLASGPS4D={version:'1.0.0',policy:{locationHistory:false,rawCameraUpload:false,routePersistence:'session-only'},registerProvider,getState:()=>({language:state.language,hasLocation:Boolean(state.position),cameraActive:Boolean(state.stream),routePoints:state.route.length,provider:state.provider?.name||null}),clearSession};
+window.ATLASGPS4D={version:'1.0.1',policy:{locationHistory:false,rawCameraUpload:false,routePersistence:'session-only',maxRoutePoints:MAX_ROUTE_POINTS},registerProvider,getState:()=>({language:state.language,hasLocation:Boolean(state.position),cameraActive:Boolean(state.stream),routePoints:state.route.length,provider:state.provider?.name||null}),clearSession};
 
-applyLanguage();requestAnimationFrame(resizeCanvas);window.dispatchEvent(new CustomEvent('atlas:gps:ready',{detail:{version:'1.0.0',localFirst:true}}));
+applyLanguage();requestAnimationFrame(resizeCanvas);window.dispatchEvent(new CustomEvent('atlas:gps:ready',{detail:{version:'1.0.1',localFirst:true}}));
 })();
