@@ -7,6 +7,7 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const foundationPath = path.join(root, 'supabase/migrations/202608082250_atlas_identity_foundation.sql');
 const hardeningPath = path.join(root, 'supabase/migrations/202608082251_atlas_identity_audit_hardening.sql');
+const invokerHardeningPath = path.join(root, 'supabase/migrations/202608082252_atlas_identity_invoker_hardening.sql');
 const clientPath = path.join(root, 'atlas-identity.js');
 const authHtmlPath = path.join(root, 'cloud-auth.html');
 const authClientPath = path.join(root, 'cloud-auth.js');
@@ -77,6 +78,7 @@ function balancedSql(text, label) {
 
 const foundation = read(foundationPath);
 const hardening = read(hardeningPath);
+const invokerHardening = read(invokerHardeningPath);
 const client = read(clientPath);
 const authHtml = read(authHtmlPath);
 const authClient = read(authClientPath);
@@ -102,6 +104,14 @@ if (hardening) {
   mustInclude(hardening, 'drop policy if exists organization_role_permissions_manage', 'direct policy removal');
   mustInclude(hardening, 'revoke insert, update, delete on public.organization_role_permissions from authenticated', 'direct mutation revoke');
   mustInclude(hardening, 'commit;', 'identity hardening transaction');
+}
+
+if (invokerHardening) {
+  balancedSql(invokerHardening, 'identity invoker hardening migration');
+  mustInclude(invokerHardening, 'alter function public.has_identity_permission(uuid, text) security invoker', 'permission helper invoker mode');
+  mustInclude(invokerHardening, 'alter function public.get_identity_context() security invoker', 'identity context invoker mode');
+  mustInclude(invokerHardening, 'set_identity_role_permission', 'intentional privileged mutation note');
+  mustInclude(invokerHardening, 'commit;', 'identity invoker hardening transaction');
 }
 
 if (client) {
