@@ -6,9 +6,11 @@
   const identity = window.ATLAS_IDENTITY;
   const federation = config.federatedIdentity || {};
   const $ = (selector) => document.querySelector(selector);
+  const ROLE_ORDER = ['owner', 'admin', 'accountant', 'manager', 'staff', 'viewer'];
   const state = {
     mode: 'signin',
     client: null,
+    currentUserId: null,
     mfaEnrollmentFactorId: null,
     mfaVerifiedFactorId: null
   };
@@ -44,6 +46,11 @@
     mfaStepupPanel: $('#mfa-stepup-panel'),
     mfaStepupCode: $('#mfa-stepup-code'),
     mfaStepupVerify: $('#mfa-stepup-verify'),
+    memberAdminSection: $('#member-admin-section'),
+    memberAdminOrg: $('#member-admin-org'),
+    memberAdminDetail: $('#member-admin-detail'),
+    memberList: $('#member-list'),
+    memberRefresh: $('#member-refresh'),
     message: $('#message'),
     userEmail: $('#user-email'),
     orgList: $('#organization-list'),
@@ -76,9 +83,14 @@
       elements.mfaEnrollButton,
       elements.mfaEnrollVerify,
       elements.mfaEnrollCancel,
-      elements.mfaStepupVerify
+      elements.mfaStepupVerify,
+      elements.memberRefresh
     ].forEach((element) => {
       if (element) element.disabled = busy;
+    });
+
+    document.querySelectorAll('[data-member-action], [data-org-select]').forEach((element) => {
+      element.disabled = busy;
     });
   }
 
@@ -236,6 +248,71 @@
     }
   }
 
+  function memberRoleOptions(memberRole, actorRole) {
+    const roles = actorRole === 'admin'
+      ? ROLE_ORDER.filter((role) => !['owner', 'admin'].includes(role))
+      : ROLE_ORDER;
+
+    return roles.map((role) => `<option value="${role}"${role === memberRole ? ' selected' : ''}>${escapeHtml(role)}</option>`).join('');
+  }
+
+  function renderMember(member, actorRole, canManage) {
+    const protectedFromAdmin = actorRole === 'admin' && ['owner', 'admin'].includes(member.role);
+    const manageable = canManage && !protectedFromAdmin;
+    const isSelf = member.user_id === state.currentUserId;
+    const displayName = member.full_name || 'Usuario ATLAS';
+    const shortId = String(member.user_id || '').slice(0, 8);
+    const status = member.status || 'active';
+    const nextStatus = status === 'active' ? 'suspended' : 'active';
+
+    return `<article class="member-card" data-member-user-id="${escapeHtml(member.user_id)}">
+      <div class="member-head">
+        <div>
+          <strong>${escapeHtml(displayName)}${isSelf ? ' · tú' : ''}</strong>
+          <small class="member-id">ID ${escapeHtml(shortId)} · ${escapeHtml(member.role)}</small>
+        </div>
+        <span class="member-status${status === 'suspended' ? ' suspended' : ''}">${escapeHtml(status)}</span>
+      </div>
+      ${manageable ? `<div class="member-controls">
+        <label>Rol<select data-member-role>${memberRoleOptions(member.role, actorRole)}</select></label>
+        <button type="button" class="secondary" data-member-action="role">Guardar rol</button>
+        <button type="button" class="secondary" data-member-action="status" data-next-status="${nextStatus}">${nextStatus === 'suspended' ? 'Suspender' : 'Reactivar'}</button>
+      </div>` : '<small>Acceso de solo lectura para esta membresía.</small>'}
+    </article>`;
+  }
+
+  async function loadMembers() {
+    const current = identity.current();
+    const org = current.activeOrganization;
+
+    if (!org || !identity.can('members.read', org.id)) {
+      elements.memberAdminSection.classList.add('hidden');
+      elements.memberList.innerHTML = '';
+      return;
+    }
+
+    elements.memberAdminSection.classList.remove('hidden');
+    elements.memberAdminOrg.textContent = org.name || 'Empresa activa';
+    elements.memberAdminDetail.textContent = 'Los cambios de rol y estado requieren permiso members.manage y una sesión AAL2.';
+    elements.memberList.innerHTML = '<div class="member-card"><span>Cargando miembros…</span></div>';
+
+    try {
+      const members = await identity.listMembers(org.id);
+      const actorRole = identity.role(org.id);
+      const canManage = identity.can('members.manage', org.id) && ['owner', 'admin'].includes(actorRole);
+
+      if (!members.length) {
+        elements.memberList.innerHTML = '<div class="member-card"><strong>No hay miembros visibles.</strong></div>';
+        return;
+      }
+
+      elements.memberList.innerHTML = members.map((member) => renderMember(member, actorRole, canManage)).join('');
+    } catch (error) {
+      elements.memberList.innerHTML = '<div class="member-card"><strong>No se pudieron cargar los miembros.</strong></div>';
+      showMessage(error?.message || 'No se pudieron leer los miembros.', true);
+    }
+  }
+
   async function loadOrganizations() {
     elements.orgList.innerHTML = '<div class="organization"><span>Cargando empresas y permisos…</span></div>';
 
@@ -246,17 +323,76 @@
 
       if (!organizations.length) {
         elements.orgList.innerHTML = '<div class="organization"><strong>Aún no tienes empresas.</strong><span>Crea la primera con el formulario inferior.</span></div>';
+        elements.memberAdminSection.classList.add('hidden');
         return;
       }
 
       elements.orgList.innerHTML = organizations.map((org) => {
         const permissionCount = Array.isArray(org.permissions) ? org.permissions.length : 0;
         const moduleCount = Array.isArray(org.modules) ? org.modules.length : 0;
-        return `<article class="organization" data-org-id="${escapeHtml(org.id)}"><strong>${escapeHtml(org.name || 'Empresa')}</strong><span>${escapeHtml(org.legal_name || org.industry || 'Sin detalles adicionales')}</span><small>Rol: ${escapeHtml(org.role)} · ${permissionCount} permisos · ${moduleCount} módulos activos</small></article>`;
+        const active = org.id === context.activeOrganizationId;
+        return `<article class="organization${active ? ' active' : ''}" data-org-id="${escapeHtml(org.id)}">
+          <strong>${escapeHtml(org.name || 'Empresa')}</strong>
+          <span>${escapeHtml(org.legal_name || org.industry || 'Sin detalles adicionales')}</span>
+          <small>Rol: ${escapeHtml(org.role)} · ${permissionCount} permisos · ${moduleCount} módulos activos</small>
+          <div class="organization-actions"><button type="button" class="secondary" data-org-select="${escapeHtml(org.id)}"${active ? ' disabled' : ''}>${active ? 'Empresa activa' : 'Usar esta empresa'}</button></div>
+        </article>`;
       }).join('');
+
+      await loadMembers();
     } catch (error) {
       elements.orgList.innerHTML = '<div class="organization"><strong>No se pudo resolver ATLAS Identity.</strong></div>';
+      elements.memberAdminSection.classList.add('hidden');
       showMessage(error?.message || 'No se pudieron leer las empresas y permisos.', true);
+    }
+  }
+
+  async function selectOrganization(orgId) {
+    clearMessage();
+    setBusy(true);
+    try {
+      identity.setActiveOrganization(orgId);
+      await loadOrganizations();
+      showMessage('Empresa activa actualizada. ATLAS recargó permisos y miembros para este contexto.');
+    } catch (error) {
+      showMessage(error?.message || 'No se pudo cambiar la empresa activa.', true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleMemberAction(button) {
+    const card = button.closest('[data-member-user-id]');
+    if (!card) return;
+
+    const orgId = identity.current().activeOrganizationId;
+    const userId = card.dataset.memberUserId;
+    const action = button.dataset.memberAction;
+    clearMessage();
+    setBusy(true);
+
+    try {
+      if (action === 'role') {
+        const nextRole = card.querySelector('[data-member-role]')?.value;
+        await identity.setMemberRole({ orgId, userId, role: nextRole });
+        showMessage('Rol actualizado y registrado en la auditoría de ATLAS Identity.');
+      } else if (action === 'status') {
+        const nextStatus = button.dataset.nextStatus;
+        await identity.setMemberStatus({ orgId, userId, status: nextStatus });
+        showMessage(nextStatus === 'suspended' ? 'Miembro suspendido y cambio auditado.' : 'Miembro reactivado y cambio auditado.');
+      }
+
+      await loadOrganizations();
+      await loadMfaState().catch(() => {});
+    } catch (error) {
+      if (error?.name === 'AtlasIdentityMfaRequiredError') {
+        await loadMfaState().catch(() => {});
+        showMessage('Esta acción requiere AAL2. Completa la verificación MFA en el panel superior y vuelve a intentarlo.', true);
+      } else {
+        showMessage(error?.message || 'No se pudo actualizar la membresía.', true);
+      }
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -265,12 +401,16 @@
     elements.authSection.classList.toggle('hidden', signedIn);
     elements.accountSection.classList.toggle('hidden', !signedIn);
     if (!signedIn) {
+      state.currentUserId = null;
       identity?.clear();
       resetMfaEnrollmentUi();
       elements.mfaStepupPanel.classList.add('hidden');
+      elements.memberAdminSection.classList.add('hidden');
+      elements.memberList.innerHTML = '';
       updateFederatedVisibility();
       return;
     }
+    state.currentUserId = session.user.id;
     elements.userEmail.textContent = session.user.email || session.user.id;
     await loadOrganizations();
     try {
@@ -414,9 +554,19 @@
   elements.mfaEnrollVerify.addEventListener('click', completeMfaEnrollment);
   elements.mfaEnrollCancel.addEventListener('click', cancelMfaEnrollment);
   elements.mfaStepupVerify.addEventListener('click', verifyMfaStepUp);
+  elements.memberRefresh.addEventListener('click', () => loadMembers().catch((error) => showMessage(error.message, true)));
+  elements.orgList.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-org-select]');
+    if (button) selectOrganization(button.dataset.orgSelect);
+  });
+  elements.memberList.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-member-action]');
+    if (button) handleMemberAction(button);
+  });
   elements.signOut.addEventListener('click', async () => {
     setBusy(true);
     const { error } = await state.client.auth.signOut();
+    state.currentUserId = null;
     identity?.clear();
     resetMfaEnrollmentUi();
     setBusy(false);
