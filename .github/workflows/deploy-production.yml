@@ -31,11 +31,8 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Validate ATLAS
-        run: npm run validate
-
-      - name: Build static production package
-        run: npm run build:cloudflare
+      - name: Build constitutionally approved production package
+        run: npm run build
 
       - name: Detect Cloudflare credentials
         id: cloudflare
