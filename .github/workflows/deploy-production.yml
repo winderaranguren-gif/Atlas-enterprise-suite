@@ -32,7 +32,7 @@ jobs:
         run: npm install
 
       - name: Build constitutionally approved production package
-        run: npm run build
+        run: npm run build:prod
 
       - name: Detect Cloudflare credentials
         id: cloudflare
