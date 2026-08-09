@@ -76,6 +76,25 @@ ATLAS Technical Support includes autonomous diagnostics, safe reversible repair 
 
 ATLAS may execute allowlisted safe/reversible actions automatically, but it must not bypass access controls, deployment permissions, physical-access requirements or irreversible-action boundaries. It must report the exact blocker instead of claiming success.
 
+## ATLAS Owned Core
+
+ATLAS includes a local-first intelligence control plane that keeps core routing, classification, tool execution and lightweight memory under ATLAS control.
+
+Provider priority is:
+
+`ATLAS-native -> ATLAS self-hosted -> external provider (optional)`
+
+External AI providers are disabled by default. The browser self-hosted adapter uses only same-origin ATLAS endpoints and does not require third-party API keys in client code.
+
+Runtime components:
+
+- `atlas-owned-core.js` — local classification, provider/tool registries, local memory and policy enforcement
+- `atlas-local-inference-provider.js` — same-origin bridge for an ATLAS-controlled inference service
+- `scripts/validate-owned-core.js` — repository gate that enforces provider isolation, loading and PWA availability
+- `docs/ATLAS_OWNED_CORE.md` — architecture and operating boundary
+
+The Owned Core does not claim that a frontier language model has been trained from scratch. Large-model training/inference still consumes compute, storage, bandwidth and electricity. The design instead keeps the orchestration layer owned by ATLAS and allows model runtimes or compatible open-weight models to run behind ATLAS-controlled infrastructure.
+
 ## ATLAS Fleet Intelligence boundary
 
 `atlas-fleet-intelligence.html` provides an ATLAS-native fleet operations module with local demo telemetry. It supports vehicles, heavy equipment, trailers and tools, including geofence processing, utilization and maintenance indicators, route/event history and local exports.
@@ -112,7 +131,7 @@ Run the complete repository validation pipeline with:
 npm run validate
 ```
 
-This validates JavaScript syntax, database/personal-intelligence packages, regional navigation structure and the production smoke suite.
+This validates JavaScript syntax, ATLAS Owned Core isolation, database/personal-intelligence packages, regional navigation structure and the production smoke suite.
 
 For the production package:
 
