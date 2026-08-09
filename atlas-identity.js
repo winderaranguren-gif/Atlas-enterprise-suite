@@ -321,6 +321,17 @@
     return data;
   }
 
+  async function listSecurityEvents(orgId = activeOrganizationId, limit = 50) {
+    requirePermission('security.events.read', orgId);
+    const safeLimit = Math.max(1, Math.min(200, Number(limit) || 50));
+    const { data, error } = await client.rpc('list_identity_security_events', {
+      organization_id: orgId,
+      event_limit: safeLimit
+    });
+    if (error) throw error;
+    return Array.isArray(data) ? data : [];
+  }
+
   async function signInWithProvider(provider, options = {}) {
     if (!client) throw new Error('ATLAS Identity has not been connected.');
     if (!provider || typeof provider !== 'string') throw new Error('A federated identity provider is required.');
@@ -354,6 +365,7 @@
     createInvitation,
     revokeInvitation,
     acceptInvitation,
+    listSecurityEvents,
     getAuthenticatorAssuranceLevel,
     listFactors,
     getMfaState,
