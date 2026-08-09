@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#03111f" />
+  <meta name="description" content="ATLAS GPS 4D — núcleo de navegación local-first con geolocalización y cámara opt-in." />
+  <title>ATLAS GPS 4D</title>
+  <link rel="stylesheet" href="atlas-gps-4d.css" />
+</head>
+<body>
+  <header class="gps-topbar">
+    <a class="gps-brand" href="index.html" aria-label="Volver a ATLAS Enterprise Suite">
+      <span class="gps-brand-mark">A</span>
+      <span><strong>ATLAS GPS 4D</strong><small>LOCAL-FIRST NAVIGATION CORE · v1.0.1</small></span>
+    </a>
+    <div class="gps-top-actions">
+      <span id="provider-pill" class="gps-pill">LOCAL CORE</span>
+      <button id="language-btn" type="button" aria-label="Cambiar idioma a inglés">EN</button>
+    </div>
+  </header>
+
+  <main class="gps-shell">
+    <section class="gps-hero gps-panel">
+      <div>
+        <p class="gps-eyebrow">ATLAS PLANETARY NAVIGATION</p>
+        <h1 id="hero-title">Navegación funcional aun cuando el proveedor planetario no esté conectado.</h1>
+        <p id="hero-copy">ATLAS mantiene un núcleo local para ubicación, vista de ruta y privacidad. Cuando existe un proveedor autorizado, puede elevar la vista previa a enrutamiento real sin cambiar la experiencia del usuario.</p>
+      </div>
+      <div class="gps-privacy-badge"><strong>PRIVACY</strong><span id="privacy-badge-copy">Sin historial de ubicación · cámara apagada por defecto</span></div>
+    </section>
+
+    <section class="gps-layout">
+      <article class="gps-panel gps-map-card">
+        <div class="gps-section-head">
+          <div><p class="gps-eyebrow">4D SPATIAL CORE</p><h2 id="map-title">Vista de navegación</h2></div>
+          <span id="location-status" class="gps-status">SIN UBICACIÓN</span>
+        </div>
+        <div class="gps-map-wrap">
+          <canvas id="gps-canvas" width="1100" height="620" aria-label="Vista cartográfica local de la ruta"></canvas>
+          <div class="gps-map-hud">
+            <div><small id="speed-label">VELOCIDAD</small><strong id="speed-value">0</strong><span>MPH</span></div>
+            <div><small id="heading-label">RUMBO</small><strong id="heading-value">—</strong><span>°</span></div>
+            <div><small id="accuracy-label">PRECISIÓN</small><strong id="accuracy-value">—</strong><span>m</span></div>
+          </div>
+        </div>
+        <div class="gps-route-summary" id="route-summary" aria-live="polite">
+          <strong id="route-title">Ruta local lista</strong>
+          <span id="route-detail">Activa ubicación o usa una demostración para iniciar.</span>
+        </div>
+      </article>
+
+      <aside class="gps-panel gps-control-card">
+        <div class="gps-section-head">
+          <div><p class="gps-eyebrow">NAVIGATION CONTROL</p><h2 id="control-title">Control de ruta</h2></div>
+        </div>
+        <form id="route-form" class="gps-route-form">
+          <label for="destination-input" id="destination-label">Destino</label>
+          <input id="destination-input" type="search" maxlength="200" autocomplete="off" placeholder="Ej. Orlando International Airport" />
+          <button id="route-button" class="gps-primary" type="submit">Preparar ruta</button>
+        </form>
+        <div class="gps-control-grid">
+          <button id="location-button" type="button">Usar mi ubicación</button>
+          <button id="demo-button" type="button">Ruta demo</button>
+          <button id="camera-button" type="button">Activar cámara</button>
+          <button id="stop-button" type="button">Detener</button>
+        </div>
+        <div class="gps-provider-box">
+          <span id="provider-label">Proveedor</span>
+          <strong id="provider-name">ATLAS Local Core</strong>
+          <small id="provider-detail">Sin dependencia externa obligatoria. Los proveedores reales se registran mediante la API ATLAS GPS.</small>
+        </div>
+      </aside>
+
+      <article class="gps-panel gps-camera-card">
+        <div class="gps-section-head">
+          <div><p class="gps-eyebrow">OPTIONAL ROAD VIEW</p><h2 id="camera-title">Vista de cámara</h2></div>
+          <span id="camera-status" class="gps-status">APAGADA</span>
+        </div>
+        <div class="gps-camera-stage">
+          <video id="road-camera" autoplay muted playsinline></video>
+          <div id="camera-placeholder" class="gps-camera-placeholder">
+            <span>◎</span>
+            <strong id="camera-placeholder-title">Cámara desactivada</strong>
+            <small id="camera-placeholder-copy">ATLAS no solicita acceso hasta que lo actives.</small>
+          </div>
+          <div class="gps-ar-lane" aria-hidden="true"><i></i><i></i><i></i></div>
+        </div>
+      </article>
+
+      <article class="gps-panel gps-privacy-card">
+        <div class="gps-section-head">
+          <div><p class="gps-eyebrow">DATA BOUNDARY</p><h2 id="privacy-title">Privacidad y estado</h2></div>
+        </div>
+        <ul class="gps-checks">
+          <li><span id="privacy-location">Historial de ubicación</span><strong>OFF</strong></li>
+          <li><span id="privacy-camera">Carga de cámara</span><strong>OFF</strong></li>
+          <li><span id="privacy-storage">Persistencia de ruta</span><strong>SESSION</strong></li>
+          <li><span id="privacy-provider">Proveedor externo</span><strong id="external-provider-state">NONE</strong></li>
+        </ul>
+        <button id="clear-session-button" type="button">Borrar sesión local</button>
+      </article>
+    </section>
+  </main>
+
+  <footer class="gps-footer">
+    <strong>ATLAS GPS 4D</strong>
+    <span id="footer-copy">La navegación local es una vista de apoyo; la conducción real siempre debe seguir señales, leyes y condiciones de la vía.</span>
+  </footer>
+
+  <script src="atlas-gps-4d.js"></script>
+</body>
+</html>
