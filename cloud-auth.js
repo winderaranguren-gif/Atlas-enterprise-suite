@@ -3,6 +3,7 @@
 
   const config = window.ATLAS_CONFIG || {};
   const sdk = window.supabase;
+  const identity = window.ATLAS_IDENTITY;
   const $ = (selector) => document.querySelector(selector);
   const state = { mode: 'signin', client: null };
 
@@ -63,7 +64,7 @@
     elements.password.autocomplete = signup ? 'new-password' : 'current-password';
 
     const labels = {
-      signin: ['Entrar de forma segura', 'Usa un usuario creado en el proyecto privado de Supabase.'],
+      signin: ['Entrar de forma segura', 'Usa una cuenta autorizada en ATLAS Identity.'],
       signup: ['Crear cuenta', 'Supabase puede requerir confirmación por correo antes del primer acceso.'],
       recovery: ['Enviar enlace de recuperación', 'El enlace regresará a esta página mediante la URL autorizada.']
     };
@@ -72,34 +73,34 @@
     clearMessage();
   }
 
-  async function loadOrganizations() {
-    elements.orgList.innerHTML = '<div class="organization"><span>Cargando empresas autorizadas…</span></div>';
-    const { data, error } = await state.client
-      .from('organization_members')
-      .select('org_id, role, status, organizations(id, name, legal_name, industry, active)')
-      .eq('status', 'active');
-
-    if (error) {
-      elements.orgList.innerHTML = '<div class="organization"><strong>No se pudieron leer las empresas.</strong></div>';
-      showMessage(error.message, true);
-      return;
-    }
-
-    if (!data?.length) {
-      elements.orgList.innerHTML = '<div class="organization"><strong>Aún no tienes empresas.</strong><span>Crea la primera con el formulario inferior.</span></div>';
-      return;
-    }
-
-    elements.orgList.innerHTML = data.map((membership) => {
-      const org = membership.organizations || {};
-      return `<article class="organization"><strong>${escapeHtml(org.name || 'Empresa')}</strong><span>${escapeHtml(org.legal_name || org.industry || 'Sin detalles adicionales')}</span><small>Rol: ${escapeHtml(membership.role)}</small></article>`;
-    }).join('');
-  }
-
   function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>"']/g, (character) => ({
       '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[character]));
+  }
+
+  async function loadOrganizations() {
+    elements.orgList.innerHTML = '<div class="organization"><span>Cargando empresas y permisos…</span></div>';
+
+    try {
+      if (!identity) throw new Error('ATLAS Identity client is not available.');
+      const context = await identity.refresh();
+      const organizations = context.organizations || [];
+
+      if (!organizations.length) {
+        elements.orgList.innerHTML = '<div class="organization"><strong>Aún no tienes empresas.</strong><span>Crea la primera con el formulario inferior.</span></div>';
+        return;
+      }
+
+      elements.orgList.innerHTML = organizations.map((org) => {
+        const permissionCount = Array.isArray(org.permissions) ? org.permissions.length : 0;
+        const moduleCount = Array.isArray(org.modules) ? org.modules.length : 0;
+        return `<article class="organization" data-org-id="${escapeHtml(org.id)}"><strong>${escapeHtml(org.name || 'Empresa')}</strong><span>${escapeHtml(org.legal_name || org.industry || 'Sin detalles adicionales')}</span><small>Rol: ${escapeHtml(org.role)} · ${permissionCount} permisos · ${moduleCount} módulos activos</small></article>`;
+      }).join('');
+    } catch (error) {
+      elements.orgList.innerHTML = '<div class="organization"><strong>No se pudo resolver ATLAS Identity.</strong></div>';
+      showMessage(error?.message || 'No se pudieron leer las empresas y permisos.', true);
+    }
   }
 
   async function renderSession(session) {
@@ -123,7 +124,7 @@
         const { data, error } = await state.client.auth.signInWithPassword({ email, password });
         if (error) throw error;
         await renderSession(data.session);
-        showMessage('Sesión iniciada. Las políticas RLS decidirán qué empresas y datos puede utilizar este usuario.');
+        showMessage('Sesión iniciada. ATLAS Identity cargó empresas, módulos y permisos efectivos para esta cuenta.');
       } else if (state.mode === 'signup') {
         const { data, error } = await state.client.auth.signUp({
           email,
@@ -163,7 +164,7 @@
       if (error) throw error;
       elements.orgForm.reset();
       await loadOrganizations();
-      showMessage(`Empresa creada correctamente. Identificador: ${data}`);
+      showMessage(`Empresa creada correctamente. ATLAS Identity te asignó como owner. Identificador: ${data}`);
     } catch (error) {
       showMessage(error?.message || 'No se pudo crear la empresa.', true);
     } finally {
@@ -185,7 +186,7 @@
       elements.connectionTitle.textContent = 'Configuración pendiente';
       elements.connectionDetail.textContent = 'Agrega SUPABASE_URL y SUPABASE_PUBLISHABLE_KEY en atlas-config.js.';
       elements.submit.disabled = true;
-      showMessage('La página está construida, pero no puede conectarse hasta crear el proyecto Supabase y completar sus dos valores públicos.', true);
+      showMessage('La página está construida, pero no puede conectarse hasta completar los dos valores públicos de Supabase.', true);
       return;
     }
 
@@ -194,15 +195,33 @@
     });
 
     elements.dot.classList.add('ready');
-    elements.connectionTitle.textContent = 'Supabase configurado';
+    elements.connectionTitle.textContent = 'ATLAS Identity conectado';
     elements.connectionDetail.textContent = config.environment || 'Private Beta';
 
     const { data, error } = await state.client.auth.getSession();
     if (error) showMessage(error.message, true);
+
+    if (data?.session && identity) {
+      try {
+        await identity.init(state.client);
+      } catch (identityError) {
+        showMessage(`Sesión válida, pero ATLAS Identity necesita su migración: ${identityError.message}`, true);
+      }
+    }
+
     await renderSession(data?.session);
 
     state.client.auth.onAuthStateChange((_event, session) => {
-      window.setTimeout(() => renderSession(session), 0);
+      window.setTimeout(async () => {
+        if (session && identity) {
+          try {
+            await identity.init(state.client);
+          } catch (identityError) {
+            showMessage(identityError?.message || 'No se pudo cargar ATLAS Identity.', true);
+          }
+        }
+        await renderSession(session);
+      }, 0);
     });
   }
 
