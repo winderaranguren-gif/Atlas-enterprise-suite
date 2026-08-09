@@ -1,4 +1,4 @@
-const VERSION = 'atlas-core-v14-gps-accessibility';
+const VERSION = 'atlas-core-v15-gps-accessibility-kernel';
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 const APP_SHELL = [
