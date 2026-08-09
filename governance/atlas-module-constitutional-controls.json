@@ -1,158 +1,57 @@
 {
-  "version": "1.0",
+  "version": "1.1",
   "constitutionVersion": "1.1",
   "defaultPolicy": "explicit-classification-required",
   "productionRule": "high-impact-modules-require-approved-evidence",
   "reservedHighImpactPatterns": [
+    "health",
+    "medical",
+    "clinical",
+    "hr",
+    "employment",
+    "payroll",
+    "finance",
+    "bank",
+    "wallet",
+    "identity",
+    "background",
+    "credit",
+    "insurance",
+    "education",
+    "student",
+    "security",
+    "safety",
+    "police",
+    "surveillance",
+    "biometric",
     "democracy",
     "election",
     "voting",
     "robot",
     "robotics",
     "autonomous",
-    "biometric",
-    "background",
-    "credit",
-    "insurance",
-    "police",
-    "surveillance"
+    "housing",
+    "children",
+    "child",
+    "critical-infrastructure",
+    "ai",
+    "artificial-intelligence"
   ],
   "profiles": {
-    "standard": {
-      "highImpact": false,
-      "requiredControls": []
-    },
-    "employment": {
-      "highImpact": true,
-      "requiredControls": [
-        "humanReview",
-        "correctionAndAppeal",
-        "auditTrail",
-        "leastPrivilege",
-        "dataMinimization",
-        "noAutomaticBackgroundRejection",
-        "backgroundCheckJobRelevance",
-        "contextAndSecondChanceReview",
-        "explainability",
-        "biasAndDisparateImpactReview"
-      ]
-    },
-    "finance": {
-      "highImpact": true,
-      "requiredControls": [
-        "humanReview",
-        "correctionAndAppeal",
-        "auditTrail",
-        "leastPrivilege",
-        "dataMinimization",
-        "transactionAuthorization",
-        "dualControlForHighRiskActions",
-        "reconciliation",
-        "noOpaqueAutomatedDenial",
-        "rollbackOrCompensatingControl"
-      ]
-    },
-    "identity": {
-      "highImpact": true,
-      "requiredControls": [
-        "humanReview",
-        "correctionAndAppeal",
-        "auditTrail",
-        "leastPrivilege",
-        "dataMinimization",
-        "sensitiveIdentifierMasking",
-        "consentOrLawfulBasis",
-        "revocationAndExpiry",
-        "purposeLimitation",
-        "secureStorageBoundary"
-      ]
-    },
-    "health": {
-      "highImpact": true,
-      "requiredControls": [
-        "humanReview",
-        "correctionAndAppeal",
-        "auditTrail",
-        "leastPrivilege",
-        "dataMinimization",
-        "healthPrivacyBoundary",
-        "consentOrLawfulBasis",
-        "clinicalHumanAuthority",
-        "noAutonomousDiagnosisOrTreatment",
-        "emergencyEscalation"
-      ]
-    },
-    "public_safety": {
-      "highImpact": true,
-      "requiredControls": [
-        "humanReview",
-        "correctionAndAppeal",
-        "auditTrail",
-        "leastPrivilege",
-        "purposeLimitation",
-        "noMassSurveillance",
-        "proportionality",
-        "retentionLimits",
-        "humanReviewBeforeEnforcement",
-        "independentOversight"
-      ]
-    },
-    "education": {
-      "highImpact": true,
-      "requiredControls": [
-        "humanReview",
-        "correctionAndAppeal",
-        "auditTrail",
-        "dataMinimization",
-        "highStakesDecisionReview",
-        "minorProtections",
-        "noManipulativeProfiling",
-        "explainability"
-      ]
-    },
-    "security_access": {
-      "highImpact": true,
-      "requiredControls": [
-        "humanReview",
-        "auditTrail",
-        "leastPrivilege",
-        "privilegedMfa",
-        "privilegedActionAudit",
-        "noSelfGrantedPrivileges",
-        "separationOfDuties",
-        "revocationPath"
-      ]
-    },
-    "democracy": {
-      "highImpact": true,
-      "requiredControls": [
-        "humanReview",
-        "auditTrail",
-        "leastPrivilege",
-        "voterPrivacy",
-        "independentAuditability",
-        "noSecretResultModification",
-        "multiPartyVerification",
-        "recountOrRecoveryPath",
-        "tamperEvidence",
-        "publicTransparencyWithoutVoteExposure"
-      ]
-    },
-    "autonomous_robotics": {
-      "highImpact": true,
-      "requiredControls": [
-        "operatorIdentity",
-        "auditTrail",
-        "leastPrivilege",
-        "noSelfGrantedPrivileges",
-        "cannotRemoveOwnSafetyLimits",
-        "boundedReplication",
-        "humanOverride",
-        "safeStop",
-        "failSafeMode",
-        "independentSafetyValidation"
-      ]
-    }
+    "standard": {"highImpact": false, "requiredControls": []},
+    "employment": {"highImpact": true, "requiredControls": ["humanReview","correctionAndAppeal","auditTrail","leastPrivilege","dataMinimization","noAutomaticBackgroundRejection","backgroundCheckJobRelevance","contextAndSecondChanceReview","explainability","biasAndDisparateImpactReview"]},
+    "finance": {"highImpact": true, "requiredControls": ["humanReview","correctionAndAppeal","auditTrail","leastPrivilege","dataMinimization","transactionAuthorization","dualControlForHighRiskActions","reconciliation","noOpaqueAutomatedDenial","rollbackOrCompensatingControl"]},
+    "identity": {"highImpact": true, "requiredControls": ["humanReview","correctionAndAppeal","auditTrail","leastPrivilege","dataMinimization","sensitiveIdentifierMasking","consentOrLawfulBasis","revocationAndExpiry","purposeLimitation","secureStorageBoundary"]},
+    "health": {"highImpact": true, "requiredControls": ["humanReview","correctionAndAppeal","auditTrail","leastPrivilege","dataMinimization","healthPrivacyBoundary","consentOrLawfulBasis","clinicalHumanAuthority","noAutonomousDiagnosisOrTreatment","emergencyEscalation"]},
+    "public_safety": {"highImpact": true, "requiredControls": ["humanReview","correctionAndAppeal","auditTrail","leastPrivilege","purposeLimitation","noMassSurveillance","proportionality","retentionLimits","humanReviewBeforeEnforcement","independentOversight"]},
+    "education": {"highImpact": true, "requiredControls": ["humanReview","correctionAndAppeal","auditTrail","dataMinimization","highStakesDecisionReview","minorProtections","noManipulativeProfiling","explainability"]},
+    "security_access": {"highImpact": true, "requiredControls": ["humanReview","auditTrail","leastPrivilege","privilegedMfa","privilegedActionAudit","noSelfGrantedPrivileges","separationOfDuties","revocationPath"]},
+    "democracy": {"highImpact": true, "requiredControls": ["humanReview","auditTrail","leastPrivilege","voterPrivacy","independentAuditability","noSecretResultModification","multiPartyVerification","recountOrRecoveryPath","tamperEvidence","publicTransparencyWithoutVoteExposure"]},
+    "autonomous_robotics": {"highImpact": true, "requiredControls": ["operatorIdentity","auditTrail","leastPrivilege","noSelfGrantedPrivileges","cannotRemoveOwnSafetyLimits","boundedReplication","humanOverride","safeStop","failSafeMode","independentSafetyValidation"]},
+    "housing": {"highImpact": true, "requiredControls": ["humanReview","correctionAndAppeal","auditTrail","leastPrivilege","dataMinimization","noOpaqueAutomatedDenial","nondiscriminationReview","explainability","contextReview","lawfulBasis"]},
+    "child_protection": {"highImpact": true, "requiredControls": ["humanReview","auditTrail","dataMinimization","minorProtections","guardianOrLawfulBasis","noManipulativeProfiling","ageAppropriateDesign","safetyEscalation","retentionLimits","independentOversight"]},
+    "critical_infrastructure": {"highImpact": true, "requiredControls": ["humanReview","auditTrail","leastPrivilege","separationOfDuties","failSafeMode","rollbackOrCompensatingControl","resilienceAndRedundancy","incidentResponse","independentOversight","safeDegradedMode"]},
+    "ai_high_impact": {"highImpact": true, "requiredControls": ["humanReview","correctionAndAppeal","auditTrail","leastPrivilege","dataMinimization","explainability","noSecretManipulation","noSelfGrantedPrivileges","independentOversight","safeStop"]}
   },
   "registries": {
     "atlas-os-operational.js": {
@@ -202,17 +101,16 @@
       }
     }
   },
+  "protectedAssets": {
+    "atlas-health-frontiers.html": {"profile": "health", "releaseStatus": "blocked", "reason": "Standalone health research and laboratory functionality requires health privacy, evidence, and human-authority review before production release."},
+    "atlas-holographic-health-twin.html": {"profile": "health", "releaseStatus": "blocked", "reason": "Standalone health twin functionality handles sensitive health concepts and requires health governance evidence before production release."}
+  },
   "approvalEvidenceSchema": {
-    "requiredForApprovedHighImpactModule": [
-      "controls",
-      "evidenceFiles",
-      "testCommands",
-      "reviewedBy",
-      "reviewDate",
-      "rollbackPlan"
-    ],
-    "reviewedByRule": "must identify an independent human reviewer or independent review function",
-    "evidenceRule": "every required control must be explicitly attested true and supported by at least one repository evidence file",
+    "requiredForApprovedHighImpactModule": ["controls","evidenceFiles","testCommands","reviewedBy","reviewDate","rollbackPlan","humanApprover","reviewedDigest"],
+    "reviewedByRule": "must identify an independent reviewer or independent review function",
+    "humanApproverRule": "must identify a human approver distinct from the independent review control",
+    "reviewedDigestRule": "must equal the SHA-256 digest of the released source and repository evidence files",
+    "evidenceRule": "every required control must be explicitly attested true and supported by at least one regular repository evidence file",
     "releaseStatuses": ["blocked", "approved"]
   }
 }
