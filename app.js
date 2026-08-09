@@ -59,8 +59,15 @@
     document.body.append(dragDrop);
   };
 
-  const loadAccessibility=()=>{
-    if(window.__ATLAS_WU_0300_ACCESS_INSTALLED__||document.querySelector('script[src*="atlas-accessibility.js"]'))return loadDragDrop();
+  const accessibilityScripts=()=>[...document.querySelectorAll('script[src*="atlas-accessibility.js"]')];
+  const isV4Accessibility=(script)=>{
+    try{return new URL(script.src,location.href).searchParams.get('v')==='4';}catch(_){return false;}
+  };
+  const resourceFinished=(script)=>{
+    try{return performance.getEntriesByName(script.src).length>0;}catch(_){return false;}
+  };
+
+  const appendAccessibilityV4=()=>{
     const accessibility=document.createElement('script');
     accessibility.src='atlas-accessibility.js?v=4';
     accessibility.dataset.atlasWu='0300';
@@ -68,6 +75,35 @@
     accessibility.onload=loadDragDrop;
     accessibility.onerror=loadDragDrop;
     document.body.append(accessibility);
+  };
+
+  const loadAccessibility=()=>{
+    if(window.__ATLAS_WU_0300_ACCESS_INSTALLED__)return loadDragDrop();
+
+    const scripts=accessibilityScripts();
+    const existingV4=scripts.find(isV4Accessibility);
+    if(existingV4){
+      if(resourceFinished(existingV4))return appendAccessibilityV4();
+      existingV4.addEventListener('load',loadDragDrop,{once:true});
+      existingV4.addEventListener('error',appendAccessibilityV4,{once:true});
+      return;
+    }
+
+    const pendingLegacy=scripts.filter((script)=>!isV4Accessibility(script)&&!resourceFinished(script));
+    if(pendingLegacy.length){
+      let remaining=pendingLegacy.length;
+      const settled=()=>{
+        remaining-=1;
+        if(remaining===0)appendAccessibilityV4();
+      };
+      pendingLegacy.forEach((script)=>{
+        script.addEventListener('load',settled,{once:true});
+        script.addEventListener('error',settled,{once:true});
+      });
+      return;
+    }
+
+    appendAccessibilityV4();
   };
 
   const loadRunbooks=()=>{
