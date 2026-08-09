@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#07131f" />
+  <meta name="description" content="ATLAS Mail / Inbox Intelligence — recomendaciones de limpieza, suscripciones y privacidad con confirmación del usuario." />
+  <title>ATLAS Mail · Inbox Intelligence</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="atlas-mail.css?v=1" />
+</head>
+<body>
+  <div class="mail-shell">
+    <aside class="mail-sidebar">
+      <a class="mail-brand" href="index.html"><span class="mail-mark">A</span><span><strong>ATLAS</strong><small>Mail · Inbox Intelligence</small></span></a>
+      <nav id="mail-nav" class="mail-nav" aria-label="ATLAS Mail navigation">
+        <button data-view="overview" class="active">Inbox Health</button>
+        <button data-view="recommendations">Recommendations</button>
+        <button data-view="subscriptions">Subscriptions</button>
+        <button data-view="analyze">Analyze Metadata</button>
+        <button data-view="connectors">Mail Connectors</button>
+        <button data-view="privacy">Privacy Controls</button>
+      </nav>
+      <div class="mail-side-foot"><span>PRODUCTION · METADATA-FIRST · CONFIRM BEFORE DELETE</span><a href="index.html">← ATLAS Core</a></div>
+    </aside>
+
+    <main class="mail-main">
+      <header class="mail-topbar">
+        <div><p class="mail-eyebrow">ATLAS CONNECT · COMMUNICATION INTELLIGENCE</p><h1 id="mail-title">Inbox Health</h1></div>
+        <div class="mail-actions"><button id="refresh-btn" class="mail-btn">Refresh</button><button id="export-btn" class="mail-btn primary">Export Snapshot</button></div>
+      </header>
+      <div id="mail-toast" class="mail-toast" aria-live="polite"></div>
+      <section id="mail-content" class="mail-content"></section>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.1"></script>
+  <script src="atlas-config.js"></script>
+  <script src="atlas-data-fabric.js?v=1"></script>
+  <script src="atlas-intelligence-core.js?v=1"></script>
+  <script src="atlas-mail.js?v=1"></script>
+</body>
+</html>
