@@ -68,6 +68,9 @@ function writePagesCompatibilityFiles() {
 /atlas-identity-invitations.js
   Cache-Control: no-store, max-age=0
 
+/atlas-identity-audit.js
+  Cache-Control: no-store, max-age=0
+
 /private-beta.js
   Cache-Control: no-store, max-age=0
 
@@ -96,7 +99,8 @@ function verifyRequiredFiles() {
     'cloud-auth.css',
     'atlas-config.js',
     'atlas-identity.js',
-    'atlas-identity-invitations.js'
+    'atlas-identity-invitations.js',
+    'atlas-identity-audit.js'
   ];
   const missing = required.filter((name) => !fs.existsSync(path.join(output, name)));
   if (missing.length) {
