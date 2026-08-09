@@ -1,0 +1,218 @@
+{
+  "version": "1.0",
+  "constitutionVersion": "1.1",
+  "defaultPolicy": "explicit-classification-required",
+  "productionRule": "high-impact-modules-require-approved-evidence",
+  "reservedHighImpactPatterns": [
+    "democracy",
+    "election",
+    "voting",
+    "robot",
+    "robotics",
+    "autonomous",
+    "biometric",
+    "background",
+    "credit",
+    "insurance",
+    "police",
+    "surveillance"
+  ],
+  "profiles": {
+    "standard": {
+      "highImpact": false,
+      "requiredControls": []
+    },
+    "employment": {
+      "highImpact": true,
+      "requiredControls": [
+        "humanReview",
+        "correctionAndAppeal",
+        "auditTrail",
+        "leastPrivilege",
+        "dataMinimization",
+        "noAutomaticBackgroundRejection",
+        "backgroundCheckJobRelevance",
+        "contextAndSecondChanceReview",
+        "explainability",
+        "biasAndDisparateImpactReview"
+      ]
+    },
+    "finance": {
+      "highImpact": true,
+      "requiredControls": [
+        "humanReview",
+        "correctionAndAppeal",
+        "auditTrail",
+        "leastPrivilege",
+        "dataMinimization",
+        "transactionAuthorization",
+        "dualControlForHighRiskActions",
+        "reconciliation",
+        "noOpaqueAutomatedDenial",
+        "rollbackOrCompensatingControl"
+      ]
+    },
+    "identity": {
+      "highImpact": true,
+      "requiredControls": [
+        "humanReview",
+        "correctionAndAppeal",
+        "auditTrail",
+        "leastPrivilege",
+        "dataMinimization",
+        "sensitiveIdentifierMasking",
+        "consentOrLawfulBasis",
+        "revocationAndExpiry",
+        "purposeLimitation",
+        "secureStorageBoundary"
+      ]
+    },
+    "health": {
+      "highImpact": true,
+      "requiredControls": [
+        "humanReview",
+        "correctionAndAppeal",
+        "auditTrail",
+        "leastPrivilege",
+        "dataMinimization",
+        "healthPrivacyBoundary",
+        "consentOrLawfulBasis",
+        "clinicalHumanAuthority",
+        "noAutonomousDiagnosisOrTreatment",
+        "emergencyEscalation"
+      ]
+    },
+    "public_safety": {
+      "highImpact": true,
+      "requiredControls": [
+        "humanReview",
+        "correctionAndAppeal",
+        "auditTrail",
+        "leastPrivilege",
+        "purposeLimitation",
+        "noMassSurveillance",
+        "proportionality",
+        "retentionLimits",
+        "humanReviewBeforeEnforcement",
+        "independentOversight"
+      ]
+    },
+    "education": {
+      "highImpact": true,
+      "requiredControls": [
+        "humanReview",
+        "correctionAndAppeal",
+        "auditTrail",
+        "dataMinimization",
+        "highStakesDecisionReview",
+        "minorProtections",
+        "noManipulativeProfiling",
+        "explainability"
+      ]
+    },
+    "security_access": {
+      "highImpact": true,
+      "requiredControls": [
+        "humanReview",
+        "auditTrail",
+        "leastPrivilege",
+        "privilegedMfa",
+        "privilegedActionAudit",
+        "noSelfGrantedPrivileges",
+        "separationOfDuties",
+        "revocationPath"
+      ]
+    },
+    "democracy": {
+      "highImpact": true,
+      "requiredControls": [
+        "humanReview",
+        "auditTrail",
+        "leastPrivilege",
+        "voterPrivacy",
+        "independentAuditability",
+        "noSecretResultModification",
+        "multiPartyVerification",
+        "recountOrRecoveryPath",
+        "tamperEvidence",
+        "publicTransparencyWithoutVoteExposure"
+      ]
+    },
+    "autonomous_robotics": {
+      "highImpact": true,
+      "requiredControls": [
+        "operatorIdentity",
+        "auditTrail",
+        "leastPrivilege",
+        "noSelfGrantedPrivileges",
+        "cannotRemoveOwnSafetyLimits",
+        "boundedReplication",
+        "humanOverride",
+        "safeStop",
+        "failSafeMode",
+        "independentSafetyValidation"
+      ]
+    }
+  },
+  "registries": {
+    "atlas-os-operational.js": {
+      "parser": "atlas-os-modules-array",
+      "classifications": {
+        "dashboard": {"profile": "standard"},
+        "enterprise": {"profile": "standard"},
+        "finance": {"profile": "finance", "releaseStatus": "blocked", "reason": "Production financial controls require module-specific evidence and independent review."},
+        "hr": {"profile": "employment", "releaseStatus": "blocked", "reason": "Employment decisions require second-chance, review, appeal and anti-bias evidence."},
+        "payroll": {"profile": "finance", "releaseStatus": "blocked", "reason": "Payroll production release requires authorization, reconciliation and rollback evidence."},
+        "health": {"profile": "health", "releaseStatus": "blocked", "reason": "Health production release requires privacy, consent and human clinical-authority evidence."},
+        "ride": {"profile": "standard"},
+        "pos": {"profile": "standard"},
+        "inventory": {"profile": "standard"},
+        "projects": {"profile": "standard"},
+        "crm": {"profile": "standard"},
+        "education": {"profile": "education", "releaseStatus": "blocked", "reason": "High-stakes learner decisions require human review, appeal and minor protections."},
+        "analytics": {"profile": "standard"},
+        "security": {"profile": "security_access", "releaseStatus": "blocked", "reason": "Privileged access controls require MFA, least privilege, separation of duties and audit evidence."},
+        "settings": {"profile": "standard"}
+      }
+    },
+    "atlas-suite.js": {
+      "parser": "atlas-suite-modules-object",
+      "classifications": {
+        "dashboard": {"profile": "standard"},
+        "crm": {"profile": "standard"},
+        "invoices": {"profile": "finance", "releaseStatus": "blocked", "reason": "Financial records require authorization, review and reconciliation evidence."},
+        "expenses": {"profile": "finance", "releaseStatus": "blocked", "reason": "Financial records require authorization, review and reconciliation evidence."},
+        "accounting": {"profile": "finance", "releaseStatus": "blocked", "reason": "General-ledger production use requires authorization, review, audit and rollback evidence."},
+        "inventory": {"profile": "standard"},
+        "employees": {"profile": "employment", "releaseStatus": "blocked", "reason": "Employment data and decisions require review, appeal, relevance and second-chance protections."},
+        "reports": {"profile": "standard"},
+        "wallet": {"profile": "identity", "releaseStatus": "blocked", "reason": "Identity credentials require masking, lawful basis, revocation and secure-storage evidence."},
+        "documents": {"profile": "identity", "releaseStatus": "blocked", "reason": "Legal and identity documents require access, purpose, retention and correction controls."},
+        "rewards": {"profile": "standard"},
+        "ride": {"profile": "standard"},
+        "marketplace": {"profile": "standard"},
+        "freight": {"profile": "standard"},
+        "cars": {"profile": "standard"},
+        "health": {"profile": "health", "releaseStatus": "blocked", "reason": "Health production release requires privacy, consent and human-authority evidence."},
+        "safety": {"profile": "public_safety", "releaseStatus": "blocked", "reason": "Public-safety use requires proportionality, retention, review and independent oversight evidence."},
+        "community": {"profile": "standard"},
+        "modules": {"profile": "standard"},
+        "audit": {"profile": "standard"},
+        "settings": {"profile": "standard"}
+      }
+    }
+  },
+  "approvalEvidenceSchema": {
+    "requiredForApprovedHighImpactModule": [
+      "controls",
+      "evidenceFiles",
+      "testCommands",
+      "reviewedBy",
+      "reviewDate",
+      "rollbackPlan"
+    ],
+    "reviewedByRule": "must identify an independent human reviewer or independent review function",
+    "evidenceRule": "every required control must be explicitly attested true and supported by at least one repository evidence file",
+    "releaseStatuses": ["blocked", "approved"]
+  }
+}
