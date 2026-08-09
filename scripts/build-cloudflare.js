@@ -18,6 +18,7 @@ const excludedRootFiles = new Set([
 ]);
 const publicDirectories = ['assets', 'icons', 'images', 'fonts', 'media'];
 const accessibilityScript = '<script src="/atlas-accessibility.js?v=4" data-atlas-wu="0300"></script>';
+const accessibilityDesignStyle = '<link rel="stylesheet" href="/atlas-accessibility-open-design.css?v=1" data-atlas-wu="0300-design">';
 
 function resetOutput() {
   fs.rmSync(output, { recursive: true, force: true });
@@ -57,9 +58,17 @@ function injectAccessibilityShell() {
   const htmlFiles = walkHtml(output);
   for (const filePath of htmlFiles) {
     let html = fs.readFileSync(filePath, 'utf8');
-    if (/atlas-accessibility\.js/i.test(html)) continue;
-    if (/<\/body>/i.test(html)) html = html.replace(/<\/body>/i, `  ${accessibilityScript}\n</body>`);
-    else html += `\n${accessibilityScript}\n`;
+
+    if (!/atlas-accessibility-open-design\.css/i.test(html)) {
+      if (/<\/head>/i.test(html)) html = html.replace(/<\/head>/i, `  ${accessibilityDesignStyle}\n</head>`);
+      else html = `${accessibilityDesignStyle}\n${html}`;
+    }
+
+    if (!/atlas-accessibility\.js/i.test(html)) {
+      if (/<\/body>/i.test(html)) html = html.replace(/<\/body>/i, `  ${accessibilityScript}\n</body>`);
+      else html += `\n${accessibilityScript}\n`;
+    }
+
     fs.writeFileSync(filePath, html, 'utf8');
   }
   return htmlFiles;
@@ -88,13 +97,27 @@ function writePagesCompatibilityFiles() {
 }
 
 function verifyRequiredFiles(htmlFiles) {
-  const required = ['index.html', 'styles.css', 'app.js', 'manifest.webmanifest', 'service-worker.js', 'atlas-accessibility.js', 'atlas-accessibility.css'];
+  const required = [
+    'index.html',
+    'styles.css',
+    'app.js',
+    'manifest.webmanifest',
+    'service-worker.js',
+    'atlas-accessibility.js',
+    'atlas-accessibility.css',
+    'atlas-accessibility-open-design.css'
+  ];
   const missing = required.filter((name) => !fs.existsSync(path.join(output, name)));
   if (missing.length) throw new Error(`Cloudflare build is missing required assets: ${missing.join(', ')}`);
 
-  const withoutAccessibility = htmlFiles.filter((filePath) => !/atlas-accessibility\.js/i.test(fs.readFileSync(filePath, 'utf8')));
-  if (withoutAccessibility.length) {
-    throw new Error(`ATLAS-WU-0300 accessibility shell missing from: ${withoutAccessibility.map((filePath) => path.relative(output, filePath)).join(', ')}`);
+  const withoutRuntime = htmlFiles.filter((filePath) => !/atlas-accessibility\.js/i.test(fs.readFileSync(filePath, 'utf8')));
+  if (withoutRuntime.length) {
+    throw new Error(`ATLAS-WU-0300 accessibility runtime missing from: ${withoutRuntime.map((filePath) => path.relative(output, filePath)).join(', ')}`);
+  }
+
+  const withoutDesign = htmlFiles.filter((filePath) => !/atlas-accessibility-open-design\.css/i.test(fs.readFileSync(filePath, 'utf8')));
+  if (withoutDesign.length) {
+    throw new Error(`ATLAS-WU-0300 Open Design layer missing from: ${withoutDesign.map((filePath) => path.relative(output, filePath)).join(', ')}`);
   }
 }
 
@@ -105,4 +128,4 @@ const htmlFiles = injectAccessibilityShell();
 writePagesCompatibilityFiles();
 verifyRequiredFiles(htmlFiles);
 
-console.log(`ATLAS Cloudflare build created at ${output} with ATLAS-WU-0300 accessibility on ${htmlFiles.length} HTML surfaces.`);
+console.log(`ATLAS Cloudflare build created at ${output} with ATLAS-WU-0300 accessibility and Open Design on ${htmlFiles.length} HTML surfaces.`);
