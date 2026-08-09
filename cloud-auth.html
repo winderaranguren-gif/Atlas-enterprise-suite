@@ -4,21 +4,21 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex,nofollow" />
-  <title>ATLAS Core — Cloud Auth Test</title>
+  <title>ATLAS Identity — Acceso seguro</title>
   <link rel="stylesheet" href="cloud-auth.css" />
   <link rel="stylesheet" href="atlas-accessibility.css?v=3" />
 </head>
 <body>
   <main class="shell">
     <section class="brand-panel">
-      <p class="eyebrow">ATLAS CORE · PRIVATE BETA</p>
-      <h1>Conexión segura de usuarios y empresas</h1>
-      <p class="lead">Esta superficie valida Supabase Auth, membresías y creación de empresas antes de conectar los datos operativos del dashboard.</p>
+      <p class="eyebrow">ATLAS IDENTITY · PRIVATE BETA</p>
+      <h1>Identidad, acceso y permisos para todo ATLAS</h1>
+      <p class="lead">Una sola sesión controla qué empresas, módulos y acciones puede utilizar cada persona, manteniendo el aislamiento por organización.</p>
       <div class="notice">
-        <strong>Control de lanzamiento</strong>
-        <span>Esta página no convierte todavía el dashboard local en un sistema de producción. Sirve para probar la conexión real sin mezclarla con el demo.</span>
+        <strong>Zero-trust por módulo</strong>
+        <span>Supabase Auth mantiene las credenciales y sesiones; ATLAS Identity resuelve membresías, roles, módulos y permisos efectivos sin duplicar contraseñas.</span>
       </div>
-      <a class="back-link" href="./">← Volver al MVP local</a>
+      <a class="back-link" href="./">← Volver a ATLAS</a>
     </section>
 
     <section class="card-panel">
@@ -40,7 +40,7 @@
           <label id="name-label" class="hidden">Nombre completo<input id="auth-name" type="text" autocomplete="name" /></label>
           <button id="auth-submit" class="primary" type="submit">Entrar de forma segura</button>
         </form>
-        <p id="auth-help" class="help">Usa un usuario creado en el proyecto privado de Supabase.</p>
+        <p id="auth-help" class="help">Usa una cuenta autorizada en ATLAS Identity.</p>
       </section>
 
       <section id="account-section" class="hidden">
@@ -67,6 +67,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.1"></script>
   <script src="atlas-config.js"></script>
+  <script src="atlas-identity.js"></script>
   <script src="cloud-auth.js"></script>
   <script src="atlas-accessibility.js?v=3"></script>
 </body>
