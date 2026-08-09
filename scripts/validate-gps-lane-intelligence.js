@@ -3,7 +3,9 @@
 const fs=require('fs');
 const path=require('path');
 const root=path.resolve(__dirname,'..');
-const migrationPath=path.join(root,'supabase/migrations/202608080006_atlas_gps_lane_intelligence.sql');
+const migrationDir=path.join(root,'supabase/migrations');
+const migrationName='202608080007_atlas_gps_lane_intelligence.sql';
+const migrationPath=path.join(migrationDir,migrationName);
 const failures=[];
 const fail=message=>failures.push(message);
 
@@ -38,14 +40,46 @@ function lexicalBalance(text){
   if(parens!==0)fail(`Migration has ${parens} unmatched parenthesis level(s).`);
 }
 
+function validateUniqueMigrationVersions(){
+  if(!fs.existsSync(migrationDir))return fail('Missing Supabase migration directory.');
+  const byVersion=new Map();
+  for(const file of fs.readdirSync(migrationDir)){
+    const match=file.match(/^(\d+)_.*\.sql$/);
+    if(!match)continue;
+    const version=match[1];
+    const files=byVersion.get(version)||[];
+    files.push(file);
+    byVersion.set(version,files);
+  }
+  for(const [version,files] of byVersion){
+    if(files.length>1)fail(`Duplicate Supabase migration version ${version}: ${files.join(', ')}`);
+  }
+}
+
+validateUniqueMigrationVersions();
+
 if(sql){
   lexicalBalance(sql);
   requireText('begin;','transaction');
   requireText('commit;','transaction');
   requireText('create extension if not exists postgis with schema extensions','PostGIS activation');
+  requireText("from pg_extension e\njoin pg_namespace n on n.oid = e.extnamespace\nwhere e.extname = 'postgis'",'PostGIS namespace detection');
+  requireText("set_config(\n  'search_path'",'PostGIS search path');
+  if(/extensions\.geometry\s*\(/i.test(sql))fail('Geometry types must resolve through the detected PostGIS namespace, not assume extensions.geometry.');
   requireText('with (security_invoker = true)','active-events view');
   requireText('on delete set null (road_segment_id)','nullable segment FK');
   requireText('on delete set null (lane_id)','nullable lane FK');
+  requireText("travel_direction text not null default 'unknown'",'lane direction uniqueness');
+  requireText('unique (id, org_id, road_segment_id)','lane composite identity');
+  requireText('foreign key (lane_id, org_id, road_segment_id)','speed-limit lane/segment FK');
+  requireText('references public.gps_lanes(id, org_id, road_segment_id)','speed-limit lane/segment reference');
+  requireText('gps_lane_connectivity_org_to_lane_idx','reverse connectivity index');
+  requireText('gps_sign_lanes_org_lane_idx','reverse sign/lane index');
+  requireText('gps_event_road_segments_org_road_idx','reverse event/road index');
+  requireText('gps_speed_limits_org_lane_segment_idx','speed-limit lane index');
+  requireText('gps_traffic_signs_valid_window check (valid_from is null or valid_to is null or valid_to >= valid_from)','traffic-sign validity window');
+  requireText('gps_speed_limits_valid_window check (valid_from is null or valid_to is null or valid_to >= valid_from)','speed-limit validity window');
+  requireText('gps_dynamic_road_events_valid_window check (starts_at is null or ends_at is null or ends_at >= starts_at)','dynamic-event validity window');
 
   const tables=[
     'gps_road_segments','gps_lanes','gps_lane_connectivity','gps_traffic_signs','gps_sign_lanes',
@@ -54,7 +88,10 @@ if(sql){
   for(const table of tables){
     requireText(`create table if not exists public.${table}`,`table ${table}`);
     requireText(`alter table public.${table} enable row level security`,`RLS ${table}`);
-    requireText(`create policy ${table}_access on public.${table}`,`policy ${table}`);
+    requireText(`create policy ${table}_read on public.${table} for select to authenticated using (public.is_org_member(org_id))`,`read policy ${table}`);
+    requireText(`create policy ${table}_insert on public.${table} for insert to authenticated with check (public.has_org_role(org_id,array['owner','admin','manager']))`,`insert policy ${table}`);
+    requireText(`create policy ${table}_update on public.${table} for update to authenticated using (public.has_org_role(org_id,array['owner','admin','manager'])) with check (public.has_org_role(org_id,array['owner','admin','manager']))`,`update policy ${table}`);
+    requireText(`create policy ${table}_delete on public.${table} for delete to authenticated using (public.has_org_role(org_id,array['owner','admin','manager']))`,`delete policy ${table}`);
   }
 
   const tableBlocks=[...sql.matchAll(/create table if not exists public\.(gps_[a-z_]+)\s*\(([\s\S]*?)\n\);/gi)];
@@ -65,8 +102,9 @@ if(sql){
     if(!/\borg_id\s+uuid\s+not null/.test(block))fail(`${table} must require org_id.`);
   }
 
-  const policies=[...sql.matchAll(/create policy\s+(gps_[a-z_]+_access)\s+on\s+public\.(gps_[a-z_]+)[\s\S]*?using\s*\(public\.is_org_member\(org_id\)\)[\s\S]*?with check\s*\(public\.has_org_role\(org_id,array\['owner','admin','manager'\]\)\)/gi)];
-  if(policies.length!==tables.length)fail(`Expected ${tables.length} tenant-aware GPS policies, found ${policies.length}.`);
+  if(/create policy\s+gps_[a-z_]+_access\b|create policy[\s\S]*?\bfor all\b/i.test(sql)){
+    fail('GPS RLS must use separate SELECT/INSERT/UPDATE/DELETE policies; FOR ALL is not permitted.');
+  }
 
   requireText('foreign key (road_segment_id, org_id)','segment tenant FK');
   requireText('foreign key (from_lane_id, org_id)','from-lane tenant FK');
