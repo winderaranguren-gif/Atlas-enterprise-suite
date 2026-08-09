@@ -16,7 +16,7 @@
       <p class="lead">Una sola sesión controla qué empresas, módulos y acciones puede utilizar cada persona, manteniendo el aislamiento por organización.</p>
       <div class="notice">
         <strong>Zero-trust por módulo</strong>
-        <span>Supabase Auth mantiene las credenciales y sesiones; ATLAS Identity resuelve membresías, roles, módulos y permisos efectivos sin duplicar contraseñas.</span>
+        <span>Supabase Auth mantiene la sesión y las RLS; ATLAS Identity resuelve membresías, roles, módulos, permisos y federación SSO sin duplicar contraseñas.</span>
       </div>
       <a class="back-link" href="./">← Volver a ATLAS</a>
     </section>
@@ -41,6 +41,11 @@
           <button id="auth-submit" class="primary" type="submit">Entrar de forma segura</button>
         </form>
         <p id="auth-help" class="help">Usa una cuenta autorizada en ATLAS Identity.</p>
+
+        <div id="federated-auth" class="hidden">
+          <button id="federated-signin" class="secondary" type="button">Continuar con ATLAS Identity SSO</button>
+          <p id="federated-help" class="help">Acceso federado mediante OIDC; ATLAS conserva una sola sesión y las mismas políticas RLS.</p>
+        </div>
       </section>
 
       <section id="account-section" class="hidden">
