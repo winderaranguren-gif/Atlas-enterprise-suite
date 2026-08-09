@@ -1,74 +1,57 @@
-# ATLAS Cloudflare MCP
+# ATLAS Cloudflare Control Plane
 
-ATLAS uses Cloudflare's managed remote MCP endpoint as the primary Cloudflare control plane instead of duplicating the Cloudflare API inside ATLAS.
+ATLAS uses two authorized Cloudflare control paths. Neither path bypasses account security or stores Cloudflare credentials in browser code or in the repository.
 
-## Endpoint
+## Path A — Cloudflare managed MCP
 
-- Transport: Streamable HTTP
+Preferred interactive control plane when the client supports remote MCP tool invocation.
+
 - Endpoint: `https://mcp.cloudflare.com/mcp`
-- Preferred authentication: OAuth
-- CI/automation fallback: scoped Cloudflare API token
-- Repository secrets: prohibited
+- Transport: Streamable HTTP
+- Authentication: OAuth preferred for interactive use; scoped API token only for automation where required
+- Purpose: inspect and perform authorized Cloudflare API operations without duplicating Cloudflare's API surface inside ATLAS
 
-Cloudflare's managed MCP exposes the Cloudflare API through a compact tool surface and can perform both reads and authorized writes across products such as Workers, Builds, DNS, R2, D1, KV and Zero Trust.
+Repository descriptor: `mcp/atlas-cloudflare.remote.json`.
 
-## ATLAS control path
+## Path B — Native Cloudflare Workers Builds from GitHub
 
-```text
-MCP-capable client
-       |
-       v
-ATLAS Cloudflare MCP policy
-       |
-       v
-Cloudflare managed MCP
-       |
-       v
-Cloudflare API
-       |
-       +--> preview/build/deployment/configuration
-       |
-       v
-ATLAS Cloudflare -> GitHub Bridge
-       |
-       v
-cloudflare-sync/<run-id> branch -> Draft PR -> validation -> main
-```
+This path is intentionally independent of GitHub Actions. It exists so ATLAS can continue deploying even when GitHub-hosted runners fail before the first workflow step.
 
-## Safety boundary
+Cloudflare's Git integration watches the ATLAS GitHub repository. In the Workers Builds environment Cloudflare supplies `WORKERS_CI=1` and `WORKERS_CI_BRANCH`. ATLAS uses `scripts/cloudflare-ci-bootstrap.js` plus `scripts/cloudflare-build-router.js` to choose the correct validation path:
 
-1. Never store Cloudflare credentials in browser code, committed files, screenshots or logs.
-2. Prefer OAuth for interactive users.
-3. API tokens, when required for automation, must use the minimum permissions needed.
-4. ATLAS preview operations may be automated after validation.
-5. Production mutations require explicit approval and validation.
-6. Destructive operations require explicit approval.
-7. The Cloudflare -> GitHub bridge must not write directly to `main`.
-8. Infrastructure files protected by the bridge remain protected from generated bundles.
-9. Every mutation should be auditable with actor, operation, target, timestamp and result.
+- `main` -> `npm run build:prod`
+- every non-production branch -> `npm run build:dev`
+- preview promotion must use `npx wrangler versions upload`
+- a non-production branch is rejected if it attempts a production deploy command
 
-## Tool policy
+The repository also keeps the explicit GitHub Actions production workflow as a secondary path, but the native Workers Builds path does not depend on it.
 
-ATLAS treats Cloudflare's MCP operations in three classes:
+### One-time Cloudflare account connection
 
-- **Read-safe**: list Workers, inspect deployments, builds, logs and configuration.
-- **Write-reversible**: create/update preview versions, trigger builds, update non-production configuration.
-- **Write-sensitive**: production deploys, DNS changes, secret changes, deletions and rollbacks. These require approval.
+The repository cannot create the Cloudflare account's GitHub installation by itself. An authorized Cloudflare account user must connect `winderaranguren-gif/Atlas-enterprise-suite` to Workers Builds once. After that, pushes can trigger Cloudflare directly without GitHub Actions.
 
-## Client registration
+No Cloudflare API token belongs in source control. Use Cloudflare account secrets/settings or OAuth as appropriate.
 
-A compatible MCP client should register the remote endpoint directly. The repository file `mcp/atlas-cloudflare.remote.json` is the ATLAS policy descriptor; it contains no credential.
+## ATLAS GitHub synchronization bridge
 
-## Current limitation
+The dedicated Worker in `cloudflare/github-bridge-worker.js` serves the opposite direction when deployed:
 
-This repository can prepare and validate the integration independently of the ChatGPT subscription tier. Whether a specific ChatGPT workspace can invoke custom/remote MCP write tools is a client entitlement issue, not an ATLAS architecture limitation.
+`ATLAS/Cloudflare -> validate bundle -> GitHub branch -> draft pull request -> review/CI -> main`
 
-## Verification checklist
+Required Worker secrets:
 
-- MCP endpoint reachable over HTTPS.
-- OAuth or scoped API-token authentication completes outside the repository.
-- Read-only Cloudflare query succeeds first.
-- Preview write succeeds before any production write.
-- Audit result recorded.
-- GitHub bridge creates a branch/PR rather than writing directly to `main`.
-- Production deploy remains gated.
+- `GITHUB_TOKEN`
+- `ATLAS_BRIDGE_SHARED_SECRET`
+
+The bridge never writes directly to `main`, supports dry-run, and blocks generated bundles from rewriting its protected trust-boundary files.
+
+## Operating rule
+
+ATLAS does not disable security controls to recover from a failed deployment. If one execution plane fails, move to the other authorized plane:
+
+1. managed Cloudflare MCP when available in the client;
+2. native Workers Builds from GitHub when MCP invocation is unavailable;
+3. GitHub Actions as a secondary deployment route;
+4. manual Wrangler only as an explicit operator-controlled fallback.
+
+All production paths preserve ATLAS production validation and constitutional gates.
