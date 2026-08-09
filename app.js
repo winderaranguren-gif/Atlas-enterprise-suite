@@ -31,10 +31,19 @@
     else window.dispatchEvent(new CustomEvent('atlas:alert',{detail}));
   });
 
+  const loadGpsEntry=()=>{
+    const gpsEntry=document.createElement('script');
+    gpsEntry.src='atlas-gps-entry.js?v=1';
+    gpsEntry.async=false;
+    document.body.append(gpsEntry);
+  };
+
   const loadCarsEntry=()=>{
     const carsEntry=document.createElement('script');
     carsEntry.src='atlas-cars-entry.js?v=1';
     carsEntry.async=false;
+    carsEntry.onload=loadGpsEntry;
+    carsEntry.onerror=loadGpsEntry;
     document.body.append(carsEntry);
   };
 
