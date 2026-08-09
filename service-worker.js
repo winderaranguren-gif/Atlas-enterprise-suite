@@ -1,4 +1,4 @@
-const VERSION = 'atlas-core-v14-gps-accessibility';
+const VERSION = 'atlas-core-v15-identity-hardening';
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 const APP_SHELL = [
@@ -39,6 +39,17 @@ const APP_SHELL = [
   '/public/icons/atlas-icon.svg'
 ];
 
+const IDENTITY_NETWORK_ONLY = new Set([
+  '/cloud-auth.html',
+  '/cloud-auth.js',
+  '/cloud-auth.css',
+  '/atlas-identity.js',
+  '/atlas-identity-invitations.js',
+  '/private-beta.html',
+  '/private-beta.js',
+  '/private-beta-recovery.js'
+]);
+
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(STATIC_CACHE).then(cache => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));
 });
@@ -55,6 +66,11 @@ self.addEventListener('fetch', event => {
   const request = event.request;
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
+
+  if (url.origin === self.location.origin && IDENTITY_NETWORK_ONLY.has(url.pathname)) {
+    event.respondWith(fetch(request, { cache: 'no-store' }));
+    return;
+  }
 
   if (request.mode === 'navigate') {
     event.respondWith(
