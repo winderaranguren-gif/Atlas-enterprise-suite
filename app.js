@@ -19,6 +19,11 @@
   dragDropCss.href='atlas-dragdrop.css?v=1';
   document.head.append(dragDropCss);
 
+  const accessibilityCss=document.createElement('link');
+  accessibilityCss.rel='stylesheet';
+  accessibilityCss.href='atlas-accessibility.css?v=1';
+  document.head.append(accessibilityCss);
+
   const loadCarsEntry=()=>{
     const carsEntry=document.createElement('script');
     carsEntry.src='atlas-cars-entry.js?v=1';
@@ -35,12 +40,21 @@
     document.body.append(dragDrop);
   };
 
+  const loadAccessibility=()=>{
+    const accessibility=document.createElement('script');
+    accessibility.src='atlas-accessibility.js?v=1';
+    accessibility.async=false;
+    accessibility.onload=loadDragDrop;
+    accessibility.onerror=loadDragDrop;
+    document.body.append(accessibility);
+  };
+
   const loadRunbooks=()=>{
     const runbooks=document.createElement('script');
     runbooks.src='atlas-support-runbooks.js?v=1';
     runbooks.async=false;
-    runbooks.onload=loadDragDrop;
-    runbooks.onerror=loadDragDrop;
+    runbooks.onload=loadAccessibility;
+    runbooks.onerror=loadAccessibility;
     document.body.append(runbooks);
   };
 
