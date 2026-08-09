@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="robots" content="noindex,nofollow" />
+  <meta name="robots" content="noindex,nofollow,noarchive" />
   <meta name="theme-color" content="#081c2c" />
   <title>ATLAS Core — Private Beta Cloud</title>
   <link rel="stylesheet" href="private-beta.css" />
@@ -16,8 +16,8 @@
       <span class="logo">A</span>
       <p class="eyebrow">ATLAS CORE · PRIVATE BETA CLOUD</p>
       <h1>Conexión pendiente</h1>
-      <p>La aplicación cloud está construida. Para activarla, completa la URL del proyecto y la clave publicable de Supabase en <code>atlas-config.js</code>.</p>
-      <p class="warning">Nunca coloques aquí la clave secreta, service role ni contraseña de base de datos.</p>
+      <p>La aplicación cloud está construida. Para activarla, completa la configuración pública autorizada de Supabase en <code>atlas-config.js</code>.</p>
+      <p class="warning">Nunca coloques aquí una clave secreta, service role ni contraseña de base de datos.</p>
       <a class="button secondary" href="./">Abrir demo local</a>
     </article>
   </section>
@@ -32,7 +32,7 @@
         <div><strong>Multiempresa</strong><span>Cada registro pertenece a una organización.</span></div>
         <div><strong>Roles</strong><span>Owner, admin, accountant, manager, staff y viewer.</span></div>
         <div><strong>Auditoría</strong><span>Los cambios importantes quedan registrados.</span></div>
-        <div><strong>Private Beta</strong><span>No usar con datos reales hasta aprobar las pruebas.</span></div>
+        <div><strong>Private Beta</strong><span>Acceso únicamente para cuentas autorizadas o invitadas.</span></div>
       </div>
     </div>
 
@@ -40,7 +40,6 @@
       <article class="auth-card">
         <div class="tabs">
           <button class="tab active" type="button" data-mode="signin">Entrar</button>
-          <button class="tab" type="button" data-mode="signup">Crear cuenta</button>
           <button class="tab" type="button" data-mode="recovery">Recuperar</button>
         </div>
         <form id="auth-form" class="stack">
@@ -49,7 +48,7 @@
           <label id="auth-name-label" class="hidden">Nombre completo<input id="auth-name" autocomplete="name" /></label>
           <button id="auth-submit" class="button primary" type="submit">Entrar</button>
         </form>
-        <p id="auth-help" class="help">Accede con una cuenta autorizada en el proyecto privado.</p>
+        <p id="auth-help" class="help">Private Beta: no hay registro público. Usa una cuenta autorizada o una invitación emitida por ATLAS.</p>
         <a href="./" class="text-link">Abrir demo local</a>
       </article>
     </div>
@@ -58,14 +57,14 @@
   <section id="onboarding-view" class="center-shell hidden">
     <article class="auth-card wide-card">
       <span class="logo">A</span>
-      <p class="eyebrow">PRIMERA EMPRESA</p>
-      <h1>Configura tu organización</h1>
-      <p>Tu usuario todavía no pertenece a una empresa. Crea la primera y quedarás asignado como owner.</p>
+      <p class="eyebrow">BOOTSTRAP CONTROLADO</p>
+      <h1>Configura la organización inicial</h1>
+      <p>Solo una cuenta administradora de plataforma puede crear una organización desde este formulario. Las demás cuentas deben ingresar mediante invitación.</p>
       <form id="organization-form" class="form-grid">
         <label>Nombre comercial<input id="organization-name" required /></label>
         <label>Nombre legal<input id="organization-legal-name" /></label>
         <label class="full">Industria<input id="organization-industry" /></label>
-        <button class="button primary full" type="submit">Crear empresa</button>
+        <button class="button primary full" type="submit">Crear organización autorizada</button>
       </form>
       <button id="onboarding-signout" class="button secondary" type="button">Cerrar sesión</button>
     </article>
