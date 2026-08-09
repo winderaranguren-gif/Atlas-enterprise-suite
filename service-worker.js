@@ -1,4 +1,4 @@
-const VERSION = 'atlas-core-v13-accessibility-hardening';
+const VERSION = 'atlas-core-v14-gps-accessibility';
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 const APP_SHELL = [
@@ -16,6 +16,11 @@ const APP_SHELL = [
   '/atlas-cars.html',
   '/atlas-cars.css',
   '/atlas-cars.js',
+  '/atlas-gps-entry.js',
+  '/atlas-gps-4d.html',
+  '/atlas-gps-4d.css',
+  '/atlas-gps-4d.js',
+  '/atlas-gps-cloud-provider.js',
   '/atlas-regional-navigation.js',
   '/atlas-legacy-migrate.js',
   '/atlas-suite.js',
