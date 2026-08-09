@@ -4,7 +4,11 @@
 const DB_NAME='atlas-production-outbox-v1';
 const STORE='operations';
 const ACTIVE_ORG_KEY='atlas.activeOrg';
-const CORE_TABLES=new Set(['customers','vendors','products','invoices','invoice_lines','payments','expense_categories','expenses','chart_of_accounts','journal_entries','journal_lines','employees','documents','organization_modules','atlas_module_registry','atlas_module_records','atlas_events','atlas_workflows','atlas_workflow_runs','atlas_connectors','atlas_outbox','atlas_intelligence_signals']);
+const CORE_TABLES=new Set([
+  'organizations','organization_members','organization_modules','customers','vendors','products','invoices','invoice_lines','payments',
+  'expense_categories','expenses','chart_of_accounts','journal_entries','journal_lines','employees','documents','atlas_module_registry',
+  'atlas_module_records','atlas_events','atlas_workflows','atlas_workflow_runs','atlas_connectors','atlas_outbox','atlas_intelligence_signals'
+]);
 
 let client=null;
 let currentSession=null;
@@ -151,7 +155,7 @@ function setActiveOrg(org){
 
 async function list(table,{orgId,select='*',filters=[],order='updated_at',ascending=false,limit=200}={}){
   await initialize();ensureTable(table);const oid=ensureOrg(orgId);
-  let query=client.from(table).select(select).eq(table==='organization_modules'||table==='atlas_module_registry'?'org_id':'org_id',oid);
+  let query=client.from(table).select(select).eq('org_id',oid);
   for(const [method,column,value] of filters){if(typeof query[method]!=='function')throw new Error(`Unsupported filter: ${method}`);query=query[method](column,value);}
   if(order)query=query.order(order,{ascending});
   if(limit)query=query.limit(limit);
@@ -186,10 +190,12 @@ async function moduleRecords(moduleCode,recordType=null,orgId=null){
 }
 
 async function createModuleRecord(moduleCode,recordType,payload,{orgId=null,externalKey=null,subjectUserId=null,status='active'}={}){
+  if(!currentSession)throw new Error('Authentication required.');
   return insert('atlas_module_records',{module_code:moduleCode,record_type:recordType,external_key:externalKey,subject_user_id:subjectUserId,status,payload,updated_by:currentSession.user.id},orgId);
 }
 
 async function updateModuleRecord(id,payload,{orgId=null,status,recordType,moduleCode,externalKey,subjectUserId}={}){
+  if(!currentSession)throw new Error('Authentication required.');
   const patch={payload,updated_by:currentSession.user.id};
   if(status!==undefined)patch.status=status;if(recordType)patch.record_type=recordType;if(moduleCode)patch.module_code=moduleCode;
   if(externalKey!==undefined)patch.external_key=externalKey;if(subjectUserId!==undefined)patch.subject_user_id=subjectUserId;
@@ -197,6 +203,7 @@ async function updateModuleRecord(id,payload,{orgId=null,status,recordType,modul
 }
 
 async function emitEvent(eventType,sourceModule,{targetModule=null,entityType=null,entityId=null,payload={},orgId=null}={}){
+  if(!currentSession)throw new Error('Authentication required.');
   const oid=ensureOrg(orgId);
   return insert('atlas_events',{event_type:eventType,source_module:sourceModule,target_module:targetModule,entity_type:entityType,entity_id:entityId,payload,actor_id:currentSession.user.id},oid);
 }
@@ -207,6 +214,29 @@ async function listEvents({orgId=null,sourceModule=null,targetModule=null,eventT
   if(targetModule)filters.push(['eq','target_module',targetModule]);
   if(eventType)filters.push(['eq','event_type',eventType]);
   return list('atlas_events',{orgId,filters,order:'occurred_at',limit});
+}
+
+function safeFileName(name){return String(name||'document').replace(/[^a-zA-Z0-9._-]+/g,'-').replace(/^-+|-+$/g,'').slice(-120)||'document';}
+async function uploadDocument(file,{orgId=null,classification='internal'}={}){
+  await initialize();
+  if(!currentSession)throw new Error('Authentication required.');
+  if(!navigator.onLine)throw new Error('Document upload requires an online connection.');
+  const oid=ensureOrg(orgId);
+  if(!(file instanceof File))throw new Error('A valid file is required.');
+  if(file.size>25*1024*1024)throw new Error('Document exceeds the 25 MB ATLAS limit.');
+  const objectPath=`${oid}/${crypto.randomUUID()}-${safeFileName(file.name)}`;
+  const {error:uploadError}=await client.storage.from('atlas-documents').upload(objectPath,file,{upsert:false,contentType:file.type||undefined});
+  if(uploadError)throw normalizeError(uploadError);
+  const {data,error}=await client.from('documents').insert({org_id:oid,file_name:file.name,storage_path:objectPath,classification,uploaded_by:currentSession.user.id}).select().single();
+  if(error){await client.storage.from('atlas-documents').remove([objectPath]).catch(()=>{});throw normalizeError(error);}
+  return data;
+}
+
+async function signedDocumentUrl(storagePath,expiresIn=300){
+  await initialize();
+  const {data,error}=await client.storage.from('atlas-documents').createSignedUrl(storagePath,Math.max(60,Math.min(3600,expiresIn)));
+  if(error)throw normalizeError(error);
+  return data?.signedUrl||null;
 }
 
 async function flushQueue(){
@@ -231,9 +261,10 @@ async function health(){
 window.addEventListener('online',()=>flushQueue().catch(()=>{}));
 
 const api={
-  version:'1.0.0',mode:'production',initialize,signIn,signOut,organizations,setActiveOrg,
+  version:'1.1.0',mode:'production',initialize,signIn,signOut,organizations,setActiveOrg,
   session:()=>currentSession,client:()=>client,activeOrg:()=>currentOrg,list,insert,update,remove,
-  moduleRecords,createModuleRecord,updateModuleRecord,emitEvent,listEvents,flushQueue,health,queuedOperations
+  moduleRecords,createModuleRecord,updateModuleRecord,emitEvent,listEvents,uploadDocument,signedDocumentUrl,
+  flushQueue,health,queuedOperations
 };
 window.ATLASDataFabric=api;
 })();
