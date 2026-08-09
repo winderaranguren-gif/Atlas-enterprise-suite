@@ -59,6 +59,12 @@ for (const required of [
   if (!workerSource.includes(required)) fail(`worker entry is missing security control: ${required}`);
 }
 
+const publicIndex = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+for (const forbidden of ['demo@atlas.local', 'Atlas2026!', '246810', 'Winder Aranguren']) {
+  if (publicIndex.includes(forbidden)) fail(`public index exposes forbidden demo/personal value: ${forbidden}`);
+}
+if (!/Private Beta/i.test(publicIndex)) fail('public index must remain a minimal Private Beta landing');
+
 const privateBetaHtml = fs.readFileSync(path.join(root, 'private-beta.html'), 'utf8');
 const cloudAuthHtml = fs.readFileSync(path.join(root, 'cloud-auth.html'), 'utf8');
 if (/data-mode=["']signup["']/.test(privateBetaHtml)) fail('private-beta.html must not expose public signup');
