@@ -4,6 +4,7 @@ const { spawnSync } = require('child_process');
 
 const command = String(process.env.WRANGLER_COMMAND || '').trim().toLowerCase();
 const branch = String(process.env.WORKERS_CI_BRANCH || '').trim();
+const workersCi = String(process.env.WORKERS_CI || '').trim() === '1';
 const productionBranch = 'main';
 
 function fail(message) {
@@ -17,6 +18,18 @@ function run(script) {
   const result = spawnSync(npm, ['run', script], { stdio: 'inherit', env: process.env });
   if (result.error) fail(result.error.message);
   if (result.status !== 0) process.exit(result.status || 1);
+}
+
+// Workers Builds provides WORKERS_CI_BRANCH. A non-production Git branch must
+// be uploaded as a preview version, not promoted with `wrangler deploy`.
+// Fail before running any production-capable build if the Cloudflare project
+// is misconfigured, so the log names the external setting that must be fixed.
+if (workersCi && branch && branch !== productionBranch && (command === 'deploy' || command === 'versions deploy')) {
+  fail(
+    `non-production branch "${branch}" was invoked with "${command}". ` +
+    'Set Cloudflare Workers Builds > Non-production branch deploy command to "npx wrangler versions upload". ' +
+    'ATLAS will not weaken the production constitutional gate to compensate for a preview-deploy misconfiguration.'
+  );
 }
 
 // Any operation on the production branch must pass the full constitutional gate.
