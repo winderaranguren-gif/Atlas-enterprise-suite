@@ -10,6 +10,7 @@ const required=[
   'atlas-skill-registry.js',
   'atlas-agent-fabric.js',
   'app.js',
+  'service-worker.js',
   'package.json',
   'docs/ATLAS_AGENT_FABRIC.md',
   '.github/skills/atlas-agent-fabric/SKILL.md'
@@ -21,6 +22,7 @@ for(const file of required){
 const registry=read('atlas-skill-registry.js');
 const fabric=read('atlas-agent-fabric.js');
 const app=read('app.js');
+const serviceWorker=read('service-worker.js');
 const pkg=JSON.parse(read('package.json'));
 
 for(const skill of ['technical-support','deployment','security','knowledge','accounting','hr','iot-digital-twin']){
@@ -61,6 +63,11 @@ const supportIndex=app.indexOf("atlas-technical-support.js?v=1");
 if(registryIndex<0||fabricIndex<0||supportIndex<0)fail('runtime loader is missing Agent Fabric assets');
 if(!(registryIndex<fabricIndex&&fabricIndex<supportIndex))fail('load order must be skill registry → Agent Fabric → Technical Support');
 
+for(const asset of ['/atlas-skill-registry.js?v=1','/atlas-agent-fabric.js?v=1']){
+  if(!serviceWorker.includes(`'${asset}'`))fail(`PWA app shell is missing ${asset}`);
+}
+if(!/atlas-core-v\d+-agent-fabric/.test(serviceWorker))fail('service-worker cache version was not advanced for Agent Fabric');
+
 if(!pkg.scripts?.['check:agent-fabric'])fail('package.json is missing check:agent-fabric');
 if(!String(pkg.scripts.validate||'').includes('check:agent-fabric'))fail('main validate chain does not include check:agent-fabric');
 if(!String(pkg.scripts['check:js']||'').includes('atlas-agent-fabric.js'))fail('check:js does not syntax-check Agent Fabric');
@@ -71,4 +78,4 @@ for(const pattern of forbidden){
   if(pattern.test(registry)||pattern.test(fabric))fail(`possible embedded secret matched ${pattern}`);
 }
 
-console.log('ATLAS Agent Fabric validation passed: skills, canonical Identity permissions, runtime invariants, loader order and package validation are wired.');
+console.log('ATLAS Agent Fabric validation passed: skills, canonical Identity permissions, runtime invariants, loader order, PWA cache and package validation are wired.');
