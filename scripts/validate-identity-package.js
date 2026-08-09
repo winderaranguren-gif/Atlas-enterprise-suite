@@ -11,6 +11,8 @@ const invokerHardeningPath = path.join(root, 'supabase/migrations/202608082252_a
 const indexesPath = path.join(root, 'supabase/migrations/202608082253_atlas_identity_indexes.sql');
 const mfaStepupPath = path.join(root, 'supabase/migrations/202608082254_atlas_identity_mfa_stepup.sql');
 const memberAdminPath = path.join(root, 'supabase/migrations/202608082255_atlas_identity_member_admin.sql');
+const hierarchyPath = path.join(root, 'supabase/migrations/202608082256_atlas_identity_hierarchy_locking.sql');
+const memberIndexesPath = path.join(root, 'supabase/migrations/202608082257_atlas_identity_member_indexes.sql');
 const clientPath = path.join(root, 'atlas-identity.js');
 const authHtmlPath = path.join(root, 'cloud-auth.html');
 const authClientPath = path.join(root, 'cloud-auth.js');
@@ -85,6 +87,8 @@ const invokerHardening = read(invokerHardeningPath);
 const indexes = read(indexesPath);
 const mfaStepup = read(mfaStepupPath);
 const memberAdmin = read(memberAdminPath);
+const hierarchy = read(hierarchyPath);
+const memberIndexes = read(memberIndexesPath);
 const client = read(clientPath);
 const authHtml = read(authHtmlPath);
 const authClient = read(authClientPath);
@@ -152,6 +156,24 @@ if (memberAdmin) {
   mustInclude(memberAdmin, 'revoke insert, update, delete on public.organization_members from authenticated', 'direct member mutation revoke');
   mustInclude(memberAdmin, 'grant execute on function public.list_identity_members(uuid) to authenticated', 'member listing RPC grant');
   mustInclude(memberAdmin, 'commit;', 'identity member administration transaction');
+}
+
+if (hierarchy) {
+  balancedSql(hierarchy, 'identity hierarchy locking migration');
+  mustInclude(hierarchy, "has_identity_permission(organization_id, 'identity.manage')", 'effective identity.manage enforcement');
+  mustInclude(hierarchy, "has_identity_permission(organization_id, 'members.manage')", 'effective members.manage enforcement');
+  mustInclude(hierarchy, "actor_role = 'admin' and target_role in ('owner','admin')", 'admin permission hierarchy protection');
+  mustInclude(hierarchy, 'Owner identity.manage permission cannot be denied', 'owner identity administration protection');
+  mustInclude(hierarchy, 'pg_advisory_xact_lock', 'organization concurrency lock');
+  mustInclude(hierarchy, 'The organization must retain at least one active owner', 'concurrent last-owner protection');
+  mustInclude(hierarchy, 'commit;', 'identity hierarchy transaction');
+}
+
+if (memberIndexes) {
+  balancedSql(memberIndexes, 'identity member index migration');
+  mustInclude(memberIndexes, 'organization_members_user_id_idx', 'user-to-organization identity context index');
+  mustInclude(memberIndexes, 'organization_members_org_role_status_idx', 'owner hierarchy lookup index');
+  mustInclude(memberIndexes, 'commit;', 'identity member index transaction');
 }
 
 if (client) {
