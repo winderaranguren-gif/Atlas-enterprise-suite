@@ -44,6 +44,13 @@ async function requireOk(path) {
   return response;
 }
 
+async function requireAuth(path) {
+  const response = await fetchWithTimeout(path);
+  assert.equal(response.status, 401, `${path} must require authentication`);
+  const payload = await response.json();
+  assert.equal(payload.error, 'authentication_required', `${path} returned an unexpected auth error`);
+}
+
 async function main() {
   await diagnoseDns();
 
@@ -53,12 +60,14 @@ async function main() {
 
   const healthResponse = await requireOk('/healthz');
   const health = await healthResponse.json();
-  assert.equal(health.ok, true, '/healthz did not report ok=true');
-  assert.equal(health.version, '0.5.0', `unexpected deployed version: ${health.version}`);
+  assert.deepEqual(health, { ok: true }, '/healthz must expose liveness only');
 
   const versionResponse = await requireOk('/api/version');
   const version = await versionResponse.json();
-  assert.equal(version.version, '0.5.0', '/api/version does not report 0.5.0');
+  assert.deepEqual(version, { ok: true }, '/api/version must not disclose build metadata publicly');
+
+  await requireAuth('/api/support/capabilities');
+  await requireAuth('/api/gps/status');
 
   const calendarResponse = await requireOk('/atlas-calendar.html');
   const calendar = await calendarResponse.text();
