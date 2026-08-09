@@ -1,9 +1,16 @@
 (() => {
   'use strict';
+
   const params = new URLSearchParams(location.search);
+  const fragment = new URLSearchParams(location.hash.slice(1));
   const mode = params.get('mode') || 'laptop';
   const challengeId = params.get('challenge');
-  const phoneToken = params.get('token');
+  const phoneToken = fragment.get('token');
+
+  // Remove the one-time token from the visible address bar after this page has read it.
+  if (mode === 'phone' && phoneToken && location.hash) {
+    history.replaceState(null, '', `${location.pathname}${location.search}`);
+  }
 
   const laptopPanel = document.querySelector('#laptop-panel');
   const phonePanel = document.querySelector('#phone-panel');
@@ -64,9 +71,20 @@
   async function startChallenge() {
     startButton.disabled = true;
     try {
-      const response = await fetch('/api/identity/challenges', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
-      if (!response.ok) throw new Error('No se pudo crear la solicitud.');
-      current = await response.json();
+      const response = await fetch('/api/identity/challenges', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}'
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        if (result.error === 'public_origin_not_configured') {
+          throw new Error('Falta configurar el origen HTTPS seguro que puede abrir el teléfono vinculado.');
+        }
+        throw new Error(result.error || 'No se pudo crear la solicitud.');
+      }
+
+      current = result;
       phoneLink.href = current.phoneUrl;
       phoneUrl.textContent = current.phoneUrl;
       phoneLinkWrap.classList.remove('hidden');
@@ -81,7 +99,12 @@
   }
 
   async function cancelChallenge() {
-    if (current) await fetch(`/api/identity/challenges/${encodeURIComponent(current.challengeId)}`, { method: 'DELETE' }).catch(() => {});
+    if (current) {
+      await fetch(`/api/identity/challenges/${encodeURIComponent(current.challengeId)}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${current.pollToken}` }
+      }).catch(() => {});
+    }
     current = null;
     clearInterval(pollTimer); pollTimer = null;
     phoneLinkWrap.classList.add('hidden');
@@ -92,8 +115,16 @@
 
   async function enableCamera() {
     try {
-      if (!navigator.mediaDevices?.getUserMedia) throw new Error('Este navegador no permite acceso seguro a la cámara.');
-      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 1280 } }, audio: false });
+      if (!window.isSecureContext) {
+        throw new Error('La cámara requiere una conexión HTTPS segura en el teléfono.');
+      }
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw new Error('Este navegador no permite acceso seguro a la cámara.');
+      }
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 1280 } },
+        audio: false
+      });
       video.srcObject = stream;
       captureButton.disabled = false;
       setStatus(phoneStatus, 'Cámara activa. Centra tu rostro y toma la selfie.');
@@ -111,7 +142,7 @@
     canvas.width = Math.min(video.videoWidth, 1280);
     canvas.height = Math.round(canvas.width * (video.videoHeight / video.videoWidth));
     canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-    const selfieDataUrl = canvas.toDataURL('image/jpeg', 0.86);
+    let selfieDataUrl = canvas.toDataURL('image/jpeg', 0.86);
     stopCamera();
     setStatus(phoneStatus, 'Selfie capturada. Verificando…');
 
@@ -121,11 +152,20 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: phoneToken, consent: true, selfieDataUrl })
       });
+      selfieDataUrl = '';
+      canvas.width = 1;
+      canvas.height = 1;
+
       const result = await response.json().catch(() => ({}));
-      if (!response.ok || !result.ok) throw new Error(result.reason || result.error || 'La verificación no fue aprobada.');
+      if (!response.ok || !result.ok) {
+        throw new Error(result.reason || result.error || 'La verificación no fue aprobada.');
+      }
       setStatus(phoneStatus, 'Identidad verificada. Puedes volver a la laptop.', 'good');
       cameraButton.disabled = true;
     } catch (error) {
+      selfieDataUrl = '';
+      canvas.width = 1;
+      canvas.height = 1;
       setStatus(phoneStatus, error.message || 'No se pudo verificar la identidad.', 'bad');
       cameraButton.disabled = false;
     }
@@ -134,7 +174,10 @@
   if (mode === 'phone') {
     laptopPanel.classList.add('hidden');
     phonePanel.classList.remove('hidden');
-    if (!challengeId || !phoneToken) setStatus(phoneStatus, 'Enlace de verificación incompleto o inválido.', 'bad');
+    if (!challengeId || !phoneToken) {
+      setStatus(phoneStatus, 'Enlace de verificación incompleto o inválido.', 'bad');
+      cameraButton.disabled = true;
+    }
     cameraButton.addEventListener('click', enableCamera);
     captureButton.addEventListener('click', captureAndVerify);
   } else {
