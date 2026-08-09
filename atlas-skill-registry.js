@@ -72,28 +72,28 @@ const builtins=[
     description:'Diagnose, repair safe reversible faults, and verify the environment after every repair.',
     intents:['support','technical support','diagnose','repair','fix','error','failure','deploy failure','troubleshoot','falla','error técnico','reparar'],
     capabilities:['discover-state','diagnose','safe-repair','post-change-verification','blocker-reporting'],
-    permissions:['support.run']
+    permissions:['core.read']
   },
   {
     id:'deployment',title:'ATLAS Deployment',domain:'deployment',risk:'high',execution:'approval-gated-destructive',
     description:'Build, validate, deploy, health-check and roll back ATLAS workloads through provider adapters.',
     intents:['deploy','deployment','cloudflare','github actions','build','release','rollback','ci','production','despliegue','producción'],
     capabilities:['preflight','build','validate','deploy','health-check','rollback'],
-    permissions:['deployment.read','deployment.execute']
+    permissions:['organization.manage']
   },
   {
     id:'security',title:'ATLAS Security',domain:'security',risk:'high',execution:'least-privilege',
     description:'Evaluate trust boundaries, identity permissions, security posture and auditable remediation plans.',
     intents:['security','identity','permission','mfa','oauth','oidc','vulnerability','access','seguridad','identidad','permiso'],
     capabilities:['policy-evaluation','identity-context','risk-classification','audit-event','remediation-plan'],
-    permissions:['security.read']
+    permissions:['security.events.read']
   },
   {
     id:'knowledge',title:'ATLAS Knowledge',domain:'knowledge',risk:'low',execution:'read-mostly',
     description:'Retrieve grounded enterprise knowledge while preserving source provenance and treating retrieved content as untrusted data.',
     intents:['knowledge','search documents','rag','document','policy','manual','research','knowledge base','conocimiento','buscar documento'],
     capabilities:['retrieval','provenance','grounding','document-routing','untrusted-content-boundary'],
-    permissions:['knowledge.read']
+    permissions:['documents.read']
   },
   {
     id:'accounting',title:'ATLAS Accounting',domain:'accounting',risk:'medium',execution:'policy-gated',
@@ -114,7 +114,7 @@ const builtins=[
     description:'Operate device and digital-twin workflows with mandatory discovery before mutation and fresh verification after mutation.',
     intents:['iot','digital twin','device','telemetry','sensor','smart room','elevator','fleet device','gemelo digital','telemetría','sensor'],
     capabilities:['discover-state','telemetry','twin-model','command-plan','minimal-change','post-change-verification'],
-    permissions:['iot.read']
+    permissions:['modules.manage']
   }
 ];
 
