@@ -1,0 +1,51 @@
+{
+  "version": 2,
+  "product": "ATLAS GPS 4D",
+  "architecture": "local-first-with-optional-provider",
+  "classification": {
+    "preciseLocation": "restricted",
+    "routeGeometry": "restricted",
+    "cameraFrames": "restricted",
+    "destinationText": "confidential",
+    "providerMetadata": "internal"
+  },
+  "defaults": {
+    "locationHistory": false,
+    "rawCameraUpload": false,
+    "routePersistence": "session-only",
+    "externalProvider": false,
+    "analytics": false,
+    "personalizedAdvertising": false,
+    "crossTenantSharing": false
+  },
+  "permissions": {
+    "location": "requested only after explicit user action; watch is cleared when the page/session ends",
+    "camera": "requested only after explicit user action; stream tracks stop when disabled or page/session ends",
+    "microphone": "not requested by the local core",
+    "backgroundLocation": "not enabled by the local web core"
+  },
+  "providerBoundary": {
+    "registration": "runtime adapter through window.ATLASGPS4D.registerProvider",
+    "requiredInterface": "route({ origin, destination, language })",
+    "secretPolicy": "provider secrets must never be embedded in browser source",
+    "fallback": "provider failure falls back to the local route-preview core",
+    "criticalDrivingDependency": false
+  },
+  "storage": {
+    "preciseLocation": "memory only",
+    "routeGeometry": "memory only",
+    "cameraFrames": "not persisted",
+    "languagePreference": "localStorage allowed",
+    "clearSession": "must stop location watch, stop camera tracks and clear route state"
+  },
+  "releaseGates": [
+    "JavaScript syntax validation passes",
+    "PWA install does not require third-party CDN assets",
+    "location is not requested on page load",
+    "camera is not requested on page load",
+    "no browser source contains provider secret keys",
+    "provider failure preserves local-core usability",
+    "session clear stops location and camera access",
+    "production provider integrations receive separate security review"
+  ]
+}
