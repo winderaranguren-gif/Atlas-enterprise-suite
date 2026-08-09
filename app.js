@@ -109,15 +109,11 @@
       if(finalized)return;
       finalized=true;
       if(timer)clearTimeout(timer);
-      // Remove any shell/API installed by cached v3 before v4 gets a chance to bind.
       appendAccessibilityV4({replaceRuntime:true,onSettled:advanceAfterAccessibility});
     };
 
     const settleKnownLegacy=(script,loaded)=>{
       if(finalized){
-        // A script that was genuinely stalled past the bounded wait must never be
-        // allowed to become the final runtime. If it eventually executes, replace
-        // its shell/API immediately with a fresh v4 instance.
         if(loaded)appendAccessibilityV4({replaceRuntime:true,onSettled:()=>{}});
         return;
       }
@@ -130,8 +126,6 @@
       script.addEventListener('error',()=>settleKnownLegacy(script,false),{once:true});
     }
 
-    // Never wait on the global window load event. A broken image/iframe/stylesheet
-    // must not deadlock Accessibility or the downstream DragDrop/Cars/GPS chain.
     timer=setTimeout(finalize,RECONCILE_TIMEOUT_MS);
   };
 
@@ -207,10 +201,30 @@
     document.body.append(script);
   };
 
+  const loadLocalInference=()=>{
+    if(window.ATLASOwnedCore?.inspect?.().providers?.some(provider=>provider.id==='atlas-self-hosted-inference'))return loadSuite();
+    const provider=document.createElement('script');
+    provider.src='atlas-local-inference-provider.js?v=1';
+    provider.async=false;
+    provider.onload=loadSuite;
+    provider.onerror=loadSuite;
+    document.body.append(provider);
+  };
+
+  const loadOwnedCore=()=>{
+    if(window.ATLASOwnedCore)return loadLocalInference();
+    const ownedCore=document.createElement('script');
+    ownedCore.src='atlas-owned-core.js?v=1';
+    ownedCore.async=false;
+    ownedCore.onload=loadLocalInference;
+    ownedCore.onerror=loadSuite;
+    document.body.append(ownedCore);
+  };
+
   const migration=document.createElement('script');
   migration.src='atlas-legacy-migrate.js?v=4';
   migration.async=false;
-  migration.onload=loadSuite;
-  migration.onerror=loadSuite;
+  migration.onload=loadOwnedCore;
+  migration.onerror=loadOwnedCore;
   document.body.append(migration);
 })();
