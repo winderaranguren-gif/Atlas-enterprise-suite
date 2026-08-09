@@ -3,14 +3,14 @@
 
 const STORAGE_KEY='atlas-support-runbooks-v1';
 const SUPPORT_STORAGE_KEY='atlas-technical-support-v1';
-const VERSION='1.0.0';
+const VERSION='1.0.1';
 const RUNBOOK_API_TIMEOUT_MS=4500;
 const MAX_TIMELINE_EVENTS=250;
 const SAFE_ACTIONS=new Set(['repair-service-worker','request-persistence']);
 const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const now=()=>new Date().toISOString();
 const uid=()=>crypto.randomUUID?.()||`ats-runbook-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-let verifyingRunbookRepair=false;
+const verifyingRunbookCaseIds=new Set();
 
 function load(){
   try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}');}
@@ -61,7 +61,7 @@ function localPlan(caseItem={}){
     else steps.push({id:`diagnose-${id}`,diagnosticId:id,label:`Profundizar ${item.label||id}`,mode:'diagnostic',status:'ready',detail:item.detail||'Recolectar evidencia adicional antes de aplicar cambios.'});
   }
 
-  steps.push({id:'verify-final',label:'Verificación posterior',mode:'verify',status:'ready',detail:'Volver a ejecutar diagnóstico y no cerrar el caso hasta comprobar el estado final.'});
+  steps.push({id:'verify-final',label:'Verificación posterior',mode:'verify',status:'ready',detail:'Volver a ejecutar diagnóstico sin repetir reparaciones y no cerrar el caso hasta comprobar el estado final.'});
 
   return {
     ok:true,
@@ -75,7 +75,7 @@ function localPlan(caseItem={}){
 
 async function requestPlan(caseItem={}){
   const controller=new AbortController();
-  const timer=setTimeout(()=>controller.abort(),5000);
+  const timer=setTimeout(()=>controller.abort(),RUNBOOK_API_TIMEOUT_MS);
   try{
     const response=await fetch('/api/support/plan',{
       method:'POST',
@@ -145,13 +145,93 @@ function completeVerificationStep(plan,verifiedCase){
   };
 }
 
-async function verifyAfterRunbookRepair(caseItem,plan){
-  const support=window.ATLASTechnicalSupport;
-  if(!support||typeof support.resolveCase!=='function')return;
-  verifyingRunbookRepair=true;
+async function probeApiVersion(){
+  if(!navigator.onLine)return {ok:false,detail:'No se prueba backend mientras el dispositivo está offline.'};
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),RUNBOOK_API_TIMEOUT_MS);
   try{
-    const verifiedCase=await support.resolveCase(caseItem);
-    completeVerificationStep(plan,verifiedCase);
+    const response=await fetch('/api/version',{headers:{accept:'application/json'},cache:'no-store',signal:controller.signal});
+    const type=response.headers.get('content-type')||'';
+    const text=await response.text();
+    const json=type.includes('application/json')?JSON.parse(text||'{}'):null;
+    const valid=response.ok&&Boolean(json)&&typeof json==='object';
+    return {ok:valid,detail:valid?`API activa (${json.version||json.name||response.status}).`:`/api/version respondió ${response.status} ${type||'sin content-type'}; no se recibió JSON válido.`,data:{status:response.status,contentType:type,json}};
+  }finally{clearTimeout(timer);}
+}
+
+async function verifyDiagnostic(item={}){
+  const id=String(item.id||'');
+  const support=window.ATLASTechnicalSupport;
+
+  try{
+    if(id==='network')return {...item,ok:navigator.onLine,detail:navigator.onLine?'El dispositivo reporta conexión de red.':'El dispositivo reporta estado offline.'};
+    if(id==='origin'){
+      const ok=window.isSecureContext||['localhost','127.0.0.1','::1'].includes(location.hostname);
+      return {...item,ok,detail:ok?'Contexto HTTPS seguro activo.':`Origen actual: ${location.origin}`};
+    }
+    if(id==='storage'){
+      const key=`${SUPPORT_STORAGE_KEY}:verify`;
+      localStorage.setItem(key,'ok');
+      const ok=localStorage.getItem(key)==='ok';
+      localStorage.removeItem(key);
+      return {...item,ok,detail:ok?'Lectura/escritura local operativa.':'No se pudo verificar localStorage.'};
+    }
+    if(id==='quota'){
+      if(!navigator.storage?.estimate)return {...item,ok:true,detail:'El navegador no expone estimación de cuota.'};
+      const estimate=await navigator.storage.estimate();
+      const usage=Number(estimate.usage||0),quota=Number(estimate.quota||0);
+      const ratio=quota?usage/quota:0;
+      return {...item,ok:ratio<0.92,detail:quota?`${Math.round(ratio*100)}% de la cuota local en uso.`:'Cuota no reportada.',data:{usage,quota,ratio}};
+    }
+    if(id==='service-worker'){
+      if(!('serviceWorker' in navigator))return {...item,ok:false,detail:'Service Worker no soportado por este navegador.'};
+      const registration=await navigator.serviceWorker.getRegistration();
+      return {...item,ok:Boolean(registration),detail:registration?'Service Worker registrado.':'No hay Service Worker registrado.',data:{scope:registration?.scope||null}};
+    }
+    if(id==='cache-api')return {...item,ok:'caches' in window,detail:'caches' in window?'Cache API disponible.':'Cache API no disponible.'};
+    if(id==='assets'){
+      const resources=performance.getEntriesByType('resource');
+      const own=resources.filter(entry=>{try{return new URL(entry.name).origin===location.origin;}catch{return false;}});
+      const suspicious=own.filter(entry=>entry.duration===0&&entry.transferSize===0&&entry.decodedBodySize===0).map(entry=>entry.name);
+      return {...item,ok:suspicious.length===0,detail:suspicious.length?`${suspicious.length} recurso(s) requieren revisión.`:`${own.length} recurso(s) del origen observados sin fallas evidentes.`,data:{suspicious}};
+    }
+    if(id==='api-version')return {...item,...await probeApiVersion()};
+    if(id==='modules'){
+      const modules=support?.discoverModules?.()||[];
+      return {...item,ok:true,detail:`${modules.length} módulo(s) detectado(s) en el runtime actual.`,data:{modules}};
+    }
+    if(id==='adapter:browser-runtime')return {...item,ok:document.readyState!=='loading',detail:`Documento: ${document.readyState}.`};
+    if(id==='adapter:runbook-engine')return {...item,...await diagnoseRunbookApi()};
+
+    return {...item,verificationSkipped:true};
+  }catch(error){
+    return {...item,ok:false,detail:error?.message||String(error),verificationError:true};
+  }
+}
+
+async function runDiagnosticsOnly(caseItem){
+  const support=window.ATLASTechnicalSupport;
+  if(typeof support?.runDiagnostics==='function'){
+    const diagnostics=await support.runDiagnostics({case:caseItem,repair:false});
+    return Array.isArray(diagnostics)?diagnostics:[];
+  }
+
+  const current=Array.isArray(caseItem?.diagnostics)?caseItem.diagnostics:[];
+  const diagnostics=[];
+  for(const item of current)diagnostics.push(await verifyDiagnostic(item));
+  return diagnostics;
+}
+
+async function verifyAfterRunbookRepair(caseItem,plan){
+  if(!caseItem?.id)return;
+  verifyingRunbookCaseIds.add(caseItem.id);
+  try{
+    const diagnostics=await runDiagnosticsOnly(caseItem);
+    caseItem.diagnostics=diagnostics;
+    caseItem.updatedAt=now();
+    persistSupport();
+    completeVerificationStep(plan,caseItem);
+    window.dispatchEvent(new CustomEvent('atlas:support:event',{detail:{caseId:caseItem.id,event:{id:uid(),at:now(),type:'verification-completed',message:'ATLAS completó verificación diagnóstica sin repetir reparaciones.',data:{source:'runbook-engine'}}}}));
   }catch(error){
     const verifyStep=(plan.steps||[]).find(step=>step.id==='verify-final');
     if(verifyStep){
@@ -160,7 +240,7 @@ async function verifyAfterRunbookRepair(caseItem,plan){
     }
     plan.verification={at:now(),ok:false,error:error?.message||String(error)};
   }finally{
-    verifyingRunbookRepair=false;
+    verifyingRunbookCaseIds.delete(caseItem.id);
   }
 }
 
@@ -291,9 +371,9 @@ function boot(){
 }
 
 window.addEventListener('atlas:support:case-resolved',event=>{
-  if(verifyingRunbookRepair)return;
   const caseItem=event.detail?.case;
-  if(caseItem)planCase(caseItem,{autoExecute:true}).catch(()=>{});
+  if(!caseItem||verifyingRunbookCaseIds.has(caseItem.id))return;
+  planCase(caseItem,{autoExecute:true}).catch(()=>{});
 });
 window.addEventListener('atlas:support:ready',()=>boot());
 window.addEventListener('atlas:support:event',()=>setTimeout(()=>render(activeCase()?.id),0));
