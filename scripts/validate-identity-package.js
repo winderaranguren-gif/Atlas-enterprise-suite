@@ -8,6 +8,7 @@ const root = path.resolve(__dirname, '..');
 const foundationPath = path.join(root, 'supabase/migrations/202608082250_atlas_identity_foundation.sql');
 const hardeningPath = path.join(root, 'supabase/migrations/202608082251_atlas_identity_audit_hardening.sql');
 const invokerHardeningPath = path.join(root, 'supabase/migrations/202608082252_atlas_identity_invoker_hardening.sql');
+const indexesPath = path.join(root, 'supabase/migrations/202608082253_atlas_identity_indexes.sql');
 const clientPath = path.join(root, 'atlas-identity.js');
 const authHtmlPath = path.join(root, 'cloud-auth.html');
 const authClientPath = path.join(root, 'cloud-auth.js');
@@ -79,6 +80,7 @@ function balancedSql(text, label) {
 const foundation = read(foundationPath);
 const hardening = read(hardeningPath);
 const invokerHardening = read(invokerHardeningPath);
+const indexes = read(indexesPath);
 const client = read(clientPath);
 const authHtml = read(authHtmlPath);
 const authClient = read(authClientPath);
@@ -112,6 +114,16 @@ if (invokerHardening) {
   mustInclude(invokerHardening, 'alter function public.get_identity_context() security invoker', 'identity context invoker mode');
   mustInclude(invokerHardening, 'set_identity_role_permission', 'intentional privileged mutation note');
   mustInclude(invokerHardening, 'commit;', 'identity invoker hardening transaction');
+}
+
+if (indexes) {
+  balancedSql(indexes, 'identity index migration');
+  mustInclude(indexes, 'identity_role_permissions_permission_code_idx', 'role permission foreign-key index');
+  mustInclude(indexes, 'identity_security_events_org_created_idx', 'security events organization index');
+  mustInclude(indexes, 'identity_security_events_actor_user_id_idx', 'security events actor index');
+  mustInclude(indexes, 'organization_role_permissions_permission_code_idx', 'override permission index');
+  mustInclude(indexes, 'organization_role_permissions_updated_by_idx', 'override updater index');
+  mustInclude(indexes, 'commit;', 'identity index transaction');
 }
 
 if (client) {
