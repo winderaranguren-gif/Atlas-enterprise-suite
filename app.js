@@ -180,12 +180,30 @@
     document.body.append(support);
   };
 
+  const loadAgentFabric=()=>{
+    const fabric=document.createElement('script');
+    fabric.src='atlas-agent-fabric.js?v=1';
+    fabric.async=false;
+    fabric.onload=loadSupport;
+    fabric.onerror=loadSupport;
+    document.body.append(fabric);
+  };
+
+  const loadSkillRegistry=()=>{
+    const skillRegistry=document.createElement('script');
+    skillRegistry.src='atlas-skill-registry.js?v=1';
+    skillRegistry.async=false;
+    skillRegistry.onload=loadAgentFabric;
+    skillRegistry.onerror=loadSupport;
+    document.body.append(skillRegistry);
+  };
+
   const loadOperational=()=>{
     const operational=document.createElement('script');
     operational.src='atlas-os-operational.js?v=1';
     operational.async=false;
-    operational.onload=loadSupport;
-    operational.onerror=loadSupport;
+    operational.onload=loadSkillRegistry;
+    operational.onerror=loadSkillRegistry;
     document.body.append(operational);
   };
 
