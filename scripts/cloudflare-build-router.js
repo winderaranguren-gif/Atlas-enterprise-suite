@@ -13,17 +13,25 @@ function fail(message) {
 }
 
 function run(script) {
-  console.log(`ATLAS Cloudflare build router: branch=${branch || 'local/unknown'}, wrangler=${command || 'unknown'}, path=${script}`);
+  console.log(`ATLAS Cloudflare build router: branch=${branch || 'local/unknown'}, wrangler=${command || 'direct-build'}, path=${script}`);
   const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
   const result = spawnSync(npm, ['run', script], { stdio: 'inherit', env: process.env });
   if (result.error) fail(result.error.message);
   if (result.status !== 0) process.exit(result.status || 1);
 }
 
-// Workers Builds provides WORKERS_CI_BRANCH. A non-production Git branch must
-// be uploaded as a preview version, not promoted with `wrangler deploy`.
-// Fail before running any production-capable build if the Cloudflare project
-// is misconfigured, so the log names the external setting that must be fixed.
+// Workers Builds runs its configured Build command directly and does not honor
+// Wrangler custom builds from wrangler.jsonc. In that direct-build context,
+// WORKERS_CI/WORKERS_CI_BRANCH are present but WRANGLER_COMMAND is not.
+// Route production and preview branches explicitly before Wrangler-specific logic.
+if (workersCi && branch && !command) {
+  run(branch === productionBranch ? 'build:prod' : 'build:dev');
+  process.exit(0);
+}
+
+// If this router is ever reached from a Wrangler custom build inside Workers
+// Builds, a non-production branch must still be uploaded as a preview version,
+// never promoted with `wrangler deploy`.
 if (workersCi && branch && branch !== productionBranch && (command === 'deploy' || command === 'versions deploy')) {
   fail(
     `non-production branch "${branch}" was invoked with "${command}". ` +
@@ -32,7 +40,8 @@ if (workersCi && branch && branch !== productionBranch && (command === 'deploy' 
   );
 }
 
-// Any operation on the production branch must pass the full constitutional gate.
+// Any Wrangler-triggered operation on the production branch must pass the full
+// constitutional release gate.
 if (branch === productionBranch) {
   run('build:prod');
   process.exit(0);
@@ -45,11 +54,11 @@ if (command === 'deploy' || command === 'versions deploy') {
   process.exit(0);
 }
 
-// Preview uploads and development build validated assets without production
-// approval. They cannot themselves approve or promote a production release.
+// Preview uploads and development commands build validated assets without
+// production approval. They cannot themselves approve or promote a release.
 if (command === 'versions upload' || command === 'dev' || command === 'types') {
   run('build:dev');
   process.exit(0);
 }
 
-fail(`unsupported or missing WRANGLER_COMMAND: ${command || '(empty)'}`);
+fail(`unsupported build context: workersCi=${workersCi ? '1' : '0'}, branch=${branch || '(empty)'}, wrangler=${command || '(empty)'}`);
