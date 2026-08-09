@@ -53,6 +53,27 @@ function writePagesCompatibilityFiles() {
 /*.html
   Cache-Control: no-store, max-age=0
 
+/cloud-auth.js
+  Cache-Control: no-store, max-age=0
+
+/cloud-auth.css
+  Cache-Control: no-store, max-age=0
+
+/atlas-config.js
+  Cache-Control: no-store, max-age=0
+
+/atlas-identity.js
+  Cache-Control: no-store, max-age=0
+
+/atlas-identity-invitations.js
+  Cache-Control: no-store, max-age=0
+
+/private-beta.js
+  Cache-Control: no-store, max-age=0
+
+/private-beta-recovery.js
+  Cache-Control: no-store, max-age=0
+
 /service-worker.js
   Cache-Control: public, max-age=0, must-revalidate
 `;
@@ -64,7 +85,19 @@ function writePagesCompatibilityFiles() {
 }
 
 function verifyRequiredFiles() {
-  const required = ['index.html', 'styles.css', 'app.js', 'manifest.webmanifest', 'service-worker.js'];
+  const required = [
+    'index.html',
+    'styles.css',
+    'app.js',
+    'manifest.webmanifest',
+    'service-worker.js',
+    'cloud-auth.html',
+    'cloud-auth.js',
+    'cloud-auth.css',
+    'atlas-config.js',
+    'atlas-identity.js',
+    'atlas-identity-invitations.js'
+  ];
   const missing = required.filter((name) => !fs.existsSync(path.join(output, name)));
   if (missing.length) {
     throw new Error(`Cloudflare build is missing required assets: ${missing.join(', ')}`);
