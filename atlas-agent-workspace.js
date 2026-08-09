@@ -264,8 +264,8 @@ $('#session-form').addEventListener('submit',(event)=>{
 
 window.addEventListener('atlas:github-bridge-ready',detectBridge);
 window.ATLASAgentWorkspace={
-  getState:()=>structuredClone?structuredClone(state):JSON.parse(JSON.stringify(state)),
-  createSession:(input)=>{state.sessions.unshift({id:uid(),title:input.title||'Untitled session',goal:input.goal||'',source:input.source||'Prompt',mode:input.mode||'Plan',status:'active',createdAt:now(),checks:0});renderAll();},
+  getState:()=>typeof structuredClone==='function'?structuredClone(state):JSON.parse(JSON.stringify(state)),
+  createSession:(input={})=>{state.sessions.unshift({id:uid(),title:input.title||'Untitled session',goal:input.goal||'',source:input.source||'Prompt',mode:input.mode||'Plan',status:'active',createdAt:now(),checks:0});renderAll();},
   runValidation
 };
 
