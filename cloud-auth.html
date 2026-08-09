@@ -28,6 +28,11 @@
       </div>
 
       <section id="auth-section">
+        <div id="invite-auth-notice" class="invite-notice hidden">
+          <strong>Invitación ATLAS detectada</strong>
+          <span>Inicia sesión o crea la cuenta usando exactamente el correo que recibió la invitación. Después podrás aceptarla.</span>
+        </div>
+
         <div class="tabs" role="tablist" aria-label="Opciones de acceso">
           <button class="tab active" type="button" data-auth-mode="signin">Entrar</button>
           <button class="tab" type="button" data-auth-mode="signup">Crear cuenta</button>
@@ -53,6 +58,14 @@
           <div><small>Sesión autenticada</small><strong id="user-email">—</strong></div>
           <button id="signout-button" type="button" class="secondary">Cerrar sesión</button>
         </div>
+
+        <section id="pending-invite-section" class="security-panel hidden" aria-labelledby="pending-invite-title">
+          <div class="section-title">
+            <div><small>Acceso pendiente</small><h2 id="pending-invite-title">Aceptar invitación ATLAS</h2></div>
+          </div>
+          <p class="help">ATLAS verificará que el correo de esta sesión coincida con el destinatario de la invitación antes de crear la membresía.</p>
+          <button id="pending-invite-accept" type="button" class="primary">Aceptar invitación</button>
+        </section>
 
         <section id="mfa-section" class="security-panel" aria-labelledby="mfa-title">
           <div class="section-title">
@@ -97,6 +110,47 @@
           </div>
           <p id="member-admin-detail" class="help">Selecciona una empresa para revisar sus miembros.</p>
           <div id="member-list" class="member-list"></div>
+
+          <section id="invitation-admin" class="invitation-admin hidden" aria-labelledby="invitation-title">
+            <div class="section-title">
+              <div><small>Alta segura</small><h3 id="invitation-title">Invitaciones</h3></div>
+              <button id="invitation-refresh" type="button" class="secondary">Actualizar</button>
+            </div>
+
+            <form id="invitation-form" class="invite-form">
+              <label>Correo del invitado<input id="invitation-email" type="email" autocomplete="email" required /></label>
+              <label>Rol
+                <select id="invitation-role" required>
+                  <option value="staff">staff</option>
+                  <option value="manager">manager</option>
+                  <option value="accountant">accountant</option>
+                  <option value="viewer">viewer</option>
+                  <option id="invitation-admin-role" value="admin">admin</option>
+                </select>
+              </label>
+              <label>Expiración
+                <select id="invitation-expiry">
+                  <option value="24">24 horas</option>
+                  <option value="72">3 días</option>
+                  <option value="168" selected>7 días</option>
+                  <option value="336">14 días</option>
+                  <option value="720">30 días</option>
+                </select>
+              </label>
+              <button id="invitation-create" class="primary" type="submit">Crear invitación segura</button>
+            </form>
+
+            <div id="invitation-result" class="invite-result hidden">
+              <strong>Enlace generado</strong>
+              <p class="help">Este enlace contiene el token de un solo uso. La base de datos guarda únicamente su hash.</p>
+              <div class="copy-row">
+                <input id="invitation-link" type="text" readonly aria-label="Enlace de invitación" />
+                <button id="invitation-copy" type="button" class="secondary">Copiar</button>
+              </div>
+            </div>
+
+            <div id="invitation-list" class="invitation-list"></div>
+          </section>
         </section>
 
         <form id="organization-form" class="organization-form">
