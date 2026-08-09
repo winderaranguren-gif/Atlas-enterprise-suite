@@ -1,4 +1,4 @@
-const VERSION = 'atlas-core-v11-cars-architecture';
+const VERSION = 'atlas-core-v12-gps-local-first';
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 const APP_SHELL = [
@@ -13,6 +13,10 @@ const APP_SHELL = [
   '/atlas-cars.html',
   '/atlas-cars.css',
   '/atlas-cars.js',
+  '/atlas-gps-entry.js',
+  '/atlas-gps-4d.html',
+  '/atlas-gps-4d.css',
+  '/atlas-gps-4d.js',
   '/atlas-regional-navigation.js',
   '/atlas-legacy-migrate.js',
   '/atlas-suite.js',
