@@ -1,4 +1,4 @@
-const VERSION = 'atlas-core-v15-identity-hardening';
+const VERSION = 'atlas-core-v16-identity-audit';
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 const APP_SHELL = [
@@ -45,6 +45,7 @@ const IDENTITY_NETWORK_ONLY = new Set([
   '/atlas-config.js',
   '/atlas-identity.js',
   '/atlas-identity-invitations.js',
+  '/atlas-identity-audit.js',
   '/private-beta.html',
   '/private-beta.js',
   '/private-beta-recovery.js'
