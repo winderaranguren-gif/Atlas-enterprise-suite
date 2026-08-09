@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "system": "ATLAS Enterprise Suite",
+  "vault": "ATLAS Sovereign Vault",
+  "ownerControl": "winderaranguren-gif",
+  "repository": "winderaranguren-gif/Atlas-enterprise-suite",
+  "backupPolicy": {
+    "daily": true,
+    "retentionDays": 90,
+    "integrity": "sha256",
+    "secretsIncluded": false,
+    "restoreTest": true
+  },
+  "components": {
+    "source": ["repository"],
+    "infrastructure": [".github/workflows", "configuration-as-code"],
+    "databases": ["schemas", "migrations", "exports-when-configured"],
+    "agents": ["skills", "prompts", "agent-config"],
+    "design": ["ui", "assets", "documentation"],
+    "recovery": ["scripts/atlas-backup.sh", "scripts/atlas-verify.sh"]
+  },
+  "externalReplication": {
+    "cloudObjectStorage": "optional-r2-compatible",
+    "googleDrive": "planned-connector-replica"
+  },
+  "security": {
+    "secretValues": "never-store-in-backup",
+    "credentials": "use-provider-secret-manager",
+    "artifacts": "checksum-verified"
+  }
+}
