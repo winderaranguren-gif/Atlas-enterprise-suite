@@ -1,4 +1,6 @@
 # ATLAS governance ownership
 /governance/ATLAS-UNIVERSAL-CONSTITUTION.md @winderaranguren-gif
 /governance/atlas-constitutional-policy.json @winderaranguren-gif
+/governance/atlas-module-constitutional-controls.json @winderaranguren-gif
 /scripts/validate-constitution.js @winderaranguren-gif
+/scripts/validate-module-constitution.js @winderaranguren-gif
