@@ -1,0 +1,154 @@
+name: ATLAS CI v2
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: atlas-ci-v2-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  runner-probe:
+    name: Runner Probe
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Confirm GitHub-hosted runner can execute steps
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "ATLAS runner probe started"
+          echo "repository=${GITHUB_REPOSITORY}"
+          echo "event=${GITHUB_EVENT_NAME}"
+          echo "ref=${GITHUB_REF}"
+          uname -a
+          echo "ATLAS runner probe passed"
+
+  validate:
+    name: Validate and Build ATLAS
+    needs: runner-probe
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Show runtime versions
+        run: |
+          node --version
+          npm --version
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Run ATLAS validation contract
+        run: npm run validate
+
+      - name: Build Cloudflare package
+        run: npm run build:cloudflare
+
+      - name: Verify build output
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f dist/index.html
+          test -f dist/app.js
+          test -f dist/service-worker.js
+          echo "ATLAS build output verified"
+
+      - name: Smoke-test local server
+        shell: bash
+        run: |
+          set -euo pipefail
+          node server.js > /tmp/atlas-server.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID 2>/dev/null || true' EXIT
+          for attempt in 1 2 3 4 5; do
+            if curl --fail --silent --show-error http://127.0.0.1:4173/ > /dev/null; then
+              echo "ATLAS local smoke test passed"
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/atlas-server.log || true
+          exit 1
+
+  deploy-production:
+    name: Deploy Production
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Build constitutionally approved production package
+        run: npm run build:prod
+
+      - name: Verify Cloudflare deployment credentials exist
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${CLOUDFLARE_API_TOKEN}" || -z "${CLOUDFLARE_ACCOUNT_ID}" ]]; then
+            echo "Cloudflare deployment is blocked: required repository secrets are missing."
+            exit 1
+          fi
+          echo "Cloudflare deployment credentials are configured."
+
+      - name: Deploy to Cloudflare Workers
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler@4 deploy
+
+  production-verification:
+    name: Verify Production
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: deploy-production
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        origin:
+          - https://atlasenterprisesuite.com
+          - https://www.atlasenterprisesuite.com
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify deployed ATLAS surface
+        env:
+          ATLAS_PRODUCTION_URL: ${{ matrix.origin }}
+        run: node scripts/production-remote-e2e.js
