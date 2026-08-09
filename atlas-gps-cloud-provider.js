@@ -4,12 +4,35 @@
 const STATUS_URL='/api/gps/status';
 const SEARCH_URL='/api/gps/search';
 const ROUTE_URL='/api/gps/route';
+let authClient=null;
+
+function getAuthClient(){
+  const config=window.ATLAS_CONFIG||{};
+  if(authClient)return authClient;
+  if(!window.supabase?.createClient||!config.supabaseUrl||!config.supabasePublishableKey)return null;
+  authClient=window.supabase.createClient(config.supabaseUrl,config.supabasePublishableKey,{
+    auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
+  });
+  return authClient;
+}
+
+async function authHeaders(){
+  const client=getAuthClient();
+  if(!client)return {};
+  try{
+    const {data,error}=await client.auth.getSession();
+    if(error)throw error;
+    const token=data?.session?.access_token;
+    return token?{authorization:`Bearer ${token}`}:{ };
+  }catch{return {};}
+}
 
 async function jsonFetch(url,options={},timeoutMs=10000){
   const controller=new AbortController();
   const timer=setTimeout(()=>controller.abort(),timeoutMs);
   try{
-    const response=await fetch(url,{...options,signal:controller.signal,headers:{accept:'application/json',...(options.headers||{})},cache:'no-store'});
+    const authorization=await authHeaders();
+    const response=await fetch(url,{...options,signal:controller.signal,headers:{accept:'application/json',...authorization,...(options.headers||{})},cache:'no-store'});
     const payload=await response.json().catch(()=>null);
     if(!response.ok||!payload)throw new Error(payload?.error||`ATLAS GPS API ${response.status}`);
     return payload;
@@ -45,7 +68,8 @@ async function boot(){
       window.ATLASGPS4D.registerProvider({name:'ATLAS Cloud Routing',route});
     }
   }catch{
-    // Local Core remains authoritative when the optional gateway is unavailable.
+    // Local Core remains authoritative when there is no authorized cloud session
+    // or the optional gateway is unavailable.
   }
 }
 
