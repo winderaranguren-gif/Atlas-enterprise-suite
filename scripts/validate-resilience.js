@@ -24,7 +24,10 @@ for(const token of [
 ]) required(resilience.includes(token),`ATLAS resilience invariant missing: ${token}`);
 
 required(app.includes("resilience.src='atlas-resilience.js?v=1'"),'app.js does not load ATLAS resilience runtime.');
-required(app.indexOf('loadResilience')<app.indexOf("support.src='atlas-technical-support.js?v=1'"),'ATLAS resilience must be wired before Technical Support.');
+required(app.includes('resilience.onload=loadSupport'),'ATLAS resilience does not advance to Technical Support after load.');
+required(app.includes('resilience.onerror=loadSupport'),'ATLAS resilience loader does not preserve Technical Support fallback.');
+required(app.includes('operational.onload=loadResilience'),'ATLAS operational runtime is not wired to load resilience first.');
+required(app.includes('operational.onerror=loadResilience'),'ATLAS operational fallback does not preserve resilience load order.');
 required(sw.includes("'/atlas-resilience.js'"),'Service Worker app shell is missing atlas-resilience.js.');
 required(/atlas-core-v\d+-resilience/.test(sw),'Service Worker cache version was not advanced for resilience.');
 required(pkg.scripts?.['check:resilience']==='node scripts/validate-resilience.js','package.json is missing check:resilience.');
