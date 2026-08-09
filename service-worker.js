@@ -1,4 +1,4 @@
-const VERSION = 'atlas-core-v11-cars-architecture';
+const VERSION = 'atlas-core-v12-accessibility-sign';
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 const APP_SHELL = [
@@ -8,7 +8,10 @@ const APP_SHELL = [
   '/atlas-suite.css',
   '/atlas-os-modules.css',
   '/atlas-technical-support.css',
+  '/atlas-accessibility.css',
   '/app.js',
+  '/atlas-accessibility.js',
+  '/atlas-dragdrop.js',
   '/atlas-cars-entry.js',
   '/atlas-cars.html',
   '/atlas-cars.css',
