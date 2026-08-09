@@ -6,7 +6,12 @@
   const identity = window.ATLAS_IDENTITY;
   const federation = config.federatedIdentity || {};
   const $ = (selector) => document.querySelector(selector);
-  const state = { mode: 'signin', client: null };
+  const state = {
+    mode: 'signin',
+    client: null,
+    mfaEnrollmentFactorId: null,
+    mfaVerifiedFactorId: null
+  };
 
   const elements = {
     dot: $('#connection-dot'),
@@ -25,6 +30,20 @@
     federatedAuth: $('#federated-auth'),
     federatedSignin: $('#federated-signin'),
     federatedHelp: $('#federated-help'),
+    mfaBadge: $('#mfa-badge'),
+    mfaStatus: $('#mfa-status'),
+    mfaDetail: $('#mfa-detail'),
+    mfaRefresh: $('#mfa-refresh'),
+    mfaEnrollButton: $('#mfa-enroll-button'),
+    mfaEnrollPanel: $('#mfa-enroll-panel'),
+    mfaQr: $('#mfa-qr'),
+    mfaSecret: $('#mfa-secret'),
+    mfaEnrollCode: $('#mfa-enroll-code'),
+    mfaEnrollVerify: $('#mfa-enroll-verify'),
+    mfaEnrollCancel: $('#mfa-enroll-cancel'),
+    mfaStepupPanel: $('#mfa-stepup-panel'),
+    mfaStepupCode: $('#mfa-stepup-code'),
+    mfaStepupVerify: $('#mfa-stepup-verify'),
     message: $('#message'),
     userEmail: $('#user-email'),
     orgList: $('#organization-list'),
@@ -48,10 +67,19 @@
   }
 
   function setBusy(busy) {
-    elements.submit.disabled = busy;
-    elements.signOut.disabled = busy;
-    elements.refreshOrgs.disabled = busy;
-    if (elements.federatedSignin) elements.federatedSignin.disabled = busy;
+    [
+      elements.submit,
+      elements.signOut,
+      elements.refreshOrgs,
+      elements.federatedSignin,
+      elements.mfaRefresh,
+      elements.mfaEnrollButton,
+      elements.mfaEnrollVerify,
+      elements.mfaEnrollCancel,
+      elements.mfaStepupVerify
+    ].forEach((element) => {
+      if (element) element.disabled = busy;
+    });
   }
 
   function updateFederatedVisibility() {
@@ -94,6 +122,120 @@
     }[character]));
   }
 
+  function resetMfaEnrollmentUi() {
+    state.mfaEnrollmentFactorId = null;
+    elements.mfaEnrollPanel.classList.add('hidden');
+    elements.mfaQr.removeAttribute('src');
+    elements.mfaSecret.textContent = '—';
+    elements.mfaEnrollCode.value = '';
+  }
+
+  async function loadMfaState() {
+    try {
+      if (!identity) throw new Error('ATLAS Identity client is not available.');
+      const mfa = await identity.getMfaState();
+      const totpFactors = mfa.factors?.totp || [];
+      const verifiedFactor = totpFactors.find((factor) => factor.status === 'verified') || totpFactors[0] || null;
+      state.mfaVerifiedFactorId = verifiedFactor?.id || null;
+
+      elements.mfaBadge.textContent = String(mfa.currentLevel || 'aal1').toUpperCase();
+      elements.mfaBadge.classList.toggle('verified', mfa.currentLevel === 'aal2');
+      elements.mfaStepupPanel.classList.toggle('hidden', !mfa.requiresStepUp);
+      elements.mfaEnrollButton.textContent = totpFactors.length ? 'Agregar otro autenticador' : 'Agregar autenticador';
+
+      if (mfa.currentLevel === 'aal2') {
+        elements.mfaStatus.textContent = 'Sesión verificada con segundo factor';
+        elements.mfaDetail.textContent = 'AAL2 activo. Las acciones sensibles de ATLAS Identity pueden continuar.';
+      } else if (mfa.requiresStepUp) {
+        elements.mfaStatus.textContent = 'MFA configurado; falta verificar esta sesión';
+        elements.mfaDetail.textContent = 'Introduce un código del autenticador para elevar esta sesión a AAL2.';
+      } else {
+        elements.mfaStatus.textContent = 'Sesión estándar sin segundo factor verificado';
+        elements.mfaDetail.textContent = 'AAL1 activo. Puedes agregar un autenticador para proteger acciones sensibles.';
+      }
+
+      return mfa;
+    } catch (error) {
+      elements.mfaStatus.textContent = 'No se pudo revisar MFA';
+      elements.mfaDetail.textContent = error?.message || 'Error al consultar el nivel de seguridad.';
+      throw error;
+    }
+  }
+
+  async function startMfaEnrollment() {
+    clearMessage();
+    setBusy(true);
+    try {
+      const enrollment = await identity.enrollTotp('ATLAS Identity');
+      state.mfaEnrollmentFactorId = enrollment.factorId;
+      elements.mfaSecret.textContent = enrollment.secret || 'No disponible';
+      if (enrollment.qrCode) elements.mfaQr.src = enrollment.qrCode;
+      elements.mfaEnrollPanel.classList.remove('hidden');
+      elements.mfaEnrollCode.focus();
+      showMessage('Escanea el código QR y confirma con el código generado por tu autenticador.');
+    } catch (error) {
+      showMessage(error?.message || 'No se pudo iniciar la configuración de MFA.', true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function completeMfaEnrollment() {
+    clearMessage();
+    setBusy(true);
+    try {
+      if (!state.mfaEnrollmentFactorId) throw new Error('No hay una configuración MFA pendiente.');
+      await identity.challengeAndVerifyFactor({
+        factorId: state.mfaEnrollmentFactorId,
+        code: elements.mfaEnrollCode.value
+      });
+      resetMfaEnrollmentUi();
+      await loadMfaState();
+      showMessage('MFA activado correctamente. La sesión está verificada con AAL2.');
+    } catch (error) {
+      showMessage(error?.message || 'No se pudo verificar el segundo factor.', true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function cancelMfaEnrollment() {
+    setBusy(true);
+    try {
+      if (state.mfaEnrollmentFactorId) {
+        const { error } = await state.client.auth.mfa.unenroll({ factorId: state.mfaEnrollmentFactorId });
+        if (error) throw error;
+      }
+      resetMfaEnrollmentUi();
+      await loadMfaState();
+      showMessage('Configuración de MFA cancelada.');
+    } catch (error) {
+      showMessage(error?.message || 'No se pudo cancelar la configuración de MFA.', true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function verifyMfaStepUp() {
+    clearMessage();
+    setBusy(true);
+    try {
+      const mfa = await identity.getMfaState();
+      const totpFactors = mfa.factors?.totp || [];
+      const factor = totpFactors.find((item) => item.status === 'verified') || totpFactors[0];
+      if (!factor) throw new Error('No hay un autenticador TOTP disponible para verificar.');
+
+      await identity.challengeAndVerifyFactor({ factorId: factor.id, code: elements.mfaStepupCode.value });
+      elements.mfaStepupCode.value = '';
+      await loadMfaState();
+      showMessage('Sesión elevada a AAL2. Las acciones sensibles están habilitadas.');
+    } catch (error) {
+      showMessage(error?.message || 'No se pudo completar la verificación adicional.', true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function loadOrganizations() {
     elements.orgList.innerHTML = '<div class="organization"><span>Cargando empresas y permisos…</span></div>';
 
@@ -124,11 +266,18 @@
     elements.accountSection.classList.toggle('hidden', !signedIn);
     if (!signedIn) {
       identity?.clear();
+      resetMfaEnrollmentUi();
+      elements.mfaStepupPanel.classList.add('hidden');
       updateFederatedVisibility();
       return;
     }
     elements.userEmail.textContent = session.user.email || session.user.id;
     await loadOrganizations();
+    try {
+      await loadMfaState();
+    } catch {
+      // MFA status is shown in its own panel; organization access remains usable.
+    }
   }
 
   async function submitAuth(event) {
@@ -143,7 +292,7 @@
         const { data, error } = await state.client.auth.signInWithPassword({ email, password });
         if (error) throw error;
         await renderSession(data.session);
-        showMessage('Sesión iniciada. ATLAS Identity cargó empresas, módulos y permisos efectivos para esta cuenta.');
+        showMessage('Sesión iniciada. ATLAS Identity cargó empresas, módulos, permisos y nivel MFA para esta cuenta.');
       } else if (state.mode === 'signup') {
         const { data, error } = await state.client.auth.signUp({
           email,
@@ -260,10 +409,16 @@
   elements.orgForm.addEventListener('submit', createOrganization);
   elements.refreshOrgs.addEventListener('click', loadOrganizations);
   elements.federatedSignin.addEventListener('click', signInFederated);
+  elements.mfaRefresh.addEventListener('click', () => loadMfaState().catch((error) => showMessage(error.message, true)));
+  elements.mfaEnrollButton.addEventListener('click', startMfaEnrollment);
+  elements.mfaEnrollVerify.addEventListener('click', completeMfaEnrollment);
+  elements.mfaEnrollCancel.addEventListener('click', cancelMfaEnrollment);
+  elements.mfaStepupVerify.addEventListener('click', verifyMfaStepUp);
   elements.signOut.addEventListener('click', async () => {
     setBusy(true);
     const { error } = await state.client.auth.signOut();
     identity?.clear();
+    resetMfaEnrollmentUi();
     setBusy(false);
     if (error) showMessage(error.message, true);
     else showMessage('Sesión cerrada correctamente.');
