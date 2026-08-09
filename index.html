@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#07131f" />
-  <meta name="description" content="ATLAS Enterprise Suite — plataforma empresarial modular, multiempresa y bilingüe." />
-  <title>ATLAS Enterprise Suite</title>
+  <meta name="description" content="ATLAS — plataforma empresarial modular, multiempresa y conectada a producción." />
+  <title>ATLAS</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="navigation-fix.css" />
@@ -16,37 +16,29 @@
   <section id="login-view" class="login-view">
     <div class="login-visual">
       <div class="orb orb-one"></div><div class="orb orb-two"></div>
-      <div class="login-brand"><span class="atlas-logo">A</span><span><strong>ATLAS</strong><small>Enterprise Suite</small></span></div>
+      <div class="login-brand"><span class="atlas-logo">A</span><span><strong>ATLAS</strong><small>Production Core</small></span></div>
       <div class="login-copy">
-        <p class="eyebrow">ONE PLATFORM · EVERY SOLUTION · TOTAL CONTROL</p>
+        <p class="eyebrow">ONE INTELLIGENCE · EVERY OPERATION</p>
         <h1>Administra el presente.<br><span>Diseña el futuro.</span></h1>
-        <p>Un núcleo empresarial para finanzas, personas, operaciones, logística, movilidad, salud e innovación.</p>
+        <p>Finanzas, personas, operaciones, automatización, inteligencia y auditoría sobre una misma capa de datos.</p>
       </div>
       <div class="login-metrics">
-        <div><strong>13+</strong><span>Módulos integrados</span></div>
-        <div><strong>360°</strong><span>Visibilidad operativa</span></div>
-        <div><strong>24/7</strong><span>Control y auditoría</span></div>
+        <div><strong>RLS</strong><span>Aislamiento por organización</span></div>
+        <div><strong>360°</strong><span>Event Fabric transversal</span></div>
+        <div><strong>Live</strong><span>Persistencia de producción</span></div>
       </div>
     </div>
 
     <div class="login-panel">
       <form id="login-form" class="login-card">
-        <div class="mobile-brand"><span class="atlas-logo">A</span><span><strong>ATLAS</strong><small>Enterprise Suite</small></span></div>
-        <p class="eyebrow">ACCESO PRIVADO</p>
+        <div class="mobile-brand"><span class="atlas-logo">A</span><span><strong>ATLAS</strong><small>Production Core</small></span></div>
+        <p class="eyebrow">ACCESO DE PRODUCCIÓN</p>
         <h2>Bienvenido a ATLAS</h2>
-        <p class="muted">Ingresa al entorno de demostración empresarial.</p>
-        <label>Correo electrónico<input id="login-email" type="email" value="demo@atlas.local" autocomplete="username" required></label>
-        <label>Contraseña<div class="password-row"><input id="login-password" type="password" value="Atlas2026!" autocomplete="current-password" required><button id="toggle-password" type="button" class="icon-button">👁</button></div></label>
+        <p class="muted">Inicia sesión con una cuenta autorizada. No existen credenciales de demostración.</p>
+        <label>Correo electrónico<input id="login-email" type="email" autocomplete="username" required></label>
+        <label>Contraseña<div class="password-row"><input id="login-password" type="password" autocomplete="current-password" required><button id="toggle-password" type="button" class="icon-button" aria-label="Mostrar u ocultar contraseña">👁</button></div></label>
         <button class="button primary wide" type="submit">Entrar a ATLAS</button>
-        <div class="demo-box"><strong>Demo</strong><span>demo@atlas.local · Atlas2026!</span></div>
-      </form>
-
-      <form id="otp-form" class="login-card hidden">
-        <p class="eyebrow">VERIFICACIÓN</p><h2>Confirma tu identidad</h2>
-        <p class="muted">Usa el código temporal <strong>246810</strong>.</p>
-        <label>Código de seis dígitos<input id="otp-code" inputmode="numeric" maxlength="6" placeholder="000000" required></label>
-        <button class="button primary wide" type="submit">Verificar y continuar</button>
-        <button id="back-to-login" class="button ghost wide" type="button">Volver</button>
+        <a class="button ghost wide" href="cloud-auth.html">Crear cuenta · recuperar acceso · administrar identidad</a>
       </form>
     </div>
   </section>
@@ -54,10 +46,10 @@
   <div id="app-view" class="app hidden">
     <aside id="sidebar" class="sidebar">
       <div class="sidebar-head">
-        <div class="brand"><span class="atlas-logo">A</span><span><strong>ATLAS</strong><small>Enterprise Suite</small></span></div>
+        <div class="brand"><span class="atlas-logo">A</span><span><strong>ATLAS</strong><small>Production Core</small></span></div>
         <button id="sidebar-close" class="icon-button mobile-only" aria-label="Cerrar menú">✕</button>
       </div>
-      <div class="workspace-card"><span>Espacio de trabajo</span><select id="company-select"></select></div>
+      <div class="workspace-card"><span>Organización activa</span><select id="company-select"></select></div>
       <a href="atlas-automation-field-ops.html" class="nav-item" style="margin:8px 12px;text-decoration:none"><span class="nav-icon">⌁</span>Automation & Field Ops</a>
       <a href="atlas-calendar.html" class="nav-item" style="margin:8px 12px;text-decoration:none"><span class="nav-icon">▣</span>ATLAS Calendar</a>
       <a href="financial-templates.html" class="nav-item" style="margin:8px 12px;text-decoration:none"><span class="nav-icon">▦</span>Financial Template Studio</a>
@@ -69,19 +61,20 @@
       <a href="aw-client.html" class="nav-item" style="margin:8px 12px;text-decoration:none"><span class="nav-icon">◆</span>AW Tax & Audit Advisors</a>
       <nav id="main-nav" class="nav"></nav>
       <div class="sidebar-bottom">
-        <div class="user-card"><span class="avatar">WA</span><span><strong>Winder Aranguren</strong><small>Founder · Super Admin</small></span></div>
+        <div class="user-card"><span class="avatar">A</span><span><strong>Authenticated user</strong><small>ATLAS member</small></span></div>
         <button id="logout-btn" class="button sidebar-button">Cerrar sesión</button>
       </div>
     </aside>
 
     <section class="workspace">
       <header class="topbar">
-        <div class="topbar-title"><button id="menu-btn" class="icon-button mobile-only">☰</button><div><p id="page-eyebrow" class="eyebrow">ATLAS CORE</p><h2 id="page-title">Command Center</h2></div></div>
+        <div class="topbar-title"><button id="menu-btn" class="icon-button mobile-only">☰</button><div><p id="page-eyebrow" class="eyebrow">ATLAS PRODUCTION</p><h2 id="page-title">Centro de Mando</h2></div></div>
         <div class="topbar-actions">
-          <button id="global-search-btn" class="search-trigger">⌕ <span>Buscar en ATLAS</span><kbd>⌘ K</kbd></button>
+          <span class="production-status">PRODUCTION</span>
+          <button id="global-search-btn" class="search-trigger">⌕ <span>Eventos y analítica</span></button>
           <button id="theme-btn" class="icon-button" title="Cambiar tema">◐</button>
-          <button id="language-btn" class="icon-button" title="Cambiar idioma">ES</button>
-          <button id="notifications-btn" class="icon-button notification-button" title="Notificaciones">◈<span>3</span></button>
+          <button id="language-btn" class="icon-button" title="Idioma">ES</button>
+          <button id="notifications-btn" class="icon-button notification-button" title="Señales ATLAS">◈</button>
           <button id="quick-add-btn" class="button primary">＋ Crear</button>
         </div>
       </header>
@@ -90,12 +83,7 @@
   </div>
 
   <div id="modal-root"></div>
-  <div id="search-overlay" class="overlay hidden" role="dialog" aria-modal="true">
-    <div class="search-dialog">
-      <div class="search-input"><span>⌕</span><input id="global-search-input" placeholder="Buscar clientes, facturas, empleados, módulos..."><button id="close-search" class="icon-button">✕</button></div>
-      <div id="search-results" class="search-results"></div>
-    </div>
-  </div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.1"></script>
   <script src="atlas-regional-navigation.js?v=1"></script>
   <script src="atlas-config.js"></script>
   <script src="app.js"></script>
