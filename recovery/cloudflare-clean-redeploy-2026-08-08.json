@@ -1,0 +1,14 @@
+{
+  "recovery_id": "ATLAS-CLOUDFLARE-CLEAN-BASELINE-2026-08-08",
+  "source_branch": "main",
+  "purpose": "Trigger a clean Cloudflare rebuild from the verified main baseline without merging feature drafts.",
+  "created_at": "2026-08-08T23:20:00-04:00",
+  "policy": {
+    "production_source": "main",
+    "feature_prs": "draft-only",
+    "preserve_dns_and_bindings": true,
+    "no_destructive_reset": true,
+    "reintroduce_modules_one_by_one": true
+  },
+  "open_drafts": [2, 29, 31, 33, 34, 35]
+}
