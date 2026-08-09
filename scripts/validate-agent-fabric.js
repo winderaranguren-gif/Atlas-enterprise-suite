@@ -27,6 +27,19 @@ for(const skill of ['technical-support','deployment','security','knowledge','acc
   if(!registry.includes(`id:'${skill}'`))fail(`builtin skill ${skill} is not registered`);
 }
 
+const canonicalPermissions=new Set([
+  'core.read','organization.manage','members.read','members.manage','modules.read','modules.manage',
+  'accounting.read','accounting.write','crm.read','crm.write','inventory.read','inventory.write',
+  'hr.read','hr.write','documents.read','documents.write','audit.read','identity.manage','security.events.read'
+]);
+const permissionBlocks=[...registry.matchAll(/permissions:\[([^\]]*)\]/g)].map(match=>match[1]);
+for(const block of permissionBlocks){
+  const values=[...block.matchAll(/['"]([^'"]+)['"]/g)].map(match=>match[1]);
+  for(const permission of values){
+    if(!canonicalPermissions.has(permission))fail(`skill uses non-canonical ATLAS Identity permission: ${permission}`);
+  }
+}
+
 for(const invariant of [
   'Discover current state before mutation',
   'Apply policy and permission gates',
@@ -38,6 +51,8 @@ for(const invariant of [
 
 if(!fabric.includes("providerAgnostic:true"))fail('provider-agnostic policy marker is missing');
 if(!fabric.includes("registerHandler('technical-support'"))fail('Technical Support handler is not connected');
+if(!fabric.includes("typeof api?.current==='function'"))fail('ATLAS_IDENTITY.current() compatibility is missing');
+if(!fabric.includes("typeof api?.can==='function'"))fail('ATLAS_IDENTITY.can() compatibility is missing');
 if(!fabric.includes('identitySnapshot()'))fail('identity/permission policy integration is missing');
 
 const registryIndex=app.indexOf("atlas-skill-registry.js?v=1");
@@ -56,4 +71,4 @@ for(const pattern of forbidden){
   if(pattern.test(registry)||pattern.test(fabric))fail(`possible embedded secret matched ${pattern}`);
 }
 
-console.log('ATLAS Agent Fabric validation passed: skills, runtime invariants, loader order, identity gates and package validation are wired.');
+console.log('ATLAS Agent Fabric validation passed: skills, canonical Identity permissions, runtime invariants, loader order and package validation are wired.');
