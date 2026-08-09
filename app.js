@@ -109,15 +109,11 @@
       if(finalized)return;
       finalized=true;
       if(timer)clearTimeout(timer);
-      // Remove any shell/API installed by cached v3 before v4 gets a chance to bind.
       appendAccessibilityV4({replaceRuntime:true,onSettled:advanceAfterAccessibility});
     };
 
     const settleKnownLegacy=(script,loaded)=>{
       if(finalized){
-        // A script that was genuinely stalled past the bounded wait must never be
-        // allowed to become the final runtime. If it eventually executes, replace
-        // its shell/API immediately with a fresh v4 instance.
         if(loaded)appendAccessibilityV4({replaceRuntime:true,onSettled:()=>{}});
         return;
       }
@@ -130,8 +126,6 @@
       script.addEventListener('error',()=>settleKnownLegacy(script,false),{once:true});
     }
 
-    // Never wait on the global window load event. A broken image/iframe/stylesheet
-    // must not deadlock Accessibility or the downstream DragDrop/Cars/GPS chain.
     timer=setTimeout(finalize,RECONCILE_TIMEOUT_MS);
   };
 
@@ -180,12 +174,21 @@
     document.body.append(support);
   };
 
+  const loadResilience=()=>{
+    const resilience=document.createElement('script');
+    resilience.src='atlas-resilience.js?v=1';
+    resilience.async=false;
+    resilience.onload=loadSupport;
+    resilience.onerror=loadSupport;
+    document.body.append(resilience);
+  };
+
   const loadOperational=()=>{
     const operational=document.createElement('script');
     operational.src='atlas-os-operational.js?v=1';
     operational.async=false;
-    operational.onload=loadSupport;
-    operational.onerror=loadSupport;
+    operational.onload=loadResilience;
+    operational.onerror=loadResilience;
     document.body.append(operational);
   };
 
