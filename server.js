@@ -10,6 +10,7 @@ const root = path.resolve(__dirname);
 const APP_VERSION = '0.5.0';
 const SUPPORT_VERSION = '1.1.0';
 const RUNBOOK_VERSION = '1.0.0';
+const OWNED_AI_VERSION = '1.0.0';
 const types = {
   '.html':'text/html; charset=utf-8',
   '.css':'text/css; charset=utf-8',
@@ -47,6 +48,28 @@ function classifyIssue(summary=''){
   if(/slow|lento|performance|rendimiento|freeze|frozen/.test(text))return 'performance';
   if(/data|storage|database|localstorage|cache|datos/.test(text))return 'data-storage';
   return 'general';
+}
+
+function classifyOwnedIntent(input=''){
+  const text=String(input||'').trim().toLowerCase().replace(/\s+/g,' ');
+  const matches=[];
+  const rules=[
+    ['technical-support',/error|fallo|failed|deploy|build|workflow|runner|cloudflare|github|repair|repar|diagnostic|debug|bug/],
+    ['accounting',/account|ledger|journal|invoice|expense|payable|receivable|reconcile|tax|payroll|contab|factura|gasto|impuesto|n[oó]mina/],
+    ['health',/health|patient|hospital|clinical|medic|salud|paciente|hospital|cl[ií]nic/],
+    ['documents',/document|pdf|spreadsheet|sheet|excel|word|contract|documento|contrato/],
+    ['navigation',/route|map|gps|traffic|navigate|ruta|mapa|tr[aá]fico|naveg/],
+    ['identity',/login|auth|identity|permission|credential|signin|sesion|sesi[oó]n|identidad|permiso/],
+    ['communications',/email|message|chat|call|video|correo|mensaje|llamada/]
+  ];
+  for(const [intent,pattern] of rules)if(pattern.test(text))matches.push(intent);
+  return {
+    intent:matches[0]||'general',
+    matches,
+    sensitivity:/password|secret|token|ssn|social security|medical record|bank account|contrase[nñ]a|secreto|historial m[eé]dico/.test(text)?'sensitive':'normal',
+    textLength:text.length,
+    local:true
+  };
 }
 
 function analyzeSupport(body={}){
@@ -109,6 +132,66 @@ function buildRunbook(body={}){
   };
 }
 
+function ownedAIHealth(){
+  return {
+    ok:true,
+    service:'ATLAS Owned Intelligence',
+    version:OWNED_AI_VERSION,
+    engine:'atlas-native-rules',
+    ownership:'atlas',
+    sameOrigin:true,
+    externalProviders:false,
+    generativeModelInstalled:false,
+    capabilities:['classify','route','support-analyze','support-plan','status']
+  };
+}
+
+function runOwnedInference(body={}){
+  const task=String(body.task||'route').trim().toLowerCase();
+  const input=typeof body.input==='string'?body.input:JSON.stringify(body.input??'');
+  const context=body.context&&typeof body.context==='object'?body.context:{};
+  const classification=classifyOwnedIntent(input);
+
+  if(task==='classify'||task==='route'){
+    return {
+      ok:true,
+      status:'local-rules',
+      engine:'atlas-native-rules',
+      ownership:'atlas',
+      output:{classification,recommendedScope:classification.intent,requiresExternalAI:false}
+    };
+  }
+  if(task==='support-analyze'){
+    return {
+      ok:true,
+      status:'local-support-analysis',
+      engine:'atlas-native-rules',
+      ownership:'atlas',
+      output:analyzeSupport({summary:input,diagnostics:context.diagnostics})
+    };
+  }
+  if(task==='support-plan'){
+    return {
+      ok:true,
+      status:'local-support-plan',
+      engine:'atlas-native-rules',
+      ownership:'atlas',
+      output:buildRunbook({summary:input,diagnostics:context.diagnostics})
+    };
+  }
+  if(task==='status')return{ok:true,status:'healthy',output:ownedAIHealth()};
+
+  return {
+    ok:false,
+    blocked:true,
+    status:'local-generative-engine-not-installed',
+    engine:'atlas-native-rules',
+    ownership:'atlas',
+    classification,
+    detail:'ATLAS Owned Core is active, but no local generative model runtime/weights are installed. Core routing, classification and support planning continue locally without an external AI API.'
+  };
+}
+
 function readRequestJson(req,limit=65536){
   return new Promise((resolve,reject)=>{
     let size=0;
@@ -136,11 +219,24 @@ const server = http.createServer(async (req, res) => {
   const base={requestId,at:new Date().toISOString()};
 
   if (req.method==='GET' && pathname === '/healthz') {
-    return sendJson(res,200,{...base,ok:true,app:'ATLAS Enterprise Suite',version:APP_VERSION,support:SUPPORT_VERSION,runbookVersion:RUNBOOK_VERSION,runtime:'node-local',port});
+    return sendJson(res,200,{...base,ok:true,app:'ATLAS Enterprise Suite',version:APP_VERSION,support:SUPPORT_VERSION,runbookVersion:RUNBOOK_VERSION,ownedAI:OWNED_AI_VERSION,runtime:'node-local',port});
   }
 
   if (req.method==='GET' && pathname === '/api/version') {
-    return sendJson(res,200,{...base,ok:true,name:'ATLAS Enterprise Suite',version:APP_VERSION,supportVersion:SUPPORT_VERSION,runbookVersion:RUNBOOK_VERSION});
+    return sendJson(res,200,{...base,ok:true,name:'ATLAS Enterprise Suite',version:APP_VERSION,supportVersion:SUPPORT_VERSION,runbookVersion:RUNBOOK_VERSION,ownedAIVersion:OWNED_AI_VERSION});
+  }
+
+  if (req.method==='GET' && pathname === '/api/atlas-ai/health') {
+    return sendJson(res,200,{...base,...ownedAIHealth()});
+  }
+
+  if (req.method==='POST' && pathname === '/api/atlas-ai/infer') {
+    try{
+      const body=await readRequestJson(req);
+      return sendJson(res,200,{...base,...runOwnedInference(body)});
+    }catch(error){
+      return sendJson(res,error.status||400,{...base,ok:false,error:error.message||'invalid_request'});
+    }
   }
 
   if (req.method==='GET' && pathname === '/api/support/capabilities') {
@@ -210,6 +306,7 @@ server.listen(port, host, () => {
   console.log(`Local:   http://127.0.0.1:${port}`);
   for (const url of networkUrls()) console.log(`Network: ${url}`);
   console.log(`Health:  http://127.0.0.1:${port}/healthz`);
+  console.log(`Owned AI: http://127.0.0.1:${port}/api/atlas-ai/health`);
   console.log(`Support: http://127.0.0.1:${port}/api/support/capabilities`);
   console.log('\nKeep this terminal open while using ATLAS.');
   console.log('For a phone/tablet, use a Network address above and keep both devices on the same Wi-Fi.\n');
