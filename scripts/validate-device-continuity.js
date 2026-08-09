@@ -26,26 +26,34 @@ const build = read('scripts/build-cloudflare.js');
 const controls = read('governance/atlas-module-constitutional-controls.json');
 const packageJson = JSON.parse(read('package.json'));
 
-requireText(server, 'ATLAS_IDENTITY_PUBLIC_ORIGIN', 'identity relay');
-requireText(server, 'ATLAS_LOCAL_FACE_VERIFY_URL', 'identity relay');
-requireText(server, "#token=${encodeURIComponent(phoneToken)}", 'identity relay');
-requireText(server, 'crypto.timingSafeEqual', 'identity relay');
-requireText(server, "item.phoneTokenHash = null", 'identity relay');
-requireText(server, "if (req.method === 'DELETE' && stateMatch)", 'identity relay');
-requireText(server, "tokenMatches(token, item.pollTokenHash)", 'identity relay');
-requireText(server, "public_origin_must_use_https", 'identity relay');
+for (const control of [
+  'ATLAS_IDENTITY_PUBLIC_ORIGIN',
+  'ATLAS_LOCAL_FACE_VERIFY_URL',
+  'ATLAS_LOCAL_FACE_VERIFY_SECRET',
+  'normalizeSubjectId',
+  'subjectId: item.subjectId',
+  'verifier_subject_mismatch',
+  "#token=${encodeURIComponent(phoneToken)}",
+  'crypto.timingSafeEqual',
+  'item.phoneTokenHash = null',
+  "if (req.method === 'DELETE' && stateMatch)",
+  'tokenMatches(bearerToken(req), item.pollTokenHash)',
+  'public_origin_must_use_https',
+  'MAX_ACTIVE_PER_SUBJECT'
+]) requireText(server, control, 'identity relay');
 
-requireText(client, "new URLSearchParams(location.hash.slice(1))", 'identity browser client');
-requireText(client, "history.replaceState", 'identity browser client');
-requireText(client, "Authorization: `Bearer ${current.pollToken}`", 'identity browser client');
-requireText(client, 'window.isSecureContext', 'identity browser client');
+for (const control of [
+  "const subjectId = params.get('subject')",
+  'JSON.stringify({ subjectId })',
+  'No se permite seleccionar manualmente la identidad',
+  "new URLSearchParams(location.hash.slice(1))",
+  'history.replaceState',
+  'window.isSecureContext',
+  "Authorization: `Bearer ${current.pollToken}`"
+]) requireText(client, control, 'identity browser client');
 
 requireText(build, "'atlas-device-identity-server.js'", 'Cloudflare build boundary');
-for (const asset of [
-  'atlas-device-identity.html',
-  'atlas-device-identity.js',
-  'atlas-device-identity-server.js'
-]) {
+for (const asset of ['atlas-device-identity.html', 'atlas-device-identity.js', 'atlas-device-identity-server.js']) {
   requireText(controls, `\"${asset}\"`, 'constitutional identity classification');
 }
 
@@ -53,4 +61,4 @@ const checkJs = packageJson.scripts?.['check:js'] || '';
 requireText(checkJs, 'node --check atlas-device-identity.js', 'check:js');
 requireText(checkJs, 'node --check atlas-device-identity-server.js', 'check:js');
 
-console.log('ATLAS Device Continuity gate passed: secure-origin, token, cancellation, build-boundary and constitutional controls are present.');
+console.log('ATLAS Device Continuity gate passed: subject binding, verifier authentication, liveness, token isolation, cancellation, build boundary and constitutional controls are present.');
