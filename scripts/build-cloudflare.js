@@ -56,7 +56,9 @@ function writePagesCompatibilityFiles() {
 /service-worker.js
   Cache-Control: public, max-age=0, must-revalidate
 `;
-  const redirects = `/* /index.html 200\n`;
+  const redirects = `/atlas-pallet-spatial-countll /atlas-pallet-spatial-count.html 302
+/atlas-pallet-spatial-count /atlas-pallet-spatial-count.html 302
+/* /index.html 200\n`;
   fs.writeFileSync(path.join(output, '_headers'), headers, 'utf8');
   fs.writeFileSync(path.join(output, '_redirects'), redirects, 'utf8');
 }
