@@ -7,3 +7,4 @@
 /scripts/cloudflare-build-router.js @winderaranguren-gif
 /wrangler.jsonc @winderaranguren-gif
 /.github/workflows/atlas-ios-build.yml @winderaranguren-gif
+/.github/workflows/deploy-production.yml @winderaranguren-gif
