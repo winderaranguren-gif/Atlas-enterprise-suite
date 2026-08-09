@@ -31,27 +31,25 @@ const gitignore = readText('.gitignore');
 const buildScript = readText('scripts/build-cloudflare.js');
 const routerScript = readText('scripts/cloudflare-build-router.js');
 const iosWorkflow = readText('.github/workflows/atlas-ios-build.yml');
+const productionWorkflow = readText('.github/workflows/deploy-production.yml');
 
 if (wrangler.assets?.directory !== 'dist') {
   fail('Cloudflare assets.directory must remain "dist"; publishing the repository root bypasses the validated build boundary');
 }
-
 if (wrangler.build?.command !== 'node scripts/cloudflare-build-router.js') {
   fail('Wrangler custom build must remain bound to scripts/cloudflare-build-router.js');
 }
-
 if (!/(^|\n)dist\/(\n|$)/.test(gitignore)) {
   fail('dist/ must remain ignored so deployable assets cannot be committed as an unvalidated bypass');
 }
-
 if (!buildScript.includes("const output = path.join(root, 'dist')")) {
   fail('Cloudflare build script must continue generating the dist directory');
 }
 
 const requiredRouterMarkers = [
-  "WORKERS_CI_BRANCH",
-  "WRANGLER_COMMAND",
-  "branch === productionBranch",
+  'WORKERS_CI_BRANCH',
+  'WRANGLER_COMMAND',
+  'branch === productionBranch',
   "command === 'deploy' || command === 'versions deploy'",
   "command === 'versions upload' || command === 'dev' || command === 'types'",
   "run('build')",
@@ -62,15 +60,11 @@ for (const marker of requiredRouterMarkers) {
 }
 
 const scripts = packageJson.scripts || {};
-if (typeof scripts['check:constitutional-release'] !== 'string') {
-  fail('check:constitutional-release script is missing');
-}
+if (typeof scripts['check:constitutional-release'] !== 'string') fail('check:constitutional-release script is missing');
 if (typeof scripts.build !== 'string' || !scripts.build.includes('check:constitutional-release')) {
   fail('production build must run check:constitutional-release');
 }
-if (typeof scripts['build:dev'] !== 'string') {
-  fail('build:dev is required to keep development separate from production release approval');
-}
+if (typeof scripts['build:dev'] !== 'string') fail('build:dev is required to keep development separate from production release approval');
 if (scripts['build:dev'].includes('check:constitutional-release')) {
   fail('build:dev must remain a development-only path, not an alias for production release approval');
 }
@@ -86,11 +80,21 @@ if (typeof scripts['mobile:release:check'] !== 'string' || !scripts['mobile:rele
 if (!String(scripts['check:js'] || '').includes('scripts/cloudflare-build-router.js')) {
   fail('Cloudflare build router must remain syntax-checked by check:js');
 }
-if (!iosWorkflow.includes('run: npm run build:dev')) {
-  fail('iOS simulator workflow must use build:dev');
+
+if (!iosWorkflow.includes('run: npm run build:dev')) fail('iOS simulator workflow must use build:dev');
+if (/run:\s*npm run build\s*(\n|$)/.test(iosWorkflow)) fail('iOS simulator workflow must not use the production build command');
+
+if (!productionWorkflow.includes('run: npm run build')) {
+  fail('production GitHub workflow must create its package through npm run build');
 }
-if (/run:\s*npm run build\s*(\n|$)/.test(iosWorkflow)) {
-  fail('iOS simulator workflow must not use the production build command');
+if (/run:\s*npm run build:cloudflare\s*(\n|$)/.test(productionWorkflow)) {
+  fail('production GitHub workflow must not bypass the release gate with build:cloudflare');
+}
+if (!productionWorkflow.includes('run: npx wrangler@4 deploy')) {
+  fail('production GitHub workflow no longer contains the expected Cloudflare deploy step');
+}
+if (!productionWorkflow.includes('path: dist')) {
+  fail('GitHub Pages fallback must publish only the validated dist package');
 }
 
-console.log('ATLAS deployment boundary gate passed: Cloudflare previews, production deploys, development builds and iOS simulator paths remain separated.');
+console.log('ATLAS deployment boundary gate passed: previews, production deploys, Pages fallback, development builds and iOS simulator paths remain separated.');
