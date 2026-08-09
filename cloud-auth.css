@@ -52,14 +52,14 @@ input:focus, select:focus { border-color: #63caff; box-shadow: 0 0 0 3px rgba(99
 .secret-box code { color: #dff7ff; font-size: .86rem; user-select: all; }
 .button-row, .copy-row { display: flex; gap: 10px; flex-wrap: wrap; }
 .copy-row input { flex: 1 1 280px; }
-.organization-list, .member-list, .invitation-list { display: grid; gap: 10px; margin-bottom: 24px; }
+.organization-list, .member-list, .invitation-list, .audit-list { display: grid; gap: 10px; margin-bottom: 24px; }
 .organization { padding: 16px; border: 1px solid rgba(255,255,255,.1); border-radius: 14px; display: grid; gap: 8px; background: rgba(255,255,255,.035); }
 .organization.active { border-color: rgba(99,202,255,.55); box-shadow: 0 0 0 2px rgba(99,202,255,.08); }
 .organization-actions { display: flex; justify-content: flex-end; }
-.member-card, .invitation-card { display: grid; gap: 12px; padding: 15px; border: 1px solid rgba(255,255,255,.1); border-radius: 14px; background: rgba(255,255,255,.035); }
-.member-head, .invitation-head { display: flex; justify-content: space-between; gap: 14px; align-items: flex-start; }
-.member-head > div, .invitation-head > div { display: grid; gap: 4px; min-width: 0; }
-.member-status, .invitation-status { padding: 6px 9px; border-radius: 999px; border: 1px solid rgba(89,225,168,.25); color: #8bf1c5; font-size: .75rem; font-weight: 800; text-transform: uppercase; }
+.member-card, .invitation-card, .audit-card { display: grid; gap: 12px; padding: 15px; border: 1px solid rgba(255,255,255,.1); border-radius: 14px; background: rgba(255,255,255,.035); }
+.member-head, .invitation-head, .audit-head { display: flex; justify-content: space-between; gap: 14px; align-items: flex-start; }
+.member-head > div, .invitation-head > div, .audit-head > div { display: grid; gap: 4px; min-width: 0; }
+.member-status, .invitation-status, .audit-type { padding: 6px 9px; border-radius: 999px; border: 1px solid rgba(89,225,168,.25); color: #8bf1c5; font-size: .75rem; font-weight: 800; text-transform: uppercase; }
 .member-status.suspended, .invitation-status.revoked, .invitation-status.expired { border-color: rgba(255,117,143,.3); color: #ff9aad; }
 .invitation-status.pending { border-color: rgba(244,184,96,.32); color: #ffd89d; }
 .member-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; align-items: end; }
@@ -70,8 +70,12 @@ input:focus, select:focus { border-color: #63caff; box-shadow: 0 0 0 3px rgba(99
 .invite-result { display: grid; gap: 10px; margin-bottom: 16px; padding: 14px; border: 1px solid rgba(125,216,255,.18); border-radius: 14px; background: rgba(4,13,25,.58); }
 .invite-result .help { margin: 0; }
 .invitation-card .button-row { justify-content: flex-end; }
+.audit-type { max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-color: rgba(125,216,255,.25); color: #a9e8ff; }
+.audit-details { border-top: 1px solid rgba(255,255,255,.08); padding-top: 10px; }
+.audit-details summary { cursor: pointer; color: #bfeaff; font-size: .85rem; }
+.audit-details pre { margin: 10px 0 0; padding: 12px; max-height: 260px; overflow: auto; border-radius: 10px; background: rgba(3,10,18,.7); color: #cfe2f7; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
 .organization-form { padding-top: 24px; border-top: 1px solid rgba(255,255,255,.1); }
 .message { margin-top: 20px; padding: 14px 16px; border-radius: 12px; background: rgba(83,202,255,.12); border: 1px solid rgba(83,202,255,.2); line-height: 1.5; }
 .message.error { background: rgba(255,117,143,.12); border-color: rgba(255,117,143,.25); }
 @media (max-width: 1100px) { .invite-form { grid-template-columns: 1fr 1fr; } }
-@media (max-width: 900px) { .shell { grid-template-columns: 1fr; } .brand-panel { border-right: 0; border-bottom: 1px solid rgba(180,210,255,.15); } .brand-panel, .card-panel { padding: 34px 22px; } .member-controls, .invite-form { grid-template-columns: 1fr; } }
+@media (max-width: 900px) { .shell { grid-template-columns: 1fr; } .brand-panel { border-right: 0; border-bottom: 1px solid rgba(180,210,255,.15); } .brand-panel, .card-panel { padding: 34px 22px; } .member-controls, .invite-form { grid-template-columns: 1fr; } .audit-head { flex-direction: column; } .audit-type { max-width: 100%; } }
