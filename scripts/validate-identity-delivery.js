@@ -26,6 +26,7 @@ function requireAll(text, label, needles) {
 }
 
 const invitationIndexes = read('supabase/migrations/202608082300_atlas_identity_invitation_indexes.sql');
+const invitationRls = read('supabase/migrations/202608082301_atlas_identity_invitation_rls.sql');
 const invitationClient = read('atlas-identity-invitations.js');
 const authHtml = read('cloud-auth.html');
 const serviceWorker = read('service-worker.js');
@@ -35,6 +36,15 @@ const packageJson = read('package.json');
 requireAll(invitationIndexes, 'invitation actor indexes', [
   'identity_invitations_invited_by_idx',
   'identity_invitations_accepted_by_idx',
+  'commit;'
+]);
+
+requireAll(invitationRls, 'invitation deny-all RLS', [
+  'create policy identity_invitations_deny_direct',
+  'to anon, authenticated',
+  'using (false)',
+  'with check (false)',
+  'Intentional SECURITY DEFINER boundary',
   'commit;'
 ]);
 
