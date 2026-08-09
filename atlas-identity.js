@@ -273,6 +273,54 @@
     return nextContext;
   }
 
+  async function listInvitations(orgId = activeOrganizationId) {
+    requirePermission('members.manage', orgId);
+    const { data, error } = await client.rpc('list_identity_invitations', {
+      organization_id: orgId
+    });
+    if (error) throw error;
+    return Array.isArray(data) ? data : [];
+  }
+
+  async function createInvitation({ orgId = activeOrganizationId, email, role: targetRole, expiresInHours = 168 }) {
+    requirePermission('members.manage', orgId);
+    await requireAal2();
+    const { data, error } = await client.rpc('create_identity_invitation', {
+      organization_id: orgId,
+      invite_email: email,
+      target_role: targetRole,
+      expires_in_hours: expiresInHours
+    });
+    if (error) throw error;
+    emit('atlas:identity-invitations-changed', { orgId, invitationId: data?.id, action: 'created' });
+    return data;
+  }
+
+  async function revokeInvitation({ orgId = activeOrganizationId, invitationId }) {
+    requirePermission('members.manage', orgId);
+    await requireAal2();
+    if (!invitationId) throw new Error('An invitation is required.');
+    const { error } = await client.rpc('revoke_identity_invitation', {
+      organization_id: orgId,
+      invitation_id: invitationId
+    });
+    if (error) throw error;
+    emit('atlas:identity-invitations-changed', { orgId, invitationId, action: 'revoked' });
+    return listInvitations(orgId);
+  }
+
+  async function acceptInvitation(token) {
+    await requireSession();
+    if (!token || !String(token).trim()) throw new Error('An invitation token is required.');
+    const { data, error } = await client.rpc('accept_identity_invitation', {
+      invitation_token: String(token).trim()
+    });
+    if (error) throw error;
+    const nextContext = await refresh();
+    emit('atlas:identity-invitation-accepted', { ...data, context: nextContext });
+    return data;
+  }
+
   async function signInWithProvider(provider, options = {}) {
     if (!client) throw new Error('ATLAS Identity has not been connected.');
     if (!provider || typeof provider !== 'string') throw new Error('A federated identity provider is required.');
@@ -302,6 +350,10 @@
     listMembers,
     setMemberRole,
     setMemberStatus,
+    listInvitations,
+    createInvitation,
+    revokeInvitation,
+    acceptInvitation,
     getAuthenticatorAssuranceLevel,
     listFactors,
     getMfaState,
