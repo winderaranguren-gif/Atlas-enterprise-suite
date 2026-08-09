@@ -4,6 +4,7 @@
   const config = window.ATLAS_CONFIG || {};
   const sdk = window.supabase;
   const identity = window.ATLAS_IDENTITY;
+  const federation = config.federatedIdentity || {};
   const $ = (selector) => document.querySelector(selector);
   const state = { mode: 'signin', client: null };
 
@@ -21,6 +22,9 @@
     nameLabel: $('#name-label'),
     submit: $('#auth-submit'),
     help: $('#auth-help'),
+    federatedAuth: $('#federated-auth'),
+    federatedSignin: $('#federated-signin'),
+    federatedHelp: $('#federated-help'),
     message: $('#message'),
     userEmail: $('#user-email'),
     orgList: $('#organization-list'),
@@ -47,6 +51,16 @@
     elements.submit.disabled = busy;
     elements.signOut.disabled = busy;
     elements.refreshOrgs.disabled = busy;
+    if (elements.federatedSignin) elements.federatedSignin.disabled = busy;
+  }
+
+  function updateFederatedVisibility() {
+    const enabled = Boolean(federation.enabled && federation.provider && identity);
+    elements.federatedAuth.classList.toggle('hidden', !enabled || state.mode !== 'signin');
+    if (!enabled) return;
+
+    elements.federatedSignin.textContent = federation.label || 'Continuar con SSO';
+    elements.federatedHelp.textContent = 'Acceso federado mediante OIDC; ATLAS conserva una sola sesión Supabase y las mismas políticas RLS.';
   }
 
   function setMode(mode) {
@@ -70,6 +84,7 @@
     };
     elements.submit.textContent = labels[mode][0];
     elements.help.textContent = labels[mode][1];
+    updateFederatedVisibility();
     clearMessage();
   }
 
@@ -107,7 +122,11 @@
     const signedIn = Boolean(session?.user);
     elements.authSection.classList.toggle('hidden', signedIn);
     elements.accountSection.classList.toggle('hidden', !signedIn);
-    if (!signedIn) return;
+    if (!signedIn) {
+      identity?.clear();
+      updateFederatedVisibility();
+      return;
+    }
     elements.userEmail.textContent = session.user.email || session.user.id;
     await loadOrganizations();
   }
@@ -147,6 +166,22 @@
     } catch (error) {
       showMessage(error?.message || 'No se pudo completar la solicitud.', true);
     } finally {
+      setBusy(false);
+    }
+  }
+
+  async function signInFederated() {
+    clearMessage();
+    setBusy(true);
+    try {
+      if (!identity) throw new Error('ATLAS Identity client is not available.');
+      if (!federation.enabled || !federation.provider) throw new Error('Federated identity is not enabled.');
+
+      const providerOptions = {};
+      if (federation.scopes) providerOptions.scopes = federation.scopes;
+      await identity.signInWithProvider(federation.provider, providerOptions);
+    } catch (error) {
+      showMessage(error?.message || 'No se pudo iniciar el acceso federado.', true);
       setBusy(false);
     }
   }
@@ -194,34 +229,27 @@
       auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
     });
 
+    if (!identity) {
+      elements.dot.classList.add('error');
+      elements.connectionTitle.textContent = 'ATLAS Identity no cargó';
+      elements.connectionDetail.textContent = 'Revisa atlas-identity.js.';
+      elements.submit.disabled = true;
+      return;
+    }
+
+    identity.connect(state.client);
+    updateFederatedVisibility();
+
     elements.dot.classList.add('ready');
     elements.connectionTitle.textContent = 'ATLAS Identity conectado';
     elements.connectionDetail.textContent = config.environment || 'Private Beta';
 
     const { data, error } = await state.client.auth.getSession();
     if (error) showMessage(error.message, true);
-
-    if (data?.session && identity) {
-      try {
-        await identity.init(state.client);
-      } catch (identityError) {
-        showMessage(`Sesión válida, pero ATLAS Identity necesita su migración: ${identityError.message}`, true);
-      }
-    }
-
     await renderSession(data?.session);
 
     state.client.auth.onAuthStateChange((_event, session) => {
-      window.setTimeout(async () => {
-        if (session && identity) {
-          try {
-            await identity.init(state.client);
-          } catch (identityError) {
-            showMessage(identityError?.message || 'No se pudo cargar ATLAS Identity.', true);
-          }
-        }
-        await renderSession(session);
-      }, 0);
+      window.setTimeout(() => renderSession(session), 0);
     });
   }
 
@@ -231,9 +259,11 @@
   elements.authForm.addEventListener('submit', submitAuth);
   elements.orgForm.addEventListener('submit', createOrganization);
   elements.refreshOrgs.addEventListener('click', loadOrganizations);
+  elements.federatedSignin.addEventListener('click', signInFederated);
   elements.signOut.addEventListener('click', async () => {
     setBusy(true);
     const { error } = await state.client.auth.signOut();
+    identity?.clear();
     setBusy(false);
     if (error) showMessage(error.message, true);
     else showMessage('Sesión cerrada correctamente.');
