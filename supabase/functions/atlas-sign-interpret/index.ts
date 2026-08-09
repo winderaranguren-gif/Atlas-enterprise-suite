@@ -3,6 +3,7 @@ const DEFAULT_MODEL = 'gpt-5-mini';
 const MAX_FRAMES = 5;
 const MAX_FRAME_CHARS = 900_000;
 const MAX_TOTAL_CHARS = 3_200_000;
+const REQUIRED_APP_ORIGINS = ['https://localhost', 'capacitor://localhost'];
 
 function json(data: unknown, status = 200, extra: Record<string,string> = {}) {
   return new Response(JSON.stringify(data), {
@@ -15,7 +16,8 @@ function allowedOrigin(req: Request) {
   const origin = req.headers.get('origin') || '';
   const configured = (Deno.env.get('ATLAS_ALLOWED_ORIGINS') || 'https://atlasenterprisesuite.com,https://www.atlasenterprisesuite.com,http://localhost:4173,http://127.0.0.1:4173')
     .split(',').map(v => v.trim()).filter(Boolean);
-  return configured.includes(origin) ? origin : configured[0];
+  const allowed = Array.from(new Set([...configured, ...REQUIRED_APP_ORIGINS]));
+  return allowed.includes(origin) ? origin : allowed[0];
 }
 
 function cors(req: Request) {
@@ -80,6 +82,7 @@ Deno.serve(async (req: Request) => {
     'Analyze the supplied camera frames in chronological order and determine whether a person is intentionally signing.',
     `Preferred signed language: ${requestedLanguage}. Output locale: ${locale}.`,
     'Interpret only what is supported by the visible signing. Dynamic signs may be ambiguous from a short frame burst.',
+    'If no intentional signing is visible, set detected_signing=false, text="", confidence=0, needs_clarification=true, and briefly ask the user to sign again.',
     'If the meaning is not sufficiently clear, do not guess: set needs_clarification=true and explain briefly how to repeat the sign.',
     'Do not identify the person, infer sensitive attributes, diagnose conditions, or describe appearance.',
     'Return concise communication content suitable for text display and optional text-to-speech.'
@@ -138,14 +141,22 @@ Deno.serve(async (req: Request) => {
     try { result = JSON.parse(raw); }
     catch { return json({ ok: false, error: 'invalid_provider_output', requestId }, 502, corsHeaders); }
 
+    const detectedSigning = Boolean(result?.detected_signing);
+    const providerText = String(result?.text || '').trim();
+    const needsClarification = !detectedSigning || Boolean(result?.needs_clarification) || !providerText;
+    const safeText = needsClarification ? '' : providerText;
+    const clarification = !detectedSigning
+      ? 'No detecté una seña intencional con suficiente claridad. Coloca manos y rostro dentro del encuadre y vuelve a intentarlo.'
+      : String(result?.clarification || (needsClarification ? 'Repite la seña más despacio y dentro del encuadre.' : ''));
+
     return json({
       ok: true,
-      text: String(result?.text || ''),
+      text: safeText,
       signed_language: result?.signed_language || 'UNKNOWN',
-      confidence: Number(result?.confidence || 0),
-      detected_signing: Boolean(result?.detected_signing),
-      needs_clarification: Boolean(result?.needs_clarification),
-      clarification: String(result?.clarification || ''),
+      confidence: detectedSigning ? Number(result?.confidence || 0) : 0,
+      detected_signing: detectedSigning,
+      needs_clarification: needsClarification,
+      clarification,
       model,
       requestId
     }, 200, corsHeaders);
