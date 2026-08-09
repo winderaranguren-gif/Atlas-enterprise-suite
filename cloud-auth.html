@@ -90,6 +90,15 @@
         <div class="section-title"><div><small>Empresas autorizadas</small><h2>Tu acceso en ATLAS</h2></div><button id="refresh-orgs" type="button" class="secondary">Actualizar</button></div>
         <div id="organization-list" class="organization-list"></div>
 
+        <section id="member-admin-section" class="security-panel hidden" aria-labelledby="member-admin-title">
+          <div class="section-title">
+            <div><small id="member-admin-org">Empresa activa</small><h2 id="member-admin-title">Miembros y roles</h2></div>
+            <button id="member-refresh" type="button" class="secondary">Actualizar</button>
+          </div>
+          <p id="member-admin-detail" class="help">Selecciona una empresa para revisar sus miembros.</p>
+          <div id="member-list" class="member-list"></div>
+        </section>
+
         <form id="organization-form" class="organization-form">
           <h3>Crear primera empresa</h3>
           <label>Nombre comercial<input id="org-name" required /></label>
