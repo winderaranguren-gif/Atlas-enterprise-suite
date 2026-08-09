@@ -35,7 +35,19 @@ input:focus { border-color: #63caff; box-shadow: 0 0 0 3px rgba(99,202,255,.12);
 .hidden { display: none !important; }
 .account-head { padding: 18px; border-radius: 16px; background: rgba(255,255,255,.05); margin-bottom: 26px; }
 .section-title { margin: 8px 0 14px; }
-.section-title h2, .organization-form h3 { margin: 4px 0 0; }
+.section-title h2, .organization-form h3, .mfa-flow h3 { margin: 4px 0 0; }
+.security-panel { margin-bottom: 28px; padding: 18px; border: 1px solid rgba(125,216,255,.18); border-radius: 16px; background: rgba(14,34,57,.52); }
+.security-state { display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 14px; background: rgba(255,255,255,.035); }
+.security-state div { display: grid; gap: 4px; }
+.security-badge { min-width: 58px; text-align: center; padding: 8px 10px; border-radius: 999px; background: rgba(244,184,96,.14); border: 1px solid rgba(244,184,96,.32); color: #ffd89d; font-weight: 800; font-size: .78rem; letter-spacing: .08em; }
+.security-badge.verified { background: rgba(89,225,168,.13); border-color: rgba(89,225,168,.3); color: #8bf1c5; }
+.security-actions { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+.mfa-flow { margin-top: 16px; padding: 16px; display: grid; gap: 14px; border: 1px solid rgba(255,255,255,.1); border-radius: 14px; background: rgba(4,13,25,.58); }
+.mfa-flow .help { margin: 0; }
+.mfa-qr { width: min(220px, 100%); aspect-ratio: 1; padding: 10px; border-radius: 14px; background: white; object-fit: contain; }
+.secret-box { display: grid; gap: 6px; padding: 12px; border-radius: 12px; background: rgba(255,255,255,.055); overflow-wrap: anywhere; }
+.secret-box code { color: #dff7ff; font-size: .86rem; user-select: all; }
+.button-row { display: flex; gap: 10px; flex-wrap: wrap; }
 .organization-list { display: grid; gap: 10px; margin-bottom: 24px; }
 .organization { padding: 16px; border: 1px solid rgba(255,255,255,.1); border-radius: 14px; display: grid; gap: 5px; background: rgba(255,255,255,.035); }
 .organization-form { padding-top: 24px; border-top: 1px solid rgba(255,255,255,.1); }
