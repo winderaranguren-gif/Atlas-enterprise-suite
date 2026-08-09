@@ -9,6 +9,8 @@ const foundationPath = path.join(root, 'supabase/migrations/202608082250_atlas_i
 const hardeningPath = path.join(root, 'supabase/migrations/202608082251_atlas_identity_audit_hardening.sql');
 const clientPath = path.join(root, 'atlas-identity.js');
 const authHtmlPath = path.join(root, 'cloud-auth.html');
+const authClientPath = path.join(root, 'cloud-auth.js');
+const configPath = path.join(root, 'atlas-config.js');
 
 function fail(message) {
   console.error(`IDENTITY VALIDATION FAILED: ${message}`);
@@ -77,6 +79,8 @@ const foundation = read(foundationPath);
 const hardening = read(hardeningPath);
 const client = read(clientPath);
 const authHtml = read(authHtmlPath);
+const authClient = read(authClientPath);
+const config = read(configPath);
 
 if (foundation) {
   balancedSql(foundation, 'identity foundation migration');
@@ -102,13 +106,32 @@ if (hardening) {
 
 if (client) {
   mustInclude(client, 'window.ATLAS_IDENTITY', 'browser identity API');
+  mustInclude(client, 'function connect(supabaseClient)', 'pre-session identity connection');
+  mustInclude(client, 'function clear()', 'logout context clearing');
   mustInclude(client, "client.rpc('get_identity_context')", 'identity context client');
   mustInclude(client, "client.rpc('set_identity_role_permission'", 'audited permission client');
   mustInclude(client, 'getAuthenticatorAssuranceLevel', 'MFA assurance surface');
+  mustInclude(client, 'signInWithProvider', 'federated sign-in surface');
 }
 
 if (authHtml) {
   mustInclude(authHtml, '<script src="atlas-identity.js"></script>', 'cloud-auth identity loader');
+  mustInclude(authHtml, 'id="federated-signin"', 'federated sign-in control');
+}
+
+if (authClient) {
+  mustInclude(authClient, 'identity.connect(state.client)', 'single Supabase client binding');
+  mustInclude(authClient, 'identity.signInWithProvider', 'federated redirect wiring');
+  mustInclude(authClient, 'identity?.clear()', 'session context cleanup');
+}
+
+if (config) {
+  mustInclude(config, "provider: 'custom:authentik'", 'Authentik custom provider identifier');
+  mustInclude(config, 'enabled: false', 'safe default federation switch');
+  mustInclude(config, "scopes: 'openid profile email'", 'OIDC scopes');
+
+  const forbiddenBrowserSecret = /(clientSecret|client_secret|AUTHENTIK_CLIENT_SECRET)\s*[:=]\s*['\"][^'\"]+['\"]/i;
+  if (forbiddenBrowserSecret.test(config)) fail('Browser configuration appears to contain a federated provider client secret');
 }
 
 if (!process.exitCode) console.log('ATLAS Identity structural validation: PASS');
