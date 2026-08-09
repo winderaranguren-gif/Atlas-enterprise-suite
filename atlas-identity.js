@@ -234,6 +234,45 @@
     return refresh();
   }
 
+  async function listMembers(orgId = activeOrganizationId) {
+    requirePermission('members.read', orgId);
+    const { data, error } = await client.rpc('list_identity_members', {
+      organization_id: orgId
+    });
+    if (error) throw error;
+    return Array.isArray(data) ? data : [];
+  }
+
+  async function setMemberRole({ orgId = activeOrganizationId, userId, role: targetRole }) {
+    requirePermission('members.manage', orgId);
+    await requireAal2();
+    if (!userId) throw new Error('A target member is required.');
+    const { error } = await client.rpc('set_identity_member_role', {
+      organization_id: orgId,
+      target_user_id: userId,
+      target_role: targetRole
+    });
+    if (error) throw error;
+    await refresh();
+    emit('atlas:identity-members-changed', { orgId, userId, action: 'role' });
+    return listMembers(orgId);
+  }
+
+  async function setMemberStatus({ orgId = activeOrganizationId, userId, status }) {
+    requirePermission('members.manage', orgId);
+    await requireAal2();
+    if (!userId) throw new Error('A target member is required.');
+    const { error } = await client.rpc('set_identity_member_status', {
+      organization_id: orgId,
+      target_user_id: userId,
+      target_status: status
+    });
+    if (error) throw error;
+    await refresh();
+    emit('atlas:identity-members-changed', { orgId, userId, action: 'status' });
+    return listMembers(orgId);
+  }
+
   async function signInWithProvider(provider, options = {}) {
     if (!client) throw new Error('ATLAS Identity has not been connected.');
     if (!provider || typeof provider !== 'string') throw new Error('A federated identity provider is required.');
@@ -260,6 +299,9 @@
     role,
     enabledModules,
     setRolePermission,
+    listMembers,
+    setMemberRole,
+    setMemberStatus,
     getAuthenticatorAssuranceLevel,
     listFactors,
     getMfaState,
