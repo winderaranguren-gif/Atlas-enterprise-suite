@@ -17,6 +17,7 @@ const excludedRootFiles = new Set([
   'capacitor.config.ts'
 ]);
 const publicDirectories = ['assets', 'icons', 'images', 'fonts', 'media'];
+const accessibilityScript = '<script src="/atlas-accessibility.js?v=4" data-atlas-wu="0300"></script>';
 
 function resetOutput() {
   fs.rmSync(output, { recursive: true, force: true });
@@ -42,6 +43,28 @@ function copyPublicRootFiles() {
   }
 }
 
+function walkHtml(directory, files = []) {
+  if (!fs.existsSync(directory)) return files;
+  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    const fullPath = path.join(directory, entry.name);
+    if (entry.isDirectory()) walkHtml(fullPath, files);
+    else if (entry.isFile() && path.extname(entry.name).toLowerCase() === '.html') files.push(fullPath);
+  }
+  return files;
+}
+
+function injectAccessibilityShell() {
+  const htmlFiles = walkHtml(output);
+  for (const filePath of htmlFiles) {
+    let html = fs.readFileSync(filePath, 'utf8');
+    if (/atlas-accessibility\.js/i.test(html)) continue;
+    if (/<\/body>/i.test(html)) html = html.replace(/<\/body>/i, `  ${accessibilityScript}\n</body>`);
+    else html += `\n${accessibilityScript}\n`;
+    fs.writeFileSync(filePath, html, 'utf8');
+  }
+  return htmlFiles;
+}
+
 function writePagesCompatibilityFiles() {
   const headers = `/*
   X-Content-Type-Options: nosniff
@@ -64,20 +87,22 @@ function writePagesCompatibilityFiles() {
   fs.writeFileSync(path.join(output, '_redirects'), redirects, 'utf8');
 }
 
-function verifyRequiredFiles() {
-  const required = ['index.html', 'styles.css', 'app.js', 'manifest.webmanifest', 'service-worker.js'];
+function verifyRequiredFiles(htmlFiles) {
+  const required = ['index.html', 'styles.css', 'app.js', 'manifest.webmanifest', 'service-worker.js', 'atlas-accessibility.js', 'atlas-accessibility.css'];
   const missing = required.filter((name) => !fs.existsSync(path.join(output, name)));
-  if (missing.length) {
-    throw new Error(`Cloudflare build is missing required assets: ${missing.join(', ')}`);
+  if (missing.length) throw new Error(`Cloudflare build is missing required assets: ${missing.join(', ')}`);
+
+  const withoutAccessibility = htmlFiles.filter((filePath) => !/atlas-accessibility\.js/i.test(fs.readFileSync(filePath, 'utf8')));
+  if (withoutAccessibility.length) {
+    throw new Error(`ATLAS-WU-0300 accessibility shell missing from: ${withoutAccessibility.map((filePath) => path.relative(output, filePath)).join(', ')}`);
   }
 }
 
 resetOutput();
 copyPublicRootFiles();
-for (const directory of publicDirectories) {
-  copyDirectory(path.join(root, directory), path.join(output, directory));
-}
+for (const directory of publicDirectories) copyDirectory(path.join(root, directory), path.join(output, directory));
+const htmlFiles = injectAccessibilityShell();
 writePagesCompatibilityFiles();
-verifyRequiredFiles();
+verifyRequiredFiles(htmlFiles);
 
-console.log(`ATLAS Cloudflare build created at ${output}`);
+console.log(`ATLAS Cloudflare build created at ${output} with ATLAS-WU-0300 accessibility on ${htmlFiles.length} HTML surfaces.`);
