@@ -14,31 +14,26 @@ function fail(message) {
 function run(script) {
   console.log(`ATLAS Cloudflare build router: branch=${branch || 'local/unknown'}, wrangler=${command || 'unknown'}, path=${script}`);
   const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-  const result = spawnSync(npm, ['run', script], {
-    stdio: 'inherit',
-    env: process.env
-  });
+  const result = spawnSync(npm, ['run', script], { stdio: 'inherit', env: process.env });
   if (result.error) fail(result.error.message);
   if (result.status !== 0) process.exit(result.status || 1);
 }
 
-// Fail closed for the production branch regardless of which Wrangler command
-// was selected by an external CI provider.
+// Any operation on the production branch must pass the full constitutional gate.
 if (branch === productionBranch) {
-  run('build');
+  run('build:prod');
   process.exit(0);
 }
 
-// Any command capable of promoting/deploying a Worker must pass the full
-// constitutional production gate, including local/manual deployments where
-// WORKERS_CI_BRANCH is unavailable.
+// Manual or CI promotion/deploy commands are production-capable even when the
+// branch variable is missing, so they also fail closed through build:prod.
 if (command === 'deploy' || command === 'versions deploy') {
-  run('build');
+  run('build:prod');
   process.exit(0);
 }
 
-// Preview uploads and local development may generate validated development
-// assets, but they cannot promote a production release.
+// Preview uploads and development build validated assets without production
+// approval. They cannot themselves approve or promote a production release.
 if (command === 'versions upload' || command === 'dev' || command === 'types') {
   run('build:dev');
   process.exit(0);
