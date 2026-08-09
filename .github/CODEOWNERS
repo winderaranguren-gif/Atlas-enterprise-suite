@@ -1,0 +1,13 @@
+# ATLAS governance ownership
+/governance/ @winderaranguren-gif
+/package.json @winderaranguren-gif
+/wrangler.jsonc @winderaranguren-gif
+/scripts/build-cloudflare.js @winderaranguren-gif
+/scripts/cloudflare-build-router.js @winderaranguren-gif
+/scripts/validate-worker-dry-run.js @winderaranguren-gif
+/scripts/validate-constitution.js @winderaranguren-gif
+/scripts/validate-constitutional-bindings.js @winderaranguren-gif
+/scripts/validate-module-constitution.js @winderaranguren-gif
+/scripts/validate-deploy-boundary.js @winderaranguren-gif
+/.github/workflows/atlas-ios-build.yml @winderaranguren-gif
+/.github/workflows/deploy-production.yml @winderaranguren-gif
