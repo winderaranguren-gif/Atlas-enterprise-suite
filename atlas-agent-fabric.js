@@ -35,18 +35,23 @@ function identitySnapshot(){
   const api=window.ATLAS_IDENTITY||window.ATLASIdentity||null;
   let context=null;
   try{
-    if(typeof api?.getContext==='function')context=api.getContext();
+    if(typeof api?.current==='function')context=api.current();
+    else if(typeof api?.getContext==='function')context=api.getContext();
     else if(api?.context)context=api.context;
   }catch{}
+  const activeOrganization=context?.activeOrganization||
+    context?.organizations?.find?.(item=>item?.id===context?.activeOrganizationId)||null;
   const permissions=new Set([
+    ...(activeOrganization?.permissions||[]),
     ...(context?.permissions||[]),
     ...(api?.permissions||[])
   ].map(String));
   return {
     available:Boolean(api),
-    authenticated:Boolean(context?.user||context?.userId||context?.subjectId||api?.authenticated),
-    organizationId:context?.organizationId||context?.orgId||null,
-    role:context?.role||null,
+    authenticated:Boolean(context?.user_id||context?.user||context?.userId||context?.subjectId||api?.authenticated),
+    organizationId:activeOrganization?.id||context?.activeOrganizationId||context?.organizationId||context?.orgId||null,
+    role:activeOrganization?.role||context?.role||null,
+    aal:context?.aal||null,
     permissions:[...permissions]
   };
 }
@@ -55,6 +60,7 @@ function hasPermission(permission,identity=identitySnapshot()){
   if(!permission)return true;
   const api=window.ATLAS_IDENTITY||window.ATLASIdentity||null;
   try{
+    if(typeof api?.can==='function')return Boolean(api.can(permission));
     if(typeof api?.hasPermission==='function')return Boolean(api.hasPermission(permission));
   }catch{}
   return identity.permissions.includes(permission)||identity.permissions.includes('*');
