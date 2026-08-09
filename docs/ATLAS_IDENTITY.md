@@ -29,6 +29,8 @@ Migration `202608082250_atlas_identity_foundation.sql` adds:
 
 Migration `202608082251_atlas_identity_audit_hardening.sql` removes direct browser mutation privileges from `organization_role_permissions`, forcing changes through the audited RPC.
 
+Migration `202608082252_atlas_identity_invoker_hardening.sql` changes the read-only identity helper/context functions to `SECURITY INVOKER`. The permission-mutation RPC intentionally remains `SECURITY DEFINER` because authenticated users have no direct write privilege to the overrides table and the RPC performs an owner/admin authorization check before each mutation.
+
 ## Browser API
 
 `atlas-identity.js` exposes `window.ATLAS_IDENTITY`.
@@ -135,14 +137,21 @@ The canonical authorization contract remains the ATLAS Identity context and serv
 1. Apply all existing Supabase migrations in order.
 2. Apply `202608082250_atlas_identity_foundation.sql`.
 3. Apply `202608082251_atlas_identity_audit_hardening.sql`.
-4. Deploy `atlas-identity.js` with `cloud-auth.html` and `cloud-auth.js`.
-5. Sign in with a real test account using the existing Supabase method.
-6. Verify that the account page lists authorized organizations, role, permission count, and enabled module count.
-7. Configure the optional Authentik custom OIDC provider in Authentik and Supabase.
-8. Test Authentik sign-in while `federatedIdentity.enabled` is still false by invoking the provider only in a controlled test surface.
-9. Confirm the returned user receives a normal Supabase session and the correct ATLAS organization context.
-10. Set `federatedIdentity.enabled` to true only after the complete redirect/logout/refresh flow succeeds.
-11. Test at least owner, staff, and viewer accounts in separate organizations before attaching additional production modules.
+4. Apply `202608082252_atlas_identity_invoker_hardening.sql`.
+5. Deploy `atlas-identity.js` with `cloud-auth.html` and `cloud-auth.js`.
+6. Sign in with a real test account using the existing Supabase method.
+7. Verify that the account page lists authorized organizations, role, permission count, and enabled module count.
+8. Configure the optional Authentik custom OIDC provider in Authentik and Supabase.
+9. Test Authentik sign-in while `federatedIdentity.enabled` is still false by invoking the provider only in a controlled test surface.
+10. Confirm the returned user receives a normal Supabase session and the correct ATLAS organization context.
+11. Set `federatedIdentity.enabled` to true only after the complete redirect/logout/refresh flow succeeds.
+12. Test at least owner, staff, and viewer accounts in separate organizations before attaching additional production modules.
+
+## Current backend deployment status
+
+The three ATLAS Identity migrations have been applied to Supabase project `ggmanzcgtlrvqfoccgsh` (`atlas-core`). Post-migration verification confirmed the permission catalog, role mappings, overrides table, security-event table, and all three Identity RPCs are present. Direct INSERT/UPDATE/DELETE privileges on `organization_role_permissions` are not available to the `authenticated` role.
+
+The Authentik custom OIDC provider is not enabled in browser configuration yet.
 
 ## Next production steps
 
