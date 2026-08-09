@@ -24,8 +24,8 @@ jobs:
           node-version: '24'
       - name: Install dependencies
         run: npm install
-      - name: Validate and build ATLAS web assets
-        run: npm run build
+      - name: Validate and build ATLAS web assets for simulator
+        run: npm run build:dev
       - name: Generate clean iOS project in CI workspace
         run: |
           rm -rf ios
