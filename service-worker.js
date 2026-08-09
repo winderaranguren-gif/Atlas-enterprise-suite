@@ -1,4 +1,4 @@
-const VERSION = 'atlas-core-v16-resilience';
+const VERSION = 'atlas-core-v17-owned-core';
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 const APP_SHELL = [
@@ -12,6 +12,8 @@ const APP_SHELL = [
   '/atlas-accessibility.css?v=4',
   '/atlas-accessibility-open-design.css?v=1',
   '/app.js',
+  '/atlas-owned-core.js',
+  '/atlas-local-inference-provider.js',
   '/atlas-accessibility.js',
   '/atlas-accessibility.js?v=4',
   '/atlas-dragdrop.js',
