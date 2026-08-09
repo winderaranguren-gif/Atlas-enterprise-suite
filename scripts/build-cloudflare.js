@@ -71,17 +71,21 @@ function replaceOrInjectBodyScript(html, matcher, tag) {
   return `${html}\n${tag}\n`;
 }
 
-function injectAccessibilityShell() {
+function injectAtlasRuntimeShell() {
   const htmlFiles = walkHtml(output);
   for (const filePath of htmlFiles) {
     let html = fs.readFileSync(filePath, 'utf8');
     const runtimeUrl = `${deploymentRelativeUrl(filePath, 'atlas-accessibility.js')}?v=4`;
     const baseStyleUrl = `${deploymentRelativeUrl(filePath, 'atlas-accessibility.css')}?v=4`;
     const designStyleUrl = `${deploymentRelativeUrl(filePath, 'atlas-accessibility-open-design.css')}?v=1`;
+    const ownedCoreUrl = `${deploymentRelativeUrl(filePath, 'atlas-owned-core.js')}?v=1`;
+    const localInferenceUrl = `${deploymentRelativeUrl(filePath, 'atlas-local-inference-provider.js')}?v=1`;
 
     const runtimeTag = `<script src="${runtimeUrl}" data-atlas-wu="0300"></script>`;
     const baseStyleTag = `<link rel="stylesheet" href="${baseStyleUrl}" data-atlas-wu="0300-base">`;
     const designStyleTag = `<link rel="stylesheet" href="${designStyleUrl}" data-atlas-wu="0300-design">`;
+    const ownedCoreTag = `<script src="${ownedCoreUrl}" data-atlas-owned-core="1"></script>`;
+    const localInferenceTag = `<script src="${localInferenceUrl}" data-atlas-self-hosted-ai="1"></script>`;
 
     html = replaceOrInjectHeadAsset(
       html,
@@ -92,6 +96,16 @@ function injectAccessibilityShell() {
       html,
       /<link\b[^>]*href=["'][^"']*atlas-accessibility-open-design\.css(?:\?[^"']*)?["'][^>]*>/i,
       designStyleTag
+    );
+    html = replaceOrInjectBodyScript(
+      html,
+      /<script\b[^>]*src=["'][^"']*atlas-owned-core\.js(?:\?[^"']*)?["'][^>]*>\s*<\/script>/i,
+      ownedCoreTag
+    );
+    html = replaceOrInjectBodyScript(
+      html,
+      /<script\b[^>]*src=["'][^"']*atlas-local-inference-provider\.js(?:\?[^"']*)?["'][^>]*>\s*<\/script>/i,
+      localInferenceTag
     );
     html = replaceOrInjectBodyScript(
       html,
@@ -133,6 +147,8 @@ function verifyRequiredFiles(htmlFiles) {
     'app.js',
     'manifest.webmanifest',
     'service-worker.js',
+    'atlas-owned-core.js',
+    'atlas-local-inference-provider.js',
     'atlas-accessibility.js',
     'atlas-accessibility.css',
     'atlas-accessibility-open-design.css'
@@ -140,16 +156,26 @@ function verifyRequiredFiles(htmlFiles) {
   const missing = required.filter((name) => !fs.existsSync(path.join(output, name)));
   if (missing.length) throw new Error(`Cloudflare build is missing required assets: ${missing.join(', ')}`);
 
+  const invalidOwnedCore = [];
+  const invalidLocalInference = [];
   const invalidRuntime = [];
   const invalidBaseStyle = [];
   const invalidDesign = [];
   for (const filePath of htmlFiles) {
     const html = fs.readFileSync(filePath, 'utf8');
+    if (!/atlas-owned-core\.js\?v=1/i.test(html)) invalidOwnedCore.push(filePath);
+    if (!/atlas-local-inference-provider\.js\?v=1/i.test(html)) invalidLocalInference.push(filePath);
     if (!/atlas-accessibility\.js\?v=4/i.test(html)) invalidRuntime.push(filePath);
     if (!/atlas-accessibility\.css\?v=4/i.test(html)) invalidBaseStyle.push(filePath);
     if (!/atlas-accessibility-open-design\.css\?v=1/i.test(html)) invalidDesign.push(filePath);
   }
 
+  if (invalidOwnedCore.length) {
+    throw new Error(`ATLAS Owned Core missing from: ${invalidOwnedCore.map((filePath) => path.relative(output, filePath)).join(', ')}`);
+  }
+  if (invalidLocalInference.length) {
+    throw new Error(`ATLAS self-hosted inference adapter missing from: ${invalidLocalInference.map((filePath) => path.relative(output, filePath)).join(', ')}`);
+  }
   if (invalidRuntime.length) {
     throw new Error(`ATLAS-WU-0300 v4 runtime missing from: ${invalidRuntime.map((filePath) => path.relative(output, filePath)).join(', ')}`);
   }
@@ -164,8 +190,8 @@ function verifyRequiredFiles(htmlFiles) {
 resetOutput();
 copyPublicRootFiles();
 for (const directory of publicDirectories) copyDirectory(path.join(root, directory), path.join(output, directory));
-const htmlFiles = injectAccessibilityShell();
+const htmlFiles = injectAtlasRuntimeShell();
 writePagesCompatibilityFiles();
 verifyRequiredFiles(htmlFiles);
 
-console.log(`ATLAS Cloudflare build created at ${output} with versioned, deployment-relative ATLAS-WU-0300 accessibility on ${htmlFiles.length} HTML surfaces.`);
+console.log(`ATLAS Cloudflare build created at ${output} with ATLAS Owned Core, self-hosted inference adapter, and versioned ATLAS-WU-0300 accessibility on ${htmlFiles.length} HTML surfaces.`);
