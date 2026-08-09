@@ -5,9 +5,10 @@
   const fragment = new URLSearchParams(location.hash.slice(1));
   const mode = params.get('mode') || 'laptop';
   const challengeId = params.get('challenge');
+  const subjectId = params.get('subject');
   const phoneToken = fragment.get('token');
 
-  // Remove the one-time token from the visible address bar after this page has read it.
+  // Remove the one-time token from the visible address bar immediately after reading it.
   if (mode === 'phone' && phoneToken && location.hash) {
     history.replaceState(null, '', `${location.pathname}${location.search}`);
   }
@@ -52,13 +53,14 @@
       if (!response.ok) throw new Error('La solicitud expiró o ya no está disponible.');
       const state = await response.json();
       if (state.status === 'verified') {
-        setStatus(laptopStatus, 'Rostro y prueba de presencia verificados. ATLAS puede continuar el acceso.', 'good');
+        const confidence = typeof state.confidence === 'number' ? ` Confianza: ${Math.round(state.confidence * 100)}%.` : '';
+        setStatus(laptopStatus, `Rostro y prueba de presencia verificados.${confidence} ATLAS puede continuar el acceso.`, 'good');
         clearInterval(pollTimer); pollTimer = null;
       } else if (state.status === 'rejected') {
         setStatus(laptopStatus, `Verificación rechazada${state.reason ? `: ${state.reason}` : '.'}`, 'bad');
         clearInterval(pollTimer); pollTimer = null;
       } else if (state.status === 'verifying') {
-        setStatus(laptopStatus, 'Selfie recibida. ATLAS está verificando rostro y presencia.');
+        setStatus(laptopStatus, 'Selfie recibida. ATLAS está verificando identidad y presencia.');
       } else {
         setStatus(laptopStatus, 'Esperando la selfie desde el teléfono vinculado.');
       }
@@ -69,18 +71,23 @@
   }
 
   async function startChallenge() {
+    if (!subjectId) {
+      setStatus(laptopStatus, 'ATLAS debe iniciar esta verificación desde una sesión autenticada para ligar el rostro al usuario correcto.', 'bad');
+      return;
+    }
     startButton.disabled = true;
     try {
       const response = await fetch('/api/identity/challenges', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: '{}'
+        body: JSON.stringify({ subjectId })
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {
-        if (result.error === 'public_origin_not_configured') {
-          throw new Error('Falta configurar el origen HTTPS seguro que puede abrir el teléfono vinculado.');
-        }
+        if (result.error === 'public_origin_not_configured') throw new Error('Falta configurar el origen HTTPS seguro que puede abrir el teléfono vinculado.');
+        if (result.error === 'local_face_verifier_not_configured') throw new Error('El motor biométrico local todavía no está configurado. ATLAS no solicitará una selfie sin un verificador real.');
+        if (result.error === 'local_face_verifier_secret_not_configured') throw new Error('El canal privado entre ATLAS y el motor biométrico no está configurado.');
+        if (result.error === 'valid_subject_id_required') throw new Error('La sesión no contiene una identidad válida para verificar.');
         throw new Error(result.error || 'No se pudo crear la solicitud.');
       }
 
@@ -89,7 +96,7 @@
       phoneUrl.textContent = current.phoneUrl;
       phoneLinkWrap.classList.remove('hidden');
       cancelButton.classList.remove('hidden');
-      setStatus(laptopStatus, `Solicitud creada. Expira en ${current.expiresInSeconds} segundos.`);
+      setStatus(laptopStatus, `Solicitud protegida creada. Expira en ${current.expiresInSeconds} segundos.`);
       pollTimer = setInterval(poll, 1500);
       poll();
     } catch (error) {
@@ -115,12 +122,8 @@
 
   async function enableCamera() {
     try {
-      if (!window.isSecureContext) {
-        throw new Error('La cámara requiere una conexión HTTPS segura en el teléfono.');
-      }
-      if (!navigator.mediaDevices?.getUserMedia) {
-        throw new Error('Este navegador no permite acceso seguro a la cámara.');
-      }
+      if (!window.isSecureContext) throw new Error('La cámara requiere una conexión HTTPS segura en el teléfono.');
+      if (!navigator.mediaDevices?.getUserMedia) throw new Error('Este navegador no permite acceso seguro a la cámara.');
       stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 1280 } },
         audio: false
@@ -144,7 +147,7 @@
     canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
     let selfieDataUrl = canvas.toDataURL('image/jpeg', 0.86);
     stopCamera();
-    setStatus(phoneStatus, 'Selfie capturada. Verificando…');
+    setStatus(phoneStatus, 'Selfie capturada. Verificando identidad y presencia…');
 
     try {
       const response = await fetch(`/api/identity/challenges/${encodeURIComponent(challengeId)}/capture`, {
@@ -157,10 +160,8 @@
       canvas.height = 1;
 
       const result = await response.json().catch(() => ({}));
-      if (!response.ok || !result.ok) {
-        throw new Error(result.reason || result.error || 'La verificación no fue aprobada.');
-      }
-      setStatus(phoneStatus, 'Identidad verificada. Puedes volver a la laptop.', 'good');
+      if (!response.ok || !result.ok) throw new Error(result.reason || result.error || 'La verificación no fue aprobada.');
+      setStatus(phoneStatus, 'Identidad verificada. La selfie fue descartada; puedes volver a la laptop.', 'good');
       cameraButton.disabled = true;
     } catch (error) {
       selfieDataUrl = '';
@@ -181,6 +182,10 @@
     cameraButton.addEventListener('click', enableCamera);
     captureButton.addEventListener('click', captureAndVerify);
   } else {
+    if (!subjectId) {
+      startButton.disabled = true;
+      setStatus(laptopStatus, 'Abre esta verificación desde una sesión autenticada de ATLAS. No se permite seleccionar manualmente la identidad.', 'bad');
+    }
     startButton.addEventListener('click', startChallenge);
     cancelButton.addEventListener('click', cancelChallenge);
   }
