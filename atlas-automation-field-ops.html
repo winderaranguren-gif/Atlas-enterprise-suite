@@ -20,14 +20,18 @@
         <button data-view="sales">Field Sales</button>
         <button data-view="reports">Analytics 360</button>
       </nav>
-      <div class="afo-side-foot"><span>Local-first ready</span><a href="index.html">← ATLAS Core</a></div>
+      <div class="afo-side-foot"><span>PRODUCTION · CLOUD + OFFLINE QUEUE</span><a href="index.html">← ATLAS Core</a></div>
     </aside>
     <main class="afo-main">
-      <header class="afo-topbar"><div><p class="afo-eyebrow">ATLAS CORE EXTENSION</p><h1 id="afo-title">Command Center</h1></div><div class="afo-actions"><button id="gps-btn" class="afo-btn">Capture GPS</button><button id="export-btn" class="afo-btn primary">Export Snapshot</button></div></header>
+      <header class="afo-topbar"><div><p class="afo-eyebrow">ATLAS INTELLIGENCE EXTENSION</p><h1 id="afo-title">Command Center</h1></div><div class="afo-actions"><button id="gps-btn" class="afo-btn">Capture GPS</button><button id="export-btn" class="afo-btn primary">Export Snapshot</button></div></header>
       <div id="afo-toast" class="afo-toast" aria-live="polite"></div>
       <section id="afo-content" class="afo-content"></section>
     </main>
   </div>
-  <script src="atlas-automation-field-ops.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.1"></script>
+  <script src="atlas-config.js"></script>
+  <script src="atlas-data-fabric.js?v=1"></script>
+  <script src="atlas-intelligence-core.js?v=1"></script>
+  <script src="atlas-automation-field-ops.js?v=2"></script>
 </body>
 </html>
