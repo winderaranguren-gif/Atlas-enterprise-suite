@@ -21,8 +21,15 @@
 
   const accessibilityCss=document.createElement('link');
   accessibilityCss.rel='stylesheet';
-  accessibilityCss.href='atlas-accessibility.css?v=1';
+  accessibilityCss.href='atlas-accessibility.css?v=2';
   document.head.append(accessibilityCss);
+
+  navigator.serviceWorker?.addEventListener('message',(event)=>{
+    const detail=event.data;
+    if(detail?.type!=='atlas:alert')return;
+    if(window.ATLASAccessibility?.visualAlert)window.ATLASAccessibility.visualAlert(detail);
+    else window.dispatchEvent(new CustomEvent('atlas:alert',{detail}));
+  });
 
   const loadCarsEntry=()=>{
     const carsEntry=document.createElement('script');
@@ -42,7 +49,7 @@
 
   const loadAccessibility=()=>{
     const accessibility=document.createElement('script');
-    accessibility.src='atlas-accessibility.js?v=1';
+    accessibility.src='atlas-accessibility.js?v=2';
     accessibility.async=false;
     accessibility.onload=loadDragDrop;
     accessibility.onerror=loadDragDrop;
