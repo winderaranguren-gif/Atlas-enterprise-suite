@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#050914" />
+  <meta name="description" content="ATLAS Voice & Audio Studio" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/voice-studio.css" />
+  <title>ATLAS Voice & Audio</title>
+</head>
+<body class="voice-body">
+  <div class="voice-shell">
+    <header class="voice-topbar">
+      <a class="voice-brand" href="/app.html" aria-label="Back to ATLAS"><span class="voice-mark">A</span><span><strong>ATLAS</strong><small>Voice & Audio</small></span></a>
+      <div class="voice-status"><span class="status-dot"></span><span id="runtimeStatus">Initializing</span></div>
+    </header>
+
+    <main class="voice-workspace">
+      <section class="voice-hero">
+        <div>
+          <p class="voice-eyebrow">ATLAS MEDIA / SOVEREIGN AUDIO LAYER</p>
+          <h1>Voice Intelligence Studio</h1>
+          <p>Generate, capture, transcribe, transform and orchestrate voice from one controlled ATLAS surface.</p>
+        </div>
+        <div class="hero-metrics">
+          <article><small>Runtime</small><strong id="metricRuntime">—</strong></article>
+          <article><small>Native voices</small><strong id="metricVoices">—</strong></article>
+          <article><small>Processes</small><strong>10</strong></article>
+        </div>
+      </section>
+
+      <section class="voice-grid primary-grid">
+        <article class="voice-panel voice-panel-large">
+          <div class="panel-title"><div><small>01 / SYNTHESIS</small><h2>Text to Speech</h2></div><span class="cap-badge" id="ttsBadge">CHECKING</span></div>
+          <textarea id="ttsText" rows="7" placeholder="Write what ATLAS should say…">Welcome to ATLAS Voice. One platform for speech, audio, localization and intelligent voice interaction.</textarea>
+          <div class="control-row">
+            <label>Voice<select id="voiceSelect"></select></label>
+            <label>Language<input id="ttsLang" value="en-US" /></label>
+            <label>Rate<input id="ttsRate" type="range" min="0.5" max="2" value="1" step="0.05" /></label>
+            <label>Pitch<input id="ttsPitch" type="range" min="0" max="2" value="1" step="0.05" /></label>
+          </div>
+          <div class="action-row"><button class="voice-action primary" id="speakBtn">Generate & Speak</button><button class="voice-action" id="stopSpeakBtn">Stop</button></div>
+          <div class="event-line" id="ttsEvent">Ready.</div>
+        </article>
+
+        <article class="voice-panel">
+          <div class="panel-title"><div><small>02 / TRANSCRIPTION</small><h2>Speech to Text</h2></div><span class="cap-badge" id="sttBadge">CHECKING</span></div>
+          <label class="field">Language<input id="sttLang" value="en-US" /></label>
+          <div class="transcript" id="transcript">Live transcript will appear here.</div>
+          <div class="action-row"><button class="voice-action primary" id="startSttBtn">Start Listening</button><button class="voice-action" id="stopSttBtn">Stop</button></div>
+        </article>
+
+        <article class="voice-panel">
+          <div class="panel-title"><div><small>03 / CAPTURE</small><h2>Voice Recorder</h2></div><span class="cap-badge" id="recordBadge">CHECKING</span></div>
+          <div class="record-orb" id="recordOrb"><span></span></div>
+          <p class="record-copy" id="recordState">Microphone idle.</p>
+          <audio id="recordingPlayer" controls hidden></audio>
+          <div class="action-row"><button class="voice-action primary" id="startRecordBtn">Record</button><button class="voice-action" id="stopRecordBtn" disabled>Stop & Prepare</button><a class="voice-action link-action" id="saveRecording" hidden>Export Audio</a></div>
+        </article>
+      </section>
+
+      <section class="voice-section-head"><div><p class="voice-eyebrow">ADVANCED AUDIO FABRIC</p><h2>Full process matrix</h2></div><p>Advanced neural operations attach through health-verified ATLAS adapters. Unattached capabilities fail closed instead of reporting false completion.</p></section>
+      <section class="process-grid" id="processGrid"></section>
+
+      <section class="voice-grid secondary-grid">
+        <article class="voice-panel">
+          <div class="panel-title"><div><small>VOICE RIGHTS</small><h2>Consent Registry</h2></div><span class="cap-badge safe">ENFORCED</span></div>
+          <p>Cloning, conversion and dubbing require explicit authorization from the voice owner.</p>
+          <label class="field">Profile name<input id="profileName" placeholder="My verified voice" /></label>
+          <label class="field">Voice owner<input id="profileOwner" placeholder="Owner name" /></label>
+          <label class="consent"><input id="profileConsent" type="checkbox" /> I confirm explicit authorization from the voice owner.</label>
+          <button class="voice-action primary" id="registerProfileBtn">Register Authorized Profile</button>
+          <div class="profile-list" id="profileList"></div>
+        </article>
+
+        <article class="voice-panel architecture-panel">
+          <div class="panel-title"><div><small>EXECUTION MODEL</small><h2>ATLAS Audio Pipeline</h2></div><span class="cap-badge safe">ZERO-TRUST</span></div>
+          <div class="pipeline"><span>Input</span><b>→</b><span>Consent / Policy</span><b>→</b><span>Model Adapter</span><b>→</b><span>Verification</span><b>→</b><span>Audio Output</span></div>
+          <p>Browser-native operations run locally when supported. Higher-fidelity models connect only through controlled same-origin server adapters.</p>
+        </article>
+      </section>
+    </main>
+  </div>
+  <script src="/voice-core.js" defer></script>
+  <script src="/voice-studio.js" defer></script>
+</body>
+</html>
