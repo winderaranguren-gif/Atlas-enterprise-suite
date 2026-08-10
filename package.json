@@ -6,9 +6,10 @@
   "author": "ATLAS Health Frontiers <atlashealthfrontiers@gmail.com>",
   "scripts": {
     "test:core": "node scripts/runtime-test.mjs",
+    "test:documents": "node scripts/validate-documents.mjs",
     "test:e2e:commercial-pilot": "node scripts/e2e-commercial-pilot.mjs",
     "validate:cloudflare:prod": "node scripts/validate-cloudflare-production.mjs",
-    "validate": "node scripts/validate.mjs && npm run test:core",
+    "validate": "node scripts/validate.mjs && npm run test:core && npm run test:documents",
     "build": "node scripts/build.mjs",
     "build:cloudflare": "node scripts/build.mjs",
     "build:dev": "npm run validate && npm run build",
