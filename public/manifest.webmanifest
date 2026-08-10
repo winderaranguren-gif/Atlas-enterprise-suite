@@ -1,1 +1,19 @@
-{"name":"ATLAS Enterprise Suite","short_name":"ATLAS","start_url":"/","display":"standalone","background_color":"#050b14","theme_color":"#07111f","description":"ATLAS Enterprise Suite clean production foundation"}
+{
+  "id":"/",
+  "name":"ATLAS Enterprise Suite",
+  "short_name":"ATLAS",
+  "start_url":"/",
+  "scope":"/",
+  "display":"standalone",
+  "display_override":["window-controls-overlay","standalone","minimal-ui"],
+  "orientation":"any",
+  "background_color":"#050b14",
+  "theme_color":"#07111f",
+  "description":"ATLAS Enterprise Suite — unified web, PWA and installed app surface",
+  "categories":["business","productivity","finance","health","navigation"],
+  "shortcuts":[
+    {"name":"Command Center","short_name":"Command","url":"/?view=home"},
+    {"name":"ATLAS Repertoire","short_name":"Repertoire","url":"/?view=repertoire"},
+    {"name":"Technical Support","short_name":"Support","url":"/?view=support"}
+  ]
+}
