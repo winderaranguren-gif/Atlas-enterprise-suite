@@ -76,6 +76,25 @@ ATLAS Technical Support includes autonomous diagnostics, safe reversible repair 
 
 ATLAS may execute allowlisted safe/reversible actions automatically, but it must not bypass access controls, deployment permissions, physical-access requirements or irreversible-action boundaries. It must report the exact blocker instead of claiming success.
 
+## ATLAS Intelligence (OpenAI)
+
+`atlas-intelligence.html` provides the bilingual ATLAS Intelligence interface. All model requests pass through the ATLAS server or Cloudflare Worker; the OpenAI API key is never included in browser assets.
+
+Local setup:
+
+```bash
+cp .env.example .env
+# Add OPENAI_API_KEY to .env, then load that environment before npm start.
+```
+
+Cloudflare setup:
+
+```bash
+npx wrangler secret put OPENAI_API_KEY
+```
+
+`OPENAI_MODEL` is optional and defaults to `gpt-5.6`. The Responses API call uses `store: false`, bounded conversation input and safe error responses. Never commit `.env` or an API key.
+
 ## ATLAS Fleet Intelligence boundary
 
 `atlas-fleet-intelligence.html` provides an ATLAS-native fleet operations module with local demo telemetry. It supports vehicles, heavy equipment, trailers and tools, including geofence processing, utilization and maintenance indicators, route/event history and local exports.
