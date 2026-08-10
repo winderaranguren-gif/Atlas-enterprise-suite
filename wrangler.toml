@@ -1,3 +1,7 @@
 name = "atlas-enterprise-suite"
 compatibility_date = "2026-08-09"
-pages_build_output_dir = "./dist"
+workers_dev = false
+
+[assets]
+directory = "./public"
+not_found_handling = "single-page-application"
