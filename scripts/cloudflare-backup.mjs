@@ -14,14 +14,26 @@ const databaseName = process.env.ATLAS_D1_DATABASE_NAME || 'atlas-enterprise-sui
 const reason = (process.argv[2] || 'scheduled').replace(/[^a-z0-9_-]/gi,'-').toLowerCase();
 const stamp = new Date().toISOString().replace(/[:.]/g,'-');
 const dir = path.resolve('backups');
+const controlConfig = '.wrangler.backup-control.json';
 fs.mkdirSync(dir,{recursive:true});
 const sqlPath = path.join(dir,`atlas-d1-${reason}-${stamp}.sql`);
 const manifestPath = `${sqlPath}.manifest.json`;
 
-execFileSync('npx',[
-  '--yes','wrangler@4','d1','export',databaseName,
-  '--remote','--skip-confirmation','--output',sqlPath
-],{stdio:'inherit',env:process.env});
+const source = JSON.parse(fs.readFileSync('wrangler.jsonc','utf8'));
+fs.writeFileSync(controlConfig,`${JSON.stringify({
+  name: `${source.name || 'atlas-enterprise-suite'}-backup-control`,
+  compatibility_date: source.compatibility_date || '2026-08-10'
+},null,2)}\n`);
+
+try {
+  execFileSync('npx',[
+    '--yes','wrangler@4','d1','export',databaseName,
+    '--remote','--skip-confirmation','--output',sqlPath,
+    '--config',controlConfig
+  ],{stdio:'inherit',env:process.env});
+} finally {
+  fs.rmSync(controlConfig,{force:true});
+}
 
 if (!fs.existsSync(sqlPath) || fs.statSync(sqlPath).size === 0) {
   console.error('D1 backup export is missing or empty');
