@@ -3,6 +3,10 @@
   "version": "0.6.0",
   "private": true,
   "description": "ATLAS production-connected web, PWA and mobile operating foundation",
+  "author": {
+    "name": "ATLAS Health Frontiers",
+    "email": "atlashealthfrontiers@gmail.com"
+  },
   "scripts": {
     "start": "node server.js",
     "serve": "node server.js",
