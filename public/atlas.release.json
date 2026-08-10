@@ -1,13 +1,13 @@
 {
   "product": "ATLAS Enterprise Suite",
   "channel": "stable",
-  "version": "1.1.0",
-  "releaseId": "2026-08-10-core-v1.1.0",
-  "generatedAt": "2026-08-10T00:00:00-04:00",
+  "version": "1.2.0",
+  "releaseId": "2026-08-10-repertoire-4d-v1.2.0",
+  "generatedAt": "2026-08-10T05:01:00-04:00",
   "minimumCompatibleVersion": "1.1.0",
   "autoApply": true,
   "rollbackCapable": true,
-  "scope": ["web", "pwa", "modules", "design", "configuration"],
+  "scope": ["web", "pwa", "modules", "design", "configuration", "repertoire", "design-studio"],
   "native": {
     "strategy": "adapter",
     "requiresSignedPackage": true,
