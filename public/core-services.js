@@ -20,7 +20,7 @@ function save(){
 }
 function notify(type,detail={}){window.dispatchEvent(new CustomEvent(`atlas:${type}`,{detail}));}
 
-const adapters={data:null,identity:null,providers:new Map(),tools:new Map(),handlers:new Map(),connectors:new Map()};
+const adapters={data:null,identity:null,providers:new Map(),tools:new Map(),handlers:new Map(),connectors:new Map(),integrationAdapters:new Map()};
 
 const Identity=Object.freeze({
   registerAdapter(adapter){if(!adapter||typeof adapter!=='object')throw new TypeError('Identity adapter required');adapters.identity=adapter;notify('identity:adapter',{connected:true});return true;},
@@ -99,10 +99,21 @@ const AgentFabric=Object.freeze({
 });
 
 const Integrations=Object.freeze({
-  register(name,{kind='api',status='disconnected',metadata={}}={}){if(!name)throw new TypeError('Connector name required');const connector={name:String(name),kind,status,metadata:clone(metadata),updatedAt:now()};adapters.connectors.set(connector.name,connector);return clone(connector);},
-  setStatus(name,status){const item=adapters.connectors.get(name);if(!item)throw new Error('Connector not registered');item.status=String(status);item.updatedAt=now();return clone(item);},
+  register(name,{kind='api',metadata={}}={}){
+    if(!name)throw new TypeError('Connector name required');
+    const connector={name:String(name),kind,status:'disconnected',metadata:clone(metadata),health:null,updatedAt:now()};
+    adapters.connectors.set(connector.name,connector);adapters.integrationAdapters.delete(connector.name);return clone(connector);
+  },
+  async connect(name,adapter){
+    const item=adapters.connectors.get(name);if(!item)throw new Error('Connector not registered');
+    if(!adapter||typeof adapter.health!=='function')throw new TypeError('Authorized connector adapter with health() is required');
+    const result=await adapter.health();
+    if(result?.ok!==true){item.status='disconnected';item.health={ok:false,checkedAt:now()};item.updatedAt=now();throw new Error('Connector health check did not verify a live authorized connection.');}
+    adapters.integrationAdapters.set(name,adapter);item.status='connected';item.health={ok:true,checkedAt:now()};item.updatedAt=now();notify('integration:connected',{name});return clone(item);
+  },
+  disconnect(name){const item=adapters.connectors.get(name);if(!item)throw new Error('Connector not registered');adapters.integrationAdapters.delete(name);item.status='disconnected';item.health=null;item.updatedAt=now();notify('integration:disconnected',{name});return clone(item);},
   list(){return clone([...adapters.connectors.values()]);},
-  status(){return {gatewayActive:true,connected:[...adapters.connectors.values()].filter(c=>c.status==='connected').length,total:adapters.connectors.size};}
+  status(){return {gatewayActive:true,connected:[...adapters.connectors.values()].filter(c=>c.status==='connected'&&c.health?.ok===true).length,total:adapters.connectors.size};}
 });
 
 function configure(config){state.config=config||{};save();notify('core-services:ready',{status:inspect()});return inspect();}
