@@ -51,3 +51,19 @@ CREATE TABLE IF NOT EXISTS atlas_security_events (
 );
 CREATE INDEX IF NOT EXISTS idx_security_events_scope
   ON atlas_security_events(organization_id, dba_id, created_at);
+
+CREATE TABLE IF NOT EXISTS atlas_audit_events (
+  id TEXT PRIMARY KEY,
+  organization_id TEXT NOT NULL,
+  dba_id TEXT NOT NULL,
+  actor_user_id TEXT NOT NULL,
+  action TEXT NOT NULL,
+  resource_type TEXT NOT NULL,
+  resource_id TEXT NOT NULL,
+  payload TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_atlas_audit_scope
+  ON atlas_audit_events(organization_id, dba_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_atlas_audit_actor
+  ON atlas_audit_events(actor_user_id, created_at);
