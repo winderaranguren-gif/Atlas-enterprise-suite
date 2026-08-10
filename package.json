@@ -7,11 +7,12 @@
   "scripts": {
     "test:core": "node scripts/runtime-test.mjs",
     "test:e2e:commercial-pilot": "node scripts/e2e-commercial-pilot.mjs",
+    "validate:cloudflare:prod": "node scripts/validate-cloudflare-production.mjs",
     "validate": "node scripts/validate.mjs && npm run test:core",
     "build": "node scripts/build.mjs",
     "build:cloudflare": "node scripts/build.mjs",
     "build:dev": "npm run validate && npm run build",
-    "build:prod": "npm run validate && npm run build",
+    "build:prod": "npm run validate:cloudflare:prod && npm run validate && npm run build",
     "start": "npx serve dist -l 4173",
     "deploy": "npx wrangler@4 deploy",
     "cloudflare:deploy": "npx wrangler@4 deploy",
