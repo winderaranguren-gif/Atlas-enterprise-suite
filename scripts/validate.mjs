@@ -41,9 +41,11 @@ for(const [file,source] of [['public/app.js',app],['public/core-services.js',cor
 
 const requiredCoreMarkers=[
   'ATLASCoreServices','DataFabric','EventFabric','Identity','Intelligence','AgentFabric','WorkGraph','Integrations',
-  'Dependency would create a cycle','High-risk execution requires explicit approval','ATLAS Data Fabric adapter is not connected.'
+  'Dependency would create a cycle','High-risk execution requires explicit approval','ATLAS Data Fabric adapter is not connected.',
+  "status:'disconnected'","typeof adapter.health!=='function'","result?.ok!==true","c.status==='connected'&&c.health?.ok===true"
 ];
 for(const marker of requiredCoreMarkers){if(!core.includes(marker))throw new Error(`Core services invariant missing: ${marker}`);}
+if(core.includes('setStatus(name,status)'))throw new Error('Integrations may not be marked connected by an arbitrary status setter');
 if(!core.includes('sessionStorage'))throw new Error('Core services must use bounded session storage for browser runtime state');
 if(core.includes('localStorage'))throw new Error('Core services must not persist execution/audit state in localStorage');
 
