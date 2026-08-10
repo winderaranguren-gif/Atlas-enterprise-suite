@@ -7,31 +7,36 @@
   <meta name="description" content="ATLAS Enterprise Suite" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/core-services.css" />
   <title>ATLAS Enterprise Suite</title>
 </head>
 <body>
   <div class="ambient" aria-hidden="true"></div>
   <header class="topbar">
     <div class="brand"><span class="mark">A</span><div><strong>ATLAS</strong><small>Enterprise Suite</small></div></div>
-    <div class="status"><span class="pulse"></span> Core online <span id="clock"></span></div>
+    <div class="status"><span class="pulse"></span> Core services online <span id="clock"></span></div>
   </header>
   <main class="shell">
     <aside class="rail">
       <button class="nav active" data-view="home">Command Center</button>
+      <button class="nav" data-view="services">Core Services</button>
       <button class="nav" data-view="modules">Module Center</button>
+      <button class="nav" data-view="music">ATLAS Music</button>
       <button class="nav" data-view="regions">Regional Layer</button>
       <button class="nav" data-view="support">Technical Support</button>
       <button class="nav" data-view="settings">Settings</button>
     </aside>
     <section class="workspace">
       <div class="hero">
-        <div><p class="eyebrow">ATLAS GLOBAL CORE</p><h1 id="viewTitle">Command Center</h1><p id="viewSubtitle">A clean, resilient operating surface for the ATLAS ecosystem.</p></div>
+        <div><p class="eyebrow">ATLAS GLOBAL CORE</p><h1 id="viewTitle">Command Center</h1><p id="viewSubtitle">Secure clean foundation with ATLAS-owned core services.</p></div>
         <div class="region-control"><label for="region">Region</label><select id="region"></select></div>
       </div>
       <section id="content" class="grid"></section>
     </section>
   </main>
-  <footer>ATLAS Health Frontiers · <a href="mailto:atlashealthfrontiers@gmail.com">atlashealthfrontiers@gmail.com</a> · v1.0.0</footer>
+  <footer>ATLAS Health Frontiers · <a href="mailto:atlashealthfrontiers@gmail.com">atlashealthfrontiers@gmail.com</a> · v1.1.0</footer>
+  <script src="/core-services.js" defer></script>
+  <script src="/music-core.js" defer></script>
   <script src="/app.js" defer></script>
 </body>
 </html>
