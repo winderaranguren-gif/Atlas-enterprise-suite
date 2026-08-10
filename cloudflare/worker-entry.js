@@ -12,10 +12,22 @@ const EDGE_HEADERS=Object.freeze({
   'Cache-Control':'no-store, max-age=0'
 });
 
-function secure(response){
+const MUSIC_CSP="default-src 'self'; script-src 'self'; connect-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.mzstatic.com https://i.ytimg.com; font-src 'self' data:; media-src 'self' blob:; frame-src https://www.youtube.com https://www.youtube-nocookie.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
+
+function secure(response,overrides={}){
   const headers=new Headers(response.headers);
   for(const [name,value] of Object.entries(EDGE_HEADERS))headers.set(name,value);
+  for(const [name,value] of Object.entries(overrides))headers.set(name,value);
   return new Response(response.body,{status:response.status,statusText:response.statusText,headers});
+}
+
+async function handleMusicSurface(request,env,url){
+  const response=await env.ASSETS.fetch(request);
+  const isHtml=url.pathname==='/atlas-music.html';
+  return secure(response,{
+    'Content-Security-Policy':MUSIC_CSP,
+    'Cache-Control':isHtml?'no-store, max-age=0':'public, max-age=3600'
+  });
 }
 
 export default {
@@ -30,6 +42,9 @@ export default {
       const base={requestId:crypto.randomUUID(),at:new Date().toISOString()};
       const response=await handleMusicApi(request,url,env,base);
       if(response)return secure(response);
+    }
+    if(['/atlas-music.html','/atlas-music.css','/atlas-music.js','/atlas-music-providers.js'].includes(url.pathname)){
+      return handleMusicSurface(request,env,url);
     }
     return baseWorker.fetch(request,env);
   }
