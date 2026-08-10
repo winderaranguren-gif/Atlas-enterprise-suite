@@ -1,14 +1,15 @@
 {
   "product": "ATLAS Enterprise Suite",
-  "channel": "stable",
-  "version": "1.4.3",
-  "releaseId": "2026-08-10-crm-architecture-v1.4.3",
-  "generatedAt": "2026-08-10T08:08:00-04:00",
-  "minimumCompatibleVersion": "1.4.2",
-  "autoApply": true,
+  "channel": "candidate",
+  "version": "1.4.4-rc.1",
+  "releaseId": "2026-08-10-commercial-pilot-clean-rebuild-rc1",
+  "generatedAt": "2026-08-10T17:46:00-04:00",
+  "autoApply": false,
+  "productionReady": false,
+  "verifiedE2E": false,
   "rollbackCapable": true,
   "designLock": "ATLAS-COMMAND-CENTER-DL-1.0",
-  "scope": ["public-website", "signin", "signup", "private-app", "crm", "company-dba-scoping", "language-core", "review-mode", "operational-core"],
+  "scope": ["commercial-pilot", "users-permissions", "crm", "documents", "accounting", "backups", "company-dba-scoping", "audit", "language-core", "update-fabric"],
   "language": {
     "default": "en",
     "supported": ["en", "es"],
@@ -16,40 +17,27 @@
     "persistentPreference": true,
     "storageKey": "atlas.language"
   },
-  "crm": {
-    "route": "/crm.html",
-    "architecture": "/architecture/atlas-crm.json",
-    "defaultLanguage": "en",
-    "truthfulStatusGating": true,
-    "scope": "legal_entity_id + operating_unit_id",
-    "entities": ["accounts", "contacts", "leads", "opportunities", "quotes", "tasks", "activities", "notes", "attachments"],
-    "pipeline": ["new", "qualified", "proposal", "negotiation", "won", "lost"],
-    "integrations": ["Accounting", "Documents", "Pages", "Audit", "CompanySelector"],
-    "status": "blocked_until_real_backend"
+  "commercialPilot": {
+    "status": "implemented-not-operational",
+    "workerEntry": "worker/router.js",
+    "requiredBindings": ["D1:DB", "R2:BACKUPS", "secret:ATLAS_BOOTSTRAP_TOKEN"],
+    "requiredE2E": "npm run test:e2e:commercial-pilot",
+    "modules": {
+      "usersPermissions": "implemented-not-operational",
+      "crm": "implemented-not-operational",
+      "documents": "implemented-not-operational",
+      "accounting": "implemented-not-operational",
+      "backups": "implemented-not-operational"
+    }
   },
-  "musicPrompter": {
-    "route": "/music-prompter.html",
-    "sourceStrategy": "native-reimplementation",
-    "base44RuntimeRequired": false
-  },
-  "publicWebsite": {
-    "root": "/",
-    "signin": "/signin.html",
-    "signup": "/signup.html",
-    "app": "/app.html",
-    "contact": "atlashealthfrontiers@gmail.com"
-  },
-  "operationalCore": {
-    "version": "0.1.0",
-    "statusEndpoint": "/api/health",
-    "bindingsRequired": ["D1:DB", "R2:BACKUPS", "secret:BOOTSTRAP_KEY"],
-    "truthfulStatusGating": true
-  },
-  "reviewMode": {
-    "enabled": true,
-    "requestTypes": ["Design", "Text", "Function", "Data", "Permissions", "Error"],
-    "liveTextEdits": true,
-    "persistentLocalOverrides": true
+  "promotionGate": {
+    "exactDeployedShaRequired": true,
+    "cloudflareDeploymentRequired": true,
+    "d1BindingRequired": true,
+    "r2BackupBindingRequired": true,
+    "bootstrapSecretRequired": true,
+    "e2ePassRequired": true,
+    "automaticUpdateAllowedOnlyWhen": ["productionReady", "verifiedE2E", "autoApply"]
   },
   "native": {
     "strategy": "adapter",
