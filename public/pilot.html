@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#050914" />
+  <meta name="description" content="ATLAS Live Pilot — one intelligence, one ecosystem, many operational surfaces." />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="stylesheet" href="/pilot.css" />
+  <title>ATLAS Live Pilot</title>
+</head>
+<body>
+  <div class="atmosphere" aria-hidden="true"></div>
+  <div class="pilot-shell">
+    <header class="pilot-topbar">
+      <a class="brand" href="/"><span class="mark">A</span><span><strong>ATLAS</strong><small>LIVE PILOT</small></span></a>
+      <div class="pilot-status"><span class="dot"></span><span id="coreState">CORE CHECKING</span></div>
+      <div class="top-actions"><a class="ghost" href="/app.html">Open App</a><a class="primary" href="/signup.html">Request Pilot</a></div>
+    </header>
+
+    <main class="pilot-main">
+      <section class="hero-grid">
+        <div class="hero-copy">
+          <p class="eyebrow">ATLAS HUMANITY INTELLIGENCE OS · GUIDED PILOT</p>
+          <h1>One intelligence.<br><span>One ecosystem.</span></h1>
+          <p class="lead">See how one intent can move through Enterprise, People, Intelligence, Communication, Health and Mobility while sharing the same ATLAS core.</p>
+          <div class="command-bar">
+            <span class="command-icon">✦</span>
+            <input id="pilotCommand" aria-label="ATLAS pilot command" value="Show me how my company is doing today" />
+            <button id="runCommand">Run</button>
+          </div>
+          <div class="truth-note"><strong>Truthful Pilot:</strong> core status is read from the current ATLAS configuration. Business events below are guided demo scenarios and never pretend to be production transactions.</div>
+        </div>
+        <aside class="core-card">
+          <div class="card-head"><span>ATLAS LIVE CORE</span><span id="coreBadge" class="badge">CHECKING</span></div>
+          <div id="coreServices" class="service-list"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+          <div class="core-foot"><span>Identity</span><span>Data</span><span>Events</span><span>Agents</span><span>Audit</span></div>
+        </aside>
+      </section>
+
+      <section class="pilot-stage">
+        <div class="stage-head">
+          <div><p class="eyebrow">LIVE PRODUCT WALKTHROUGH</p><h2 id="stageTitle">Command Center</h2><p id="stageSubtitle">Start with one question. ATLAS routes the intent to the right domains.</p></div>
+          <div class="stage-progress"><span id="stageNumber">01</span><span>/ 08</span></div>
+        </div>
+
+        <div class="stage-layout">
+          <nav id="scenarioNav" class="scenario-nav" aria-label="Pilot scenarios">
+            <button class="scenario active" data-step="0"><span>01</span><strong>Command</strong><small>One intent</small></button>
+            <button class="scenario" data-step="1"><span>02</span><strong>Enterprise</strong><small>Finance + CRM</small></button>
+            <button class="scenario" data-step="2"><span>03</span><strong>People</strong><small>Candidate assessment</small></button>
+            <button class="scenario" data-step="3"><span>04</span><strong>Intelligence</strong><small>Cross-domain reasoning</small></button>
+            <button class="scenario" data-step="4"><span>05</span><strong>Communication</strong><small>Calendar + tasks</small></button>
+            <button class="scenario" data-step="5"><span>06</span><strong>Health</strong><small>Patient OS context</small></button>
+            <button class="scenario" data-step="6"><span>07</span><strong>Mobility</strong><small>Fleet + field</small></button>
+            <button class="scenario" data-step="7"><span>08</span><strong>One ATLAS</strong><small>Shared core</small></button>
+          </nav>
+
+          <section class="demo-canvas">
+            <div class="canvas-toolbar"><span class="canvas-label">ATLAS PILOT WORKSPACE</span><span id="demoMode" class="mode-chip">GUIDED DEMO</span></div>
+            <div id="demoContent" class="demo-content"></div>
+            <div class="canvas-actions"><button id="prevStep" class="ghost-button">← Previous</button><button id="nextStep" class="next-button">Next scenario →</button></div>
+          </section>
+
+          <aside class="activity-panel">
+            <div class="card-head"><span>ACTIVITY & EVIDENCE</span><span class="live-word">LIVE</span></div>
+            <div id="activityFeed" class="activity-feed"></div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="one-atlas">
+        <p class="eyebrow">THE POINT OF THE PILOT</p>
+        <h2>Different worlds. Shared intelligence.</h2>
+        <div class="architecture-flow">
+          <span>User</span><b>→</b><span>Identity</span><b>→</b><span>Permission</span><b>→</b><span>Module</span><b>→</b><span>Data + Events</span><b>→</b><span>Intelligence</span><b>→</b><span>Agent</span><b>→</b><span>Action + Audit</span>
+        </div>
+        <div class="domain-grid"><div>Enterprise</div><div>People</div><div>Health</div><div>Mobility</div><div>Humanity</div><div>Frontiers</div></div>
+      </section>
+    </main>
+
+    <footer class="pilot-footer"><span>ATLAS · 10 AUG 2026</span><span>WEB + PWA + APP SURFACE</span><span>One intelligence. One ecosystem. Many worlds.</span></footer>
+  </div>
+  <script src="/core-services.js" defer></script>
+  <script src="/pilot.js" defer></script>
+</body>
+</html>
