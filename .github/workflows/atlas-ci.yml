@@ -14,7 +14,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  checkout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify repository checkout
+        run: test -f README.md && test -f package.json && test -f package-lock.json
+
   runner-node:
+    needs: checkout
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -23,7 +32,7 @@ jobs:
         with:
           node-version: 22
       - name: Verify runner toolchain
-        run: node --version && npm --version && test -f package.json && test -f package-lock.json
+        run: node --version && npm --version
 
   install:
     needs: runner-node
