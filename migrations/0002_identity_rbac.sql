@@ -67,3 +67,12 @@ CREATE INDEX IF NOT EXISTS idx_atlas_audit_scope
   ON atlas_audit_events(organization_id, dba_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_atlas_audit_actor
   ON atlas_audit_events(actor_user_id, created_at);
+
+CREATE TABLE IF NOT EXISTS atlas_bootstrap_state (
+  id TEXT PRIMARY KEY CHECK(id='primary'),
+  completed_at TEXT NOT NULL,
+  owner_user_id TEXT NOT NULL,
+  organization_id TEXT NOT NULL,
+  dba_id TEXT NOT NULL,
+  FOREIGN KEY(owner_user_id) REFERENCES atlas_users(id) ON DELETE RESTRICT
+);
