@@ -1,8 +1,8 @@
 {
   "name": "atlas-enterprise-suite",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
-  "description": "ATLAS Enterprise Suite secure clean foundation with provider-independent core services",
+  "description": "ATLAS Enterprise Suite design-locked 4D command center with provider-independent core services and Update Fabric",
   "author": "ATLAS Health Frontiers <atlashealthfrontiers@gmail.com>",
   "scripts": {
     "test:core": "node scripts/runtime-test.mjs",
