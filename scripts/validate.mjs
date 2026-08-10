@@ -7,6 +7,7 @@ const required = [
   'atlas.config.json',
   'wrangler.toml',
   'scripts/build.mjs',
+  'scripts/cloudflare-build-router.js',
   'public/index.html',
   'public/styles.css',
   'public/app.js',
@@ -37,6 +38,7 @@ const headers = read('public/_headers');
 const redirects = read('public/_redirects');
 const wrangler = read('wrangler.toml');
 const build = read('scripts/build.mjs');
+const buildRouter = read('scripts/cloudflare-build-router.js');
 
 if (pkg.version !== cfg.version) fail('Version mismatch between package.json and atlas.config.json');
 if (JSON.stringify(cfg) !== JSON.stringify(publicCfg)) fail('Root and public ATLAS runtime configuration must remain identical');
@@ -45,7 +47,15 @@ if (!Array.isArray(cfg.modules) || cfg.modules.length < 20) fail('Module registr
 if (!Array.isArray(cfg.regions) || !cfg.regions.includes(cfg.defaultRegion)) fail('Default region is not registered');
 if (!pkg.scripts?.validate?.includes('scripts/validate.mjs')) fail('package.json must retain the clean-foundation validation gate');
 if (!pkg.scripts?.build?.includes('scripts/build.mjs')) fail('package.json must retain the deterministic local build script');
+if (pkg.scripts?.['build:cloudflare'] !== 'node scripts/build.mjs') fail('Legacy Cloudflare build alias must route to the clean build only');
+if (pkg.scripts?.['build:dev'] !== 'npm run validate && npm run build') fail('build:dev must remain a clean validate+build alias');
+if (pkg.scripts?.['build:prod'] !== 'npm run validate && npm run build') fail('build:prod must remain a clean validate+build alias');
 if (pkg.scripts?.deploy !== 'npx wrangler@4 deploy') fail('Deployment must use the connected Cloudflare Workers service through Wrangler deploy');
+if (pkg.scripts?.['cloudflare:deploy'] !== 'npx wrangler@4 deploy') fail('Cloudflare deploy compatibility alias is missing');
+if (pkg.scripts?.['cloudflare:preview'] !== 'npx wrangler@4 versions upload') fail('Cloudflare preview compatibility alias is missing');
+if (!buildRouter.includes("run('scripts/validate.mjs')") || !buildRouter.includes("run('scripts/build.mjs')")) {
+  fail('Cloudflare build-router compatibility shim must execute only clean validation and build scripts');
+}
 
 for (const [pattern, message] of [
   [/^name\s*=\s*["']atlas-enterprise-suite["']/m, 'Wrangler Worker name must match the connected Cloudflare service'],
@@ -137,4 +147,4 @@ for (const file of walkRepo(root)) {
   }
 }
 
-console.log(`ATLAS clean-foundation validation passed: v${cfg.version}, ${cfg.modules.length} modules, ${cfg.regions.length} regions; Workers Static Assets, security and cache boundaries verified.`);
+console.log(`ATLAS clean-foundation validation passed: v${cfg.version}, ${cfg.modules.length} modules, ${cfg.regions.length} regions; Workers Static Assets, build compatibility, security and cache boundaries verified.`);
