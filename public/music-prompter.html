@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#050914"><title>ATLAS Music Prompter</title>
+<style>
+:root{--bg:#050914;--panel:#0d1728;--line:#20385a;--text:#eef6ff;--muted:#8fa5bc;--accent:#47c7ff;--accent2:#5f78ff;--good:#47d18c}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top right,rgba(71,199,255,.12),transparent 28%),var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+main{max-width:1200px;margin:auto;padding:20px}.top{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:18px}.brand h1{margin:0}.brand small{color:var(--muted)}
+.grid{display:grid;grid-template-columns:340px 1fr;gap:16px}.panel{background:rgba(13,23,40,.94);border:1px solid var(--line);border-radius:20px;padding:16px}.list{display:grid;gap:10px;max-height:70vh;overflow:auto}.item{padding:12px;border:1px solid var(--line);border-radius:14px;background:#09121f;cursor:pointer}.item.active{outline:2px solid var(--accent)}
+input,textarea,select,button{width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);background:#08111f;color:var(--text);margin:5px 0}button{cursor:pointer;font-weight:700}.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));border:0}.secondary{background:#13243c}.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.controls{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.tele-wrap{position:relative;height:64vh;border:1px solid var(--line);border-radius:20px;overflow:hidden;background:#000}.tele{position:absolute;left:0;right:0;padding:44vh 8vw;white-space:pre-wrap;line-height:1.5;text-align:center;will-change:transform}.toolbar{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:10px}.status{color:var(--muted);font-size:12px;margin-top:8px}
+@media(max-width:800px){.grid{grid-template-columns:1fr}.controls,.toolbar{grid-template-columns:repeat(2,1fr)}.tele-wrap{height:58vh}}
+</style>
+</head><body><main>
+<div class="top"><div class="brand"><h1>ATLAS Music Prompter</h1><small>Native ATLAS recreation · no Base44 runtime required</small></div><a href="/app.html" style="color:#7fdfff">← ATLAS</a></div>
+<div class="grid">
+<section class="panel"><button id="newBtn" class="primary">+ Nuevo guion</button><div id="scriptList" class="list"></div></section>
+<section class="panel">
+<input id="title" placeholder="Título del guion"><textarea id="content" rows="8" placeholder="Escribe o pega el guion..."></textarea>
+<div class="controls"><label>WPM<input id="wpm" type="number" min="30" max="400" value="120"></label><label>Tamaño<input id="fontSize" type="number" min="20" max="120" value="48"></label><label>Texto<input id="textColor" type="color" value="#ffffff"></label><label>Fondo<input id="bgColor" type="color" value="#000000"></label></div>
+<div class="row"><label><input id="mirror" type="checkbox"> Espejar texto</label><label><input id="loop" type="checkbox"> Loop al terminar</label></div>
+<div class="row"><button id="saveBtn" class="primary">Guardar</button><button id="deleteBtn" class="secondary">Eliminar</button></div>
+<div class="tele-wrap" id="teleWrap"><div id="tele" class="tele"></div></div>
+<div class="toolbar"><button id="startBtn" class="primary">▶ Iniciar</button><button id="pauseBtn" class="secondary">⏸ Pausa</button><button id="restartBtn" class="secondary">↺ Reiniciar</button><button id="slowerBtn" class="secondary">− Velocidad</button><button id="fasterBtn" class="secondary">+ Velocidad</button><button id="fullscreenBtn" class="secondary">⛶ Pantalla</button></div>
+<div id="status" class="status">Listo.</div>
+</section>
+</div>
+<script>
+const KEY='atlas.music.prompter.scripts.v1';let scripts=JSON.parse(localStorage.getItem(KEY)||'[]');let currentId=null;let raf=null;let running=false;let y=0;let last=0;
+const $=id=>document.getElementById(id);const fields=['title','content','wpm','fontSize','textColor','bgColor','mirror','loop'];
+function persist(){localStorage.setItem(KEY,JSON.stringify(scripts))}
+function current(){return scripts.find(s=>s.id===currentId)}
+function data(){return{id:currentId||crypto.randomUUID(),title:$('title').value.trim()||'Sin título',content:$('content').value,words_per_minute:Number($('wpm').value)||120,font_size:Number($('fontSize').value)||48,text_color:$('textColor').value,background_color:$('bgColor').value,mirror:$('mirror').checked,loop:$('loop').checked,updated_at:new Date().toISOString()}}
+function apply(s){currentId=s?.id||null;$('title').value=s?.title||'';$('content').value=s?.content||'';$('wpm').value=s?.words_per_minute??120;$('fontSize').value=s?.font_size??48;$('textColor').value=s?.text_color||'#ffffff';$('bgColor').value=s?.background_color||'#000000';$('mirror').checked=!!s?.mirror;$('loop').checked=!!s?.loop;renderTele();renderList()}
+function renderList(){$('scriptList').innerHTML=scripts.map(s=>`<div class="item ${s.id===currentId?'active':''}" data-id="${s.id}"><strong>${escapeHtml(s.title)}</strong><div style="color:#8fa5bc;font-size:12px">${s.words_per_minute} WPM · ${s.font_size}px</div></div>`).join('');document.querySelectorAll('.item').forEach(el=>el.onclick=()=>apply(scripts.find(s=>s.id===el.dataset.id)))}
+function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
+function renderTele(){const s=data();$('tele').textContent=s.content||'Tu guion aparecerá aquí.';$('tele').style.fontSize=s.font_size+'px';$('tele').style.color=s.text_color;$('teleWrap').style.background=s.background_color;$('tele').style.transform=`translateY(${y}px) scaleX(${s.mirror?-1:1})`}
+function save(){const s=data();const i=scripts.findIndex(x=>x.id===s.id);if(i>=0)scripts[i]=s;else scripts.unshift(s);currentId=s.id;persist();renderList();renderTele();$('status').textContent='Guardado en ATLAS local storage.'}
+function step(t){if(!running)return;if(!last)last=t;const dt=(t-last)/1000;last=t;const s=data();const pxPerSec=Math.max(8,(s.words_per_minute/60)*(s.font_size*.18));y-=pxPerSec*dt;renderTele();const bottom=$('tele').getBoundingClientRect().bottom;const top=$('teleWrap').getBoundingClientRect().top;if(bottom<top){if(s.loop){y=0}else{running=false;$('status').textContent='Finalizado.';return}}raf=requestAnimationFrame(step)}
+$('newBtn').onclick=()=>{running=false;y=0;apply(null)};$('saveBtn').onclick=save;$('deleteBtn').onclick=()=>{if(!currentId)return;scripts=scripts.filter(s=>s.id!==currentId);persist();apply(null)};$('startBtn').onclick=()=>{save();running=true;last=0;cancelAnimationFrame(raf);raf=requestAnimationFrame(step);$('status').textContent='Reproduciendo.'};$('pauseBtn').onclick=()=>{running=false;cancelAnimationFrame(raf);$('status').textContent='Pausado.'};$('restartBtn').onclick=()=>{running=false;cancelAnimationFrame(raf);y=0;renderTele();$('status').textContent='Reiniciado.'};$('slowerBtn').onclick=()=>{$('wpm').value=Math.max(30,Number($('wpm').value)-10);renderTele()};$('fasterBtn').onclick=()=>{$('wpm').value=Math.min(400,Number($('wpm').value)+10);renderTele()};$('fullscreenBtn').onclick=()=>$('teleWrap').requestFullscreen?.();fields.forEach(id=>$(id).addEventListener('input',renderTele));renderList();apply(scripts[0]||null);
+</script>
+</main></body></html>
