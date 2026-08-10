@@ -1,4 +1,4 @@
-const VERSION = 'atlas-core-v16-resilience';
+const VERSION = 'atlas-core-v17-music';
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 const APP_SHELL = [
@@ -35,6 +35,9 @@ const APP_SHELL = [
   '/atlas-fleet-intelligence.css',
   '/atlas-fleet-intelligence.js',
   '/atlas-calendar.html',
+  '/atlas-music.html',
+  '/atlas-music.css',
+  '/atlas-music.js',
   '/atlas-config.js',
   '/atlas-calendar-system-events.js',
   '/atlas-calendar.js',
