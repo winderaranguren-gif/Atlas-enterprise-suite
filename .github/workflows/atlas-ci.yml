@@ -22,7 +22,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
       - name: Reproducible install
         run: npm ci
 
@@ -35,7 +34,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
       - run: npm ci
       - name: Validate ATLAS contracts and runtime
         run: npm run validate
@@ -66,7 +64,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
       - run: npm ci
       - name: Production build
         run: npm run build:prod
