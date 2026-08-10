@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#07131f">
+  <meta name="description" content="ATLAS Intelligence — inteligencia operativa bilingüe para ATLAS Enterprise Suite.">
+  <title>ATLAS Intelligence</title>
+  <link rel="stylesheet" href="atlas-intelligence.css">
+</head>
+<body>
+  <main class="ai-shell">
+    <header class="ai-header">
+      <a class="back-link" href="index.html" aria-label="Volver al centro de mando">← ATLAS Core</a>
+      <div class="brand"><span class="brand-mark">A</span><span><strong>ATLAS</strong><small>INTELLIGENCE</small></span></div>
+      <div id="ai-status" class="status" role="status"><span></span>Comprobando conexión</div>
+    </header>
+
+    <section class="hero" aria-labelledby="ai-title">
+      <p class="eyebrow">SOVEREIGN OPERATING INTELLIGENCE</p>
+      <h1 id="ai-title">Piensa, organiza y ejecuta<br><span>desde un solo núcleo.</span></h1>
+      <p>Asistencia bilingüe para operaciones, contabilidad, documentos, análisis y decisiones dentro de ATLAS.</p>
+    </section>
+
+    <section class="workspace" aria-label="Conversación con ATLAS Intelligence">
+      <div id="conversation" class="conversation" aria-live="polite" aria-busy="false">
+        <article class="message atlas-message">
+          <div class="message-label">ATLAS</div>
+          <p>Estoy listo. Puedo ayudarte a analizar una operación, preparar un documento o convertir una idea en un plan ejecutable.</p>
+        </article>
+      </div>
+
+      <div class="suggestions" aria-label="Sugerencias">
+        <button type="button" data-prompt="Resume el estado operativo de hoy y señala las tres prioridades principales.">Prioridades de hoy</button>
+        <button type="button" data-prompt="Ayúdame a revisar una situación contable paso a paso.">Análisis contable</button>
+        <button type="button" data-prompt="Convierte mi idea en un plan de ejecución de 30, 60 y 90 días.">Plan 30/60/90</button>
+      </div>
+
+      <form id="ai-form" class="composer">
+        <label class="sr-only" for="ai-input">Escribe tu solicitud</label>
+        <textarea id="ai-input" maxlength="8000" rows="3" placeholder="Escribe en español o inglés…" required></textarea>
+        <div class="composer-footer">
+          <span id="character-count">0 / 8000</span>
+          <button id="send-button" type="submit">Enviar <span aria-hidden="true">↑</span></button>
+        </div>
+      </form>
+      <p class="privacy-note">La clave de OpenAI permanece en el servidor. No se almacena ni se envía al navegador.</p>
+    </section>
+  </main>
+  <script src="atlas-intelligence.js"></script>
+</body>
+</html>
