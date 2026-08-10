@@ -7,8 +7,10 @@ const requireMarker = (text,marker,label) => { if (!text.includes(marker)) fail(
 const wrangler = read('wrangler.jsonc');
 const secure = read('worker/secure-entry.js');
 const core = read('worker/index.js');
+const identity = read('worker/identity-permissions.js');
 const migration1 = read('migrations/0001_commercial_pilot_core.sql');
 const migration2 = read('migrations/0002_security_events.sql');
+const migration3 = read('migrations/0003_identity_permissions.sql');
 const deploy = read('.github/workflows/atlas-deploy.yml');
 const backupWorkflow = read('.github/workflows/atlas-backup.yml');
 const backupScript = read('scripts/cloudflare-backup.mjs');
@@ -24,10 +26,14 @@ for (const marker of [
   "READ_ROLES = new Set(['owner','admin','editor','viewer','auditor'])",
   "WRITE_ROLES = new Set(['owner','admin','editor'])",
   'atlas_security_events',
-  "url.pathname === '/api/system/self-repair'",
+  "url.pathname==='/api/system/self-repair'",
   'x-atlas-bootstrap-key',
   "reason:'membership_missing'",
-  "reason:`role_${role}_not_allowed`"
+  "reason:`role_${role}_not_allowed`",
+  "url.pathname==='/api/auth/redeem-invite'",
+  "url.pathname==='/api/auth/logout'",
+  "url.pathname==='/api/users/invite'",
+  "url.pathname.startsWith('/api/memberships/')"
 ]) requireMarker(secure,marker,'worker/secure-entry.js');
 
 for (const marker of [
@@ -38,6 +44,20 @@ for (const marker of [
   'actor_user_id',
   'Forbidden for requested organization/DBA scope'
 ]) requireMarker(core,marker,'worker/index.js');
+
+for (const marker of [
+  "ALL_ROLES = new Set(['owner','admin','editor','viewer','auditor'])",
+  "ADMIN_MANAGED_ROLES = new Set(['editor','viewer','auditor'])",
+  "if (actorRole === 'owner')",
+  "if (actorRole === 'admin')",
+  "token_hash",
+  "consumed_at IS NULL",
+  "revoked_at IS NULL",
+  "session_token:sessionToken",
+  "UPDATE atlas_sessions SET revoked_at=?",
+  "You cannot suspend your own current membership",
+  "Admin cannot modify owner/admin memberships"
+]) requireMarker(identity,marker,'identity permissions');
 
 for (const marker of [
   'CREATE TABLE IF NOT EXISTS atlas_users',
@@ -52,6 +72,15 @@ for (const marker of [
   'idx_security_events_scope',
   'idx_security_events_user'
 ]) requireMarker(migration2,marker,'migration 0002');
+
+for (const marker of [
+  'CREATE TABLE IF NOT EXISTS atlas_invites',
+  'token_hash TEXT NOT NULL UNIQUE',
+  'consumed_at TEXT',
+  'revoked_at TEXT',
+  'idx_invites_scope',
+  'idx_invites_token'
+]) requireMarker(migration3,marker,'migration 0003');
 
 for (const marker of [
   'cloudflare-provision.mjs',
@@ -86,7 +115,8 @@ for (const marker of [
 ]) requireMarker(provisionScript,marker,'provision script');
 
 if (/session_token\s*[:=]\s*["'][^"']+["']/.test(core)) fail('hard-coded session token detected');
+if (/invite_token\s*[:=]\s*["'][^"']+["']/.test(identity)) fail('hard-coded invite token detected');
 if (/CLOUDFLARE_API_TOKEN\s*[:=]\s*["'][^"']+["']/.test(deploy)) fail('hard-coded Cloudflare API token detected');
 if (/ATLAS_BOOTSTRAP_KEY\s*[:=]\s*["'][^"']+["']/.test(deploy)) fail('hard-coded bootstrap key detected');
 
-console.log('ATLAS security contract passed: scoped identity, RBAC, auditability, D1 migrations, verified backups and production deployment boundaries are present.');
+console.log('ATLAS security contract passed: scoped identity, invitation lifecycle, anti-escalation RBAC, auditability, D1 migrations, verified backups and production deployment boundaries are present.');
