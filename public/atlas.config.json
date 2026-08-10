@@ -1,9 +1,19 @@
 {
   "product": "ATLAS Enterprise Suite",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "contact": "atlashealthfrontiers@gmail.com",
   "architecture": "ATLAS Global Core -> Region -> Country -> Organization -> User",
   "defaultRegion": "north-america",
   "regions": ["global","north-america","central-america","caribbean","south-america","europe","africa","asia","oceania","antarctica-research"],
-  "modules": ["Core","CRM & Sales","Accounts Receivable","Accounts Payable","Accounting & General Ledger","Inventory","HR & Payroll","Reports & Intelligence","Freight Network","Fleet Intelligence","Documents & Sign","Wallet","Ride","Marketplace","Rewards","Cars","Health","Public Safety","Community Hub","Calendar","GPS 4D","Technical Support","Settings"]
+  "modules": ["Core","CRM & Sales","Accounts Receivable","Accounts Payable","Accounting & General Ledger","Inventory","HR & Payroll","Reports & Intelligence","Freight Network","Fleet Intelligence","Documents & Sign","Wallet","Ride","Marketplace","Rewards","Cars","Health","Public Safety","Community Hub","Calendar","GPS 4D","Technical Support","Work Graph","Agent Fabric","Music","Settings"],
+  "services": {
+    "dataFabric": {"status":"verified","backendVerified":true,"mode":"same-origin-adapter"},
+    "eventFabric": {"status":"active","backendVerified":true,"mode":"atlas-native"},
+    "identity": {"status":"verified","backendVerified":true,"mode":"same-origin-adapter"},
+    "intelligence": {"status":"active","mode":"atlas-native"},
+    "agentFabric": {"status":"active","mode":"atlas-native"},
+    "workGraph": {"status":"active","backendVerified":true,"mode":"atlas-native"},
+    "music": {"status":"active","mode":"atlas-originals"},
+    "integrations": {"status":"ready","mode":"verified-same-origin-adapters"}
+  }
 }
