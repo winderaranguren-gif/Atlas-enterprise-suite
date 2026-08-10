@@ -1,65 +1,57 @@
-const state={config:null,view:'home',region:localStorage.getItem('atlas.region')||'north-america'};
-const titles={
-  home:['Command Center','Secure clean foundation with ATLAS-owned core services.'],
-  repertoire:['ATLAS Repertoire','The complete living product universe, organized and editable from inside ATLAS.'],
-  services:['Core Services','Data, events, identity boundaries, intelligence, agents and work execution in one shared core.'],
-  modules:['Module Center','One global core. Capabilities load from a controlled module registry.'],
-  music:['ATLAS Music','Provider-independent ATLAS Originals with optional server-side adapters.'],
-  regions:['Regional Layer','Regional behavior changes by configuration, not disconnected application forks.'],
-  support:['Technical Support','Diagnostics prioritize safe, reversible actions and exact blocker reporting.'],
-  settings:['Settings','Local preferences and environment-safe controls.']
-};
+const state={config:null,repertoire:null,view:'home',region:localStorage.getItem('atlas.region')||'north-america',profile:localStorage.getItem('atlas.profile.name')||'Esther'};
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+const root=()=>document.querySelector('#mainView');
+function serviceLabel(service){return String(service?.status||'unknown').toUpperCase()}
 function card(title,body,tag='ATLAS',extra=''){return `<article class="card"><h3>${esc(title)}</h3><p>${esc(body)}</p><span class="tag">${esc(tag)}</span>${extra}</article>`}
-function serviceLabel(service){return String(service?.status||'unknown').toUpperCase();}
-function bindMusic(){document.querySelectorAll('[data-track]').forEach(btn=>btn.addEventListener('click',()=>{try{window.ATLASMusicCore.play(btn.dataset.track,{duration:18});btn.textContent='Playing';setTimeout(()=>{btn.textContent='Play original'},1800);}catch(error){btn.textContent=error.message;}}));document.querySelector('#stop-music')?.addEventListener('click',()=>window.ATLASMusicCore.stop());}
-async function render(){
-  const [title,sub]=titles[state.view];document.querySelector('#viewTitle').textContent=title;document.querySelector('#viewSubtitle').textContent=sub;const root=document.querySelector('#content');
-  const services=state.config.services||{};
-  if(state.view==='repertoire'){
-    root.className='repertoire-surface';
-    try{await window.ATLASRepertoire.load();window.ATLASRepertoire.render(root)}catch(error){root.innerHTML=card('Repertoire unavailable',error.message,'Needs attention')}
-    return;
-  }
-  root.className='grid';
-  if(state.view==='home'){
-    const green=Object.values(services).filter(s=>['active','verified','ready'].includes(s.status)).length;
-    root.innerHTML=[
-      `<article class="card hero-card"><div class="metric">${state.config.modules.length}</div><h3>Registered production modules</h3><p>Current clean-core registry. Open Repertoire for the full ATLAS product universe.</p><button class="action" id="openRepertoire">Explore ATLAS</button></article>`,
-      `<article class="card"><div class="metric">${green}</div><h3>Core services ready</h3><p>Active, backend-verified, or adapter-ready services in the secure clean foundation.</p></article>`,
-      card('Update Fabric','Validated releases can now propagate to the web/PWA shell without replacing the permanent ATLAS installation.','AUTO UPDATE'),
-      card('Data + Event Fabric','Backend-verified data boundary plus ATLAS-native event runtime.',`${serviceLabel(services.dataFabric)} / ${serviceLabel(services.eventFabric)}`),
-      card('Identity boundary','Verified backend; authenticated account access attaches through a same-origin adapter.',serviceLabel(services.identity)),
-      card('Intelligence + Agents','ATLAS-native rules, skills, policy gates and provider-independent orchestration.',`${serviceLabel(services.intelligence)} / ${serviceLabel(services.agentFabric)}`),
-      card('Work Graph','Projects, work units, dependencies, evidence and execution planning.',serviceLabel(services.workGraph)),
-      card('ATLAS Music','Six ATLAS Originals can play without a commercial catalog provider.',serviceLabel(services.music)),
-      card('Architecture',state.config.architecture,'Global Core'),
-      card('Current region',state.region,'Runtime context')
-    ].join('');
-    document.querySelector('#openRepertoire')?.addEventListener('click',()=>document.querySelector('[data-view="repertoire"]')?.click());
-  }else if(state.view==='services'){
-    const runtime=window.ATLASCoreServices?.inspect?.()||{};
-    root.innerHTML=Object.entries(services).map(([key,value])=>card(key,`Mode: ${value.mode}. Runtime: ${JSON.stringify(runtime[key]||{})}`,serviceLabel(value))).join('');
-  }else if(state.view==='modules'){
-    root.innerHTML=state.config.modules.map((m,i)=>card(m,'Registered capability in the ATLAS v1.1 secure clean foundation.',`Module ${String(i+1).padStart(2,'0')}`)).join('');
-  }else if(state.view==='music'){
-    const tracks=window.ATLASMusicCore?.catalog?.()||[];
-    root.innerHTML=tracks.map(track=>card(track.title,`${track.mood} · ${track.bpm} BPM · ATLAS-owned playback and video-sync rights.`,'ATLAS Original',`<button class="action" data-track="${esc(track.id)}">Play original</button>`)).join('')+`<article class="card"><h3>Playback control</h3><p>Generated locally with Web Audio. No commercial track is downloaded or mirrored.</p><span class="tag">Provider independent</span><button class="action" id="stop-music">Stop</button></article>`;
-    bindMusic();
-  }else if(state.view==='regions'){
-    root.innerHTML=state.config.regions.map(r=>card(r,'Regional configuration layer; shared application core remains unchanged.',r===state.region?'Active':'Available')).join('');
-  }else if(state.view==='support'){
-    root.innerHTML=[card('Diagnostics','Check configuration, runtime state, module registry and deployment boundary before repair.','Safe-first'),card('Agent routing','Agent Fabric can plan work through technical support, deployment, security, knowledge, accounting, HR and IoT skills.','Policy-gated'),card('Escalation','Report the exact blocker when credentials, permissions or external infrastructure are required.','Transparent')].join('');
-  }else{
-    root.innerHTML=[card('Region preference',state.region,'Local setting'),card('Interface editing','ATLAS Design Studio preferences are available from Repertoire and persist locally.','Editable'),card('Data boundary','Only UI preferences and bounded session runtime state live in the browser. Production secrets are never embedded in the client.','Security'),card('Integration gateway','External services attach through same-origin adapters and remain disconnected until an authorized health check succeeds.',serviceLabel(services.integrations)),card('Contact',state.config.contact,'Operations')].join('');
-  }
-}
-async function boot(){
-  const res=await fetch('/atlas.config.json',{cache:'no-store'});if(!res.ok)throw new Error('ATLAS configuration could not be loaded');state.config=await res.json();
-  window.ATLASCoreServices?.configure?.(state.config);
-  const select=document.querySelector('#region');select.innerHTML=state.config.regions.map(r=>`<option value="${esc(r)}">${esc(r)}</option>`).join('');if(!state.config.regions.includes(state.region))state.region=state.config.defaultRegion;select.value=state.region;
-  select.addEventListener('change',e=>{state.region=e.target.value;localStorage.setItem('atlas.region',state.region);window.dispatchEvent(new CustomEvent('atlas:region-changed',{detail:{region:state.region}}));render()});
-  document.querySelectorAll('.nav').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.nav').forEach(x=>x.classList.remove('active'));btn.classList.add('active');state.view=btn.dataset.view;render()}));
-  await render();if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});setInterval(()=>{const el=document.querySelector('#clock');if(el)el.textContent=new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});},1000);
-}
-boot().catch(err=>{document.querySelector('#content').innerHTML=card('Startup error',err.message,'Needs attention')});
+function nowParts(){const d=new Date();return{date:d.toLocaleDateString('es-US',{weekday:'short',day:'2-digit',month:'short',year:'numeric'}),time:d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}}
+function operationalServices(){return Object.values(state.config?.services||{}).filter(s=>['active','verified','ready'].includes(s.status)).length}
+function catalog(){return state.repertoire?.modules||[]}
+function family(id){return catalog().filter(m=>m.family===id)}
+function familyCard(id,title,subtitle){const items=family(id).slice(0,6);return `<article class="family-card"><h3>${esc(title)}</h3><p>${esc(subtitle)}</p><ul>${items.map(x=>`<li>◈ ${esc(x.name)}</li>`).join('')}</ul></article>`}
+function kpi(icon,label,value,detail){return `<article class="glass-card kpi"><div class="kpi-top"><div><small>${esc(label)}</small><strong>${esc(value)}</strong><em>${esc(detail)}</em></div><span class="icon">${icon}</span></div></article>`}
+function dashboard(){const n=nowParts();const modules=catalog().length||state.config.modules.length;const services=operationalServices();const active=catalog().filter(m=>['active','verified','ready'].includes(m.status)).length;return `
+<section class="dashboard">
+  <div class="dashboard-main">
+    <header class="welcome"><p class="eyebrow">BUENOS DÍAS, ${esc(state.profile.toUpperCase())}</p><h1>ATLAS Command Center</h1><p class="sub">Todo tu universo. Conectado. Inteligente. 4D.</p><div class="context-bar"><span class="context-chip">⌖ Orlando, FL</span><span class="context-chip">${esc(n.date)}</span><span class="context-chip">${esc(n.time)}</span><span class="context-chip">${esc(state.region)}</span></div></header>
+    <div class="hero-space" aria-label="Dynamic ATLAS visual stage"></div>
+    <section class="kpi-row">
+      ${kpi('◈','Core Services',services,'operativos / verificados')}
+      ${kpi('⌘','Módulos ATLAS',modules,'repertorio total')}
+      ${kpi('◎','Capacidades activas',active,'runtime + ready')}
+      ${kpi('↻','Update Fabric','AUTO','detección de releases')}
+      ${kpi('✦','Superficie','WEB + APP','responsive / PWA')}
+    </section>
+    <section class="panel modules-panel"><div class="panel-head"><h2>MÓDULOS ATLAS</h2><button class="panel-link" data-open="repertoire">Ver todos</button></div><div class="module-families">
+      ${familyCard('enterprise','Enterprise Operations','ERP, finanzas, inventario, CRM')}
+      ${familyCard('people','People & Workforce','HR, payroll, talento y evaluación')}
+      ${familyCard('mobility','Mobility & Field','Rides, flotas, GPS y field ops')}
+      ${familyCard('health','Health & Humanity','Salud, pacientes e investigación')}
+      ${familyCard('media','Media & Creation','Música, video, voz y contenido')}
+      ${familyCard('future','Future & Research','IA, robots, espacio e innovación')}
+      ${familyCard('core','Infrastructure','Plataforma, identidad, agentes y seguridad')}
+      <article class="family-card"><h3>Finance & Banking</h3><p>Finanzas, wallet, activos digitales</p><ul><li>◈ Finance</li><li>◈ Wallet</li><li>◈ Digital Assets</li><li>◈ Reports</li></ul></article>
+    </div></section>
+    <section class="lower-grid">
+      <article class="panel mini-panel"><div class="panel-head"><h3>Actividad Reciente</h3><button class="panel-link">Ver todo</button></div><div class="activity-list"><div class="row-line"><span>◈ Design Lock aplicado</span><span>Ahora</span></div><div class="row-line"><span>↻ Update Fabric activo</span><span>v1.2.0</span></div><div class="row-line"><span>⌘ Repertoire sincronizado</span><span>${modules} módulos</span></div><div class="row-line"><span>✓ Core verificado</span><span>${services} servicios</span></div></div></article>
+      <article class="panel mini-panel"><div class="panel-head"><h3>Tareas en Proceso</h3><button class="panel-link">QA</button></div><div class="task-list"><div><div class="row-line"><span>Implementación visual</span><span>90%</span></div><div class="progress"><i style="width:90%"></i></div></div><div><div class="row-line"><span>Responsive web/app</span><span>90%</span></div><div class="progress"><i style="width:90%"></i></div></div><div><div class="row-line"><span>Preview / deployment</span><span>60%</span></div><div class="progress"><i style="width:60%"></i></div></div></div></article>
+      <article class="panel mini-panel"><div class="panel-head"><h3>Uso de Módulos</h3><span class="panel-link">Repertorio</span></div><div class="donut-wrap"><div class="donut"><div class="donut-label"><strong>${modules}</strong><small>Módulos</small></div></div><div class="legend"><span><b></b>Core & Platform</span><span><b style="background:#2f7cff"></b>Enterprise</span><span><b style="background:#24c9c9"></b>Mobility</span><span><b style="background:#23b96f"></b>Health</span><span><b style="background:#ef4da8"></b>Media</span></div></div></article>
+    </section>
+  </div>
+  <aside class="dashboard-side">
+    <article class="panel side-panel live-status"><div class="panel-head"><h3><span class="status-dot"></span> ATLAS En Vivo</h3><span class="healthy">ONLINE</span></div><div class="row-line"><span>Sistemas operativos</span><strong>${services}</strong></div><div class="row-line"><span>Módulos catalogados</span><strong>${modules}</strong></div><div class="row-line"><span>Superficies</span><strong>Web + App</strong></div><div class="row-line"><span>Integraciones externas</span><strong>${serviceLabel(state.config.services.integrations)}</strong></div></article>
+    <article class="panel side-panel quote"><h3>Reflexión de Hoy</h3><blockquote>“La excelencia no es un acto, es un hábito.”<br><br>— Aristóteles</blockquote></article>
+    <article class="panel side-panel"><h3>Acciones Rápidas</h3><div class="quick-grid"><button class="quick-action" data-open="support"><i>◉</i>Soporte</button><button class="quick-action" data-open="repertoire"><i>⌘</i>Repertoire</button><button class="quick-action" data-open="settings"><i>⚙</i>Diseño</button><button class="quick-action"><i>⇧</i>Respaldo</button><button class="quick-action" id="syncNow"><i>↻</i>Sincronizar</button><button class="quick-action" data-open="research"><i>∞</i>Explorar</button></div></article>
+    <article class="panel side-panel"><div class="panel-head"><h3>Noticias ATLAS</h3><span class="panel-link">Hoy</span></div><div class="news-list"><div class="row-line"><span>ATLAS v1.2.0</span><span>Design Lock</span></div><div class="row-line"><span>Update Fabric</span><span>Activo</span></div><div class="row-line"><span>Repertoire 4D</span><span>Integrado</span></div></div></article>
+  </aside>
+</section>`}
+function simpleHeader(title,subtitle){return `<header class="simple-hero"><div><p class="eyebrow">ATLAS GLOBAL CORE</p><h1>${esc(title)}</h1><p>${esc(subtitle)}</p></div><div class="context-bar"><span class="context-chip">${esc(state.region)}</span><span class="context-chip">v1.2.0</span></div></header>`}
+function viewByFamily(id,title,subtitle){return `${simpleHeader(title,subtitle)}<section class="grid">${family(id).map(m=>card(m.name,m.subtitle,String(m.status).toUpperCase())).join('')||card(title,'Esta familia está registrada en ATLAS Repertoire.','READY')}</section>`}
+function coreServices(){const runtime=window.ATLASCoreServices?.inspect?.()||{};return `${simpleHeader('Core Services','Data, events, identity, intelligence, agents and work execution.')}<section class="grid">${Object.entries(state.config.services).map(([key,value])=>card(key,`Mode: ${value.mode}. Runtime: ${JSON.stringify(runtime[key]||{})}`,serviceLabel(value))).join('')}</section>`}
+function settings(){return `${simpleHeader('Settings & Design Studio','Personaliza la experiencia sin tocar código.')}<section class="grid">${card('Perfil dinámico',`Nombre actual: ${state.profile}`,'EDITABLE','<button class="action" id="editProfile">Editar nombre</button>')}${card('Update Fabric','Detección automática de nuevas releases y recarga controlada.','ACTIVE','<button class="action" id="checkUpdate">Buscar actualización</button>')}${card('Design Lock','El diseño aprobado es la referencia canónica para web y app.','LOCKED')}${card('Surface Mode','Responsive para navegador, PWA, móvil, tablet y escritorio.','WEB + APP')}</section>`}
+async function render(){const el=root();if(!el)return;el.className='workspace';switch(state.view){case'home':el.innerHTML=dashboard();break;case'repertoire':el.innerHTML=`<div class="simple-view">${simpleHeader('ATLAS Repertoire','El universo completo de productos y módulos ATLAS.')}<section id="repertoireMount" class="repertoire-surface"></section></div>`;await window.ATLASRepertoire.load();window.ATLASRepertoire.render(document.querySelector('#repertoireMount'));break;case'modules':el.innerHTML=`<div class="simple-view">${viewByFamily('enterprise','Enterprise Operations','ERP, finance, CRM, inventory, projects and commerce.')}</div>`;break;case'people':el.innerHTML=`<div class="simple-view">${viewByFamily('people','People & Workforce','HR, payroll, recruiting, assessments and talent.')}</div>`;break;case'mobility':el.innerHTML=`<div class="simple-view">${viewByFamily('mobility','Mobility & Field','Rides, GPS, fleet, field operations and vehicles.')}</div>`;break;case'health':el.innerHTML=`<div class="simple-view">${viewByFamily('health','Health & Humanity','Health operations, research and humanity programs.')}</div>`;break;case'music':el.innerHTML=`<div class="simple-view">${viewByFamily('media','Media & Creation','Music, video, voice and creator tools.')}</div>`;break;case'research':el.innerHTML=`<div class="simple-view">${viewByFamily('future','Future & Research','Future Observatory, robotics, space and frontier research.')}</div>`;break;case'finance':el.innerHTML=`<div class="simple-view">${simpleHeader('Finance & Banking','Finance, wallet, digital assets and reports.')}<section class="grid">${card('Finance','GL, AP, AR, journals, reconciliation and FP&A.','ACTIVE')}${card('Wallet','ATLAS wallet and digital asset readiness.','ACTIVE')}${card('Digital Assets','Research / pre-launch tokenization strategy.','REVIEW')}${card('Financial Reports','Cross-module reporting and intelligence.','ACTIVE')}</section></div>`;break;case'services':el.innerHTML=`<div class="simple-view">${coreServices()}</div>`;break;case'settings':el.innerHTML=`<div class="simple-view">${settings()}</div>`;break;default:el.innerHTML=`<div class="simple-view">${simpleHeader('ATLAS','Surface ready.')}</div>`}
+  bindViewActions();el.focus({preventScroll:true})}
+function navigate(view){state.view=view;document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('active',x.dataset.view===view));render()}
+function bindViewActions(){document.querySelectorAll('[data-open]').forEach(b=>b.addEventListener('click',()=>navigate(b.dataset.open)));document.querySelector('#syncNow')?.addEventListener('click',()=>window.ATLASUpdateCore?.check?.());document.querySelector('#checkUpdate')?.addEventListener('click',()=>window.ATLASUpdateCore?.check?.());document.querySelector('#editProfile')?.addEventListener('click',()=>{const name=prompt('Nombre para ATLAS',state.profile);if(name&&name.trim()){state.profile=name.trim();localStorage.setItem('atlas.profile.name',state.profile);document.querySelector('#profileName').textContent=state.profile;render()}})}
+async function loadRepertoire(){const res=await fetch('/atlas-repertoire.json',{cache:'no-store'});if(res.ok)state.repertoire=await res.json()}
+async function boot(){const res=await fetch('/atlas.config.json',{cache:'no-store'});if(!res.ok)throw new Error('ATLAS configuration could not be loaded');state.config=await res.json();window.ATLASCoreServices?.configure?.(state.config);await loadRepertoire();document.querySelector('#profileName').textContent=state.profile;document.querySelectorAll('.nav').forEach(btn=>btn.addEventListener('click',()=>navigate(btn.dataset.view)));document.querySelector('#globalSearch')?.addEventListener('input',e=>{const q=e.target.value.trim().toLowerCase();if(!q)return;if(q.includes('health'))navigate('health');else if(q.includes('finance'))navigate('finance');else if(q.includes('music')||q.includes('media'))navigate('music');else if(q.includes('mobility')||q.includes('gps')||q.includes('ride'))navigate('mobility');else if(q.includes('people')||q.includes('hr')||q.includes('payroll'))navigate('people');else if(q.includes('research')||q.includes('future')||q.includes('robot'))navigate('research');else if(q.includes('core')||q.includes('service'))navigate('services');else navigate('repertoire')});await render();if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});const tick=()=>{const t=nowParts().time;const f=document.querySelector('#footerClock');if(f)f.textContent=t};tick();setInterval(tick,1000)}
+boot().catch(err=>{if(root())root().innerHTML=card('Startup error',err.message,'Needs attention')});
