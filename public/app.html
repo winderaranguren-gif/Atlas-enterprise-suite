@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="/core-services.css" />
   <link rel="stylesheet" href="/surface-mode.css" />
+  <link rel="stylesheet" href="/universal-access.css" />
   <title>ATLAS Enterprise Suite</title>
 </head>
 <body>
@@ -20,6 +21,7 @@
       <div class="brand"><span class="mark">A</span><div><strong>ATLAS</strong><small>Enterprise Suite</small></div></div>
       <label class="global-search"><span>⌕</span><input id="globalSearch" type="search" placeholder="Search ATLAS…" autocomplete="off" /></label>
       <div class="top-actions">
+        <button class="top-icon" title="Universal Access" aria-label="Open ATLAS Universal Access" onclick="window.ATLASUniversalAccess?.open()">◌</button>
         <button class="top-icon" title="Screens">▣</button>
         <button class="top-icon" title="Calendar">▦</button>
         <button class="top-icon" title="Notifications">◔</button>
@@ -76,6 +78,7 @@
   <script src="/repertoire-ui.js" defer></script>
   <script src="/surface-mode.js" defer></script>
   <script src="/operational-ui.js" defer></script>
+  <script src="/universal-access.js" defer></script>
   <script src="/app.js" defer></script>
   <script src="/operational-routing.js" defer></script>
   <script src="/review-mode.js" defer></script>
