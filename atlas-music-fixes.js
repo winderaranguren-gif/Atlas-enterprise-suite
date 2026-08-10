@@ -105,6 +105,23 @@
     return originalSelectTrack(id, Boolean(autoPlay));
   };
 
+  playTrack = async function fixedPlayTrack() {
+    const track = currentTrack();
+    if (state.playing) return;
+    state.playing = true;
+    els.play.textContent = 'Ⅱ';
+    const offset = state.pausedAt || 0;
+    state.startedAt = performance.now() - offset * 1000;
+    restartSynthAtOffset(track, offset);
+    clearInterval(state.progressTimer);
+    state.progressTimer = setInterval(() => {
+      const elapsed = (performance.now() - state.startedAt) / 1000;
+      if (elapsed >= track.duration) { stepTrack(1); return; }
+      state.pausedAt = elapsed;
+      updateProgressUI();
+    }, 250);
+  };
+
   stepTrack = function fixedStepTrack(delta) {
     const wasPlaying = Boolean(state.playing);
     const index = TRACKS.findIndex(item => item.id === state.currentTrackId);
