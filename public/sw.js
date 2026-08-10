@@ -1,4 +1,4 @@
-const CACHE = 'atlas-live-pilot-web-app-20260810';
+const CACHE = 'atlas-core-services-v1.2.0-repertoire-app-20260810';
 const APP_SHELL = [
   '/',
   '/index.html',
