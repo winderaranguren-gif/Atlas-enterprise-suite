@@ -2,6 +2,17 @@
 
 Private repository for the controlled ATLAS Enterprise Suite foundation across web, PWA and mobile targets.
 
+## Repository identity
+
+- Product: ATLAS Enterprise Suite
+- Operational contact: `atlashealthfrontiers@gmail.com`
+- Repository: `winderaranguren-gif/Atlas-enterprise-suite`
+- Default branch: `main`
+- Status: private controlled foundation
+- Last identity refresh: 2026-08-09
+
+The operational contact above is the ATLAS project contact for repository documentation and product-facing coordination. It does not replace the authenticated GitHub account email or grant access by itself.
+
 ## Current architecture
 
 ATLAS uses one global product core rather than cloned applications by geography.
