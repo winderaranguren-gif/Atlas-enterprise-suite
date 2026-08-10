@@ -1,31 +1,32 @@
 {
   "product": "ATLAS Enterprise Suite",
   "channel": "stable",
-  "version": "1.3.2",
-  "releaseId": "2026-08-10-review-mode-v1.3.2",
-  "generatedAt": "2026-08-10T06:36:00-04:00",
-  "minimumCompatibleVersion": "1.3.1",
+  "version": "1.4.0",
+  "releaseId": "2026-08-10-public-marketing-gated-app-v1.4.0",
+  "generatedAt": "2026-08-10T07:35:00-04:00",
+  "minimumCompatibleVersion": "1.3.2",
   "autoApply": true,
   "rollbackCapable": true,
   "designLock": "ATLAS-COMMAND-CENTER-DL-1.0",
-  "scope": ["web", "pwa", "operational-core", "operational-menus", "truthful-status-gating", "review-mode", "live-ui-feedback"],
+  "scope": ["public-website", "marketing", "signin", "signup", "private-app", "module-entitlements", "review-mode", "operational-core"],
+  "publicWebsite": {
+    "root": "/",
+    "signin": "/signin.html",
+    "signup": "/signup.html",
+    "app": "/app.html",
+    "contact": "atlashealthfrontiers@gmail.com"
+  },
   "operationalCore": {
     "version": "0.1.0",
-    "source": "/operational-core/",
     "statusEndpoint": "/api/health",
     "bindingsRequired": ["D1:DB", "R2:BACKUPS", "secret:BOOTSTRAP_KEY"],
-    "menus": {
-      "Operational Core": "health-gated",
-      "Pages": "real-api-only",
-      "Backups": "real-api-only"
-    }
+    "truthfulStatusGating": true
   },
   "reviewMode": {
     "enabled": true,
     "requestTypes": ["Diseño", "Texto", "Función", "Datos", "Permisos", "Error"],
     "liveTextEdits": true,
-    "persistentLocalOverrides": true,
-    "requestQueue": "localStorage"
+    "persistentLocalOverrides": true
   },
   "native": {
     "strategy": "adapter",
