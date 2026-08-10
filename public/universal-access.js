@@ -11,9 +11,36 @@
     participantCounter: 0,
     stream: null,
     recognition: null,
+    signLanguage: 'asl',
+    signLanguages: []
   };
 
   const supportsSpeech = () => Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
+
+  async function loadSignLanguageBank() {
+    if (state.signLanguages.length) return state.signLanguages;
+    try {
+      const response = await fetch('/sign-language-bank.json', { cache: 'no-store' });
+      if (!response.ok) throw new Error('bank unavailable');
+      const bank = await response.json();
+      state.signLanguages = bank.languages || [];
+      return state.signLanguages;
+    } catch (_) {
+      state.signLanguages = [
+        { id: 'asl', short_name: 'ASL', name: 'American Sign Language' },
+        { id: 'lse', short_name: 'LSE', name: 'Lengua de Signos Española' }
+      ];
+      return state.signLanguages;
+    }
+  }
+
+  async function populateSignLanguageSelect() {
+    const select = document.getElementById('uaSignLanguage');
+    if (!select) return;
+    const languages = await loadSignLanguageBank();
+    select.innerHTML = languages.map(lang => `<option value="${lang.id}">${lang.short_name || lang.id.toUpperCase()} — ${lang.name}</option>`).join('');
+    select.value = state.signLanguage;
+  }
 
   function ensurePanel() {
     let panel = document.getElementById('atlasUniversalAccess');
@@ -29,15 +56,25 @@
         <div class="ua-person" id="uaPerson">Person 1</div>
         <div class="ua-caption" id="uaCaption" aria-live="polite">Ready for voice, text or visual communication.</div>
       </div>
+      <label class="ua-language-picker">Signed language
+        <select id="uaSignLanguage" aria-label="Signed language"></select>
+      </label>
       <div class="ua-controls">
         <button data-ua="captions">CC Captions</button>
         <button data-ua="camera">Camera</button>
         <button data-ua="sign">Sign / Gesture</button>
         <button data-ua="listen">Live Voice</button>
       </div>
-      <p class="ua-privacy">ATLAS labels participants only within this session. It does not infer identity or disability from appearance. Camera and microphone require explicit device permission.</p>`;
+      <p class="ua-privacy">Signed languages are treated as independent languages, not word-for-word versions of spoken languages. ATLAS labels participants only within this session and does not infer identity or disability from appearance. Camera and microphone require explicit device permission.</p>`;
     document.body.appendChild(panel);
     panel.addEventListener('click', onAction);
+    panel.querySelector('#uaSignLanguage').addEventListener('change', e => {
+      state.signLanguage = e.target.value;
+      const lang = state.signLanguages.find(x => x.id === state.signLanguage);
+      caption(`Signed language selected: ${lang?.name || state.signLanguage}.`);
+      window.dispatchEvent(new CustomEvent('atlas:universal-access:sign-language', { detail: { id: state.signLanguage, language: lang || null } }));
+    });
+    populateSignLanguageSelect();
     return panel;
   }
 
@@ -69,8 +106,9 @@
 
   function toggleSignObservation() {
     state.signObservation = !state.signObservation;
+    const lang = state.signLanguages.find(x => x.id === state.signLanguage);
     caption(state.signObservation
-      ? 'Sign / gesture observation enabled. Recognition models can attach here without identifying the person.'
+      ? `${lang?.short_name || state.signLanguage.toUpperCase()} sign / gesture observation enabled. Recognition model can attach here without identifying the person.`
       : 'Sign / gesture observation paused.');
   }
 
@@ -103,6 +141,6 @@
   function open() { state.active = true; ensurePanel().classList.add('open'); }
   function close() { state.active = false; ensurePanel().classList.remove('open'); }
 
-  window.ATLASUniversalAccess = { open, close, caption, state };
+  window.ATLASUniversalAccess = { open, close, caption, state, loadSignLanguageBank };
   window.addEventListener('atlas:universal-access:open', open);
 })();
