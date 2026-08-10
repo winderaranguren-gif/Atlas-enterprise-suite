@@ -14,7 +14,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  runner-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify GitHub-hosted runner executes shell
+        run: echo "ATLAS runner online" && uname -a
+
   checkout:
+    needs: runner-smoke
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
