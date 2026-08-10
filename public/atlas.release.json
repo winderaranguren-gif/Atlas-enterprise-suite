@@ -1,0 +1,17 @@
+{
+  "product": "ATLAS Enterprise Suite",
+  "channel": "stable",
+  "version": "1.2.0",
+  "releaseId": "2026-08-10-design-lock-command-center-v1.2.0",
+  "generatedAt": "2026-08-10T06:28:00-04:00",
+  "minimumCompatibleVersion": "1.1.0",
+  "autoApply": true,
+  "rollbackCapable": true,
+  "designLock": "ATLAS-COMMAND-CENTER-DL-1.0",
+  "scope": ["web", "pwa", "desktop-surface", "mobile-surface", "modules", "design", "configuration", "repertoire", "design-studio"],
+  "native": {
+    "strategy": "adapter",
+    "requiresSignedPackage": true,
+    "launcherMustRemainPermanent": true
+  }
+}
