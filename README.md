@@ -1,6 +1,17 @@
-# ATLAS — Production Foundation v0.5.0
+# ATLAS — Production Foundation v0.6.0
 
 Private repository for the controlled ATLAS foundation across web, PWA and mobile targets.
+
+## Repository identity
+
+- Product: ATLAS Enterprise Suite
+- Operational contact: `atlashealthfrontiers@gmail.com`
+- Repository: `winderaranguren-gif/Atlas-enterprise-suite`
+- Default branch: `main`
+- Status: private controlled production foundation
+- Last identity refresh: 2026-08-09
+
+The operational contact above is the ATLAS project contact for repository documentation and product-facing coordination. It does not replace the authenticated GitHub account email or grant access by itself.
 
 ## Production architecture
 
@@ -112,8 +123,10 @@ Historical migrations are applied in timestamp order, followed by the production
 - `202608090001_atlas_horizontal_production_fabric.sql`
 - `202608090002_bootstrap_atlas_production_tenant.sql`
 - `202608090003_atlas_horizontal_fabric_hardening.sql`
+- `202608090004_atlas_core_performance_hardening.sql`
+- `202608090005_atlas_mail_inbox_intelligence.sql`
 
-These migrations are already applied to the connected ATLAS Supabase project.
+The core production-horizontal migrations are already applied to the connected ATLAS Supabase project. Provider- or feature-specific migrations remain subject to their own release validation.
 
 ## Technical Operations
 
