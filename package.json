@@ -7,7 +7,8 @@
   "scripts": {
     "test:core": "node scripts/runtime-test.mjs",
     "test:security": "node scripts/security-contract-test.mjs",
-    "validate": "node scripts/validate.mjs && npm run test:core && npm run test:security",
+    "test:commercial": "node scripts/commercial-modules-contract-test.mjs",
+    "validate": "node scripts/validate.mjs && npm run test:core && npm run test:security && npm run test:commercial",
     "build": "node scripts/build.mjs",
     "build:cloudflare": "node scripts/build.mjs",
     "build:dev": "npm run validate && npm run build",
