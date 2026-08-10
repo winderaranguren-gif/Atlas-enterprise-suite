@@ -11,9 +11,17 @@ for (const key of required) {
 
 const DATABASE_NAME = process.env.ATLAS_D1_DATABASE_NAME || 'atlas-enterprise-suite';
 const RUNTIME_CONFIG = '.wrangler.runtime.json';
+const CONTROL_CONFIG = '.wrangler.control.json';
+
+const source = JSON.parse(fs.readFileSync('wrangler.jsonc','utf8'));
+const control = {
+  name: `${source.name || 'atlas-enterprise-suite'}-control`,
+  compatibility_date: source.compatibility_date || '2026-08-10'
+};
+fs.writeFileSync(CONTROL_CONFIG, `${JSON.stringify(control,null,2)}\n`);
 
 function wrangler(args, { capture = true } = {}) {
-  return execFileSync('npx', ['--yes','wrangler@4', ...args], {
+  return execFileSync('npx', ['--yes','wrangler@4', ...args, '--config', CONTROL_CONFIG], {
     encoding: 'utf8',
     env: process.env,
     stdio: capture ? ['ignore','pipe','pipe'] : 'inherit'
@@ -39,7 +47,6 @@ if (!databaseId) {
   process.exit(3);
 }
 
-const source = JSON.parse(fs.readFileSync('wrangler.jsonc','utf8'));
 source.workers_dev = false;
 source.routes = [{ pattern: process.env.ATLAS_CUSTOM_DOMAIN, custom_domain: true }];
 source.d1_databases = [{
@@ -50,4 +57,5 @@ source.d1_databases = [{
 }];
 
 fs.writeFileSync(RUNTIME_CONFIG, `${JSON.stringify(source,null,2)}\n`);
+fs.rmSync(CONTROL_CONFIG,{force:true});
 console.log(`Cloudflare production config generated for ${process.env.ATLAS_CUSTOM_DOMAIN}; D1 binding DB resolved.`);
