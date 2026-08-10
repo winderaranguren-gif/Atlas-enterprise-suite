@@ -1,14 +1,20 @@
 {
   "product": "ATLAS Enterprise Suite",
   "channel": "stable",
-  "version": "1.4.0",
-  "releaseId": "2026-08-10-public-marketing-gated-app-v1.4.0",
-  "generatedAt": "2026-08-10T07:35:00-04:00",
-  "minimumCompatibleVersion": "1.3.2",
+  "version": "1.4.1",
+  "releaseId": "2026-08-10-native-music-prompter-v1.4.1",
+  "generatedAt": "2026-08-10T07:50:00-04:00",
+  "minimumCompatibleVersion": "1.4.0",
   "autoApply": true,
   "rollbackCapable": true,
   "designLock": "ATLAS-COMMAND-CENTER-DL-1.0",
-  "scope": ["public-website", "marketing", "signin", "signup", "private-app", "module-entitlements", "review-mode", "operational-core"],
+  "scope": ["public-website", "private-app", "music-prompter", "native-recreation", "review-mode", "operational-core"],
+  "musicPrompter": {
+    "route": "/music-prompter.html",
+    "sourceStrategy": "native-reimplementation",
+    "base44RuntimeRequired": false,
+    "features": ["script-crud", "words-per-minute", "font-size", "text-color", "background-color", "mirror", "loop", "start-pause-restart", "speed-control", "fullscreen"]
+  },
   "publicWebsite": {
     "root": "/",
     "signin": "/signin.html",
