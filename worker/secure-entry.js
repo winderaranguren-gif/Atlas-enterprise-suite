@@ -1,4 +1,5 @@
 import core from './index.js';
+import { handleCommercialModule } from './commercial-modules.js';
 
 const READ_ROLES = new Set(['owner','admin','editor','viewer','auditor']);
 const WRITE_ROLES = new Set(['owner','admin','editor']);
@@ -37,7 +38,7 @@ async function recordDecision(env,{userId='',organizationId='',dbaId='',action,p
     ) VALUES(?,?,?,?,?,?,?,?,?)`)
       .bind(crypto.randomUUID(),userId,organizationId,dbaId,action,path,decision,reason,new Date().toISOString()).run();
   } catch {
-    // Authorization must fail closed even when security-event logging is unavailable.
+    // Authorization remains fail-closed even if security-event logging is unavailable.
   }
 }
 
@@ -47,14 +48,18 @@ async function actorFromRequest(request,env) {
   const token = authorization.slice(7).trim();
   if (!token) return null;
   const tokenHash = await sha256(token);
-  const now = new Date().toISOString();
-  return env.DB.prepare(`SELECT s.user_id
-    FROM atlas_sessions s JOIN atlas_users u ON u.id=s.user_id
-    WHERE s.token_hash=? AND s.revoked_at IS NULL AND s.expires_at>? AND u.status='active'`)
-    .bind(tokenHash,now).first();
+  const timestamp = new Date().toISOString();
+  try {
+    return await env.DB.prepare(`SELECT s.user_id
+      FROM atlas_sessions s JOIN atlas_users u ON u.id=s.user_id
+      WHERE s.token_hash=? AND s.revoked_at IS NULL AND s.expires_at>? AND u.status='active'`)
+      .bind(tokenHash,timestamp).first();
+  } catch {
+    return null;
+  }
 }
 
-async function authorizeCrm(request,env,url) {
+async function authorizeScopedRequest(request,env,url) {
   const action = request.method === 'GET' ? 'read' : 'write';
   const organizationId = request.headers.get('x-atlas-organization') || '';
   const dbaId = request.headers.get('x-atlas-dba') || '';
@@ -62,28 +67,41 @@ async function authorizeCrm(request,env,url) {
 
   if (!actor) {
     await recordDecision(env,{organizationId,dbaId,action,path:url.pathname,decision:'deny',reason:'invalid_session'});
-    return json({error:'Unauthorized'},401);
+    return {response:json({error:'Unauthorized'},401)};
   }
   if (!organizationId || !dbaId) {
     await recordDecision(env,{userId:actor.user_id,organizationId,dbaId,action,path:url.pathname,decision:'deny',reason:'missing_scope'});
-    return json({error:'Organization and DBA scope are required'},400);
+    return {response:json({error:'Organization and DBA scope are required'},400)};
   }
 
-  const membership = await env.DB.prepare(`SELECT role FROM atlas_memberships
-    WHERE user_id=? AND organization_id=? AND dba_id=? AND status='active'`)
-    .bind(actor.user_id,organizationId,dbaId).first();
+  let membership;
+  try {
+    membership = await env.DB.prepare(`SELECT role,organization_id,dba_id FROM atlas_memberships
+      WHERE user_id=? AND organization_id=? AND dba_id=? AND status='active'`)
+      .bind(actor.user_id,organizationId,dbaId).first();
+  } catch {
+    return {response:json({operational:false,error:'Identity schema is unavailable'},503)};
+  }
   if (!membership) {
     await recordDecision(env,{userId:actor.user_id,organizationId,dbaId,action,path:url.pathname,decision:'deny',reason:'membership_missing'});
-    return json({error:'Forbidden'},403);
+    return {response:json({error:'Forbidden'},403)};
   }
 
   const role = String(membership.role || '').toLowerCase();
   const allowed = action === 'read' ? READ_ROLES.has(role) : WRITE_ROLES.has(role);
   if (!allowed) {
     await recordDecision(env,{userId:actor.user_id,organizationId,dbaId,action,path:url.pathname,decision:'deny',reason:`role_${role}_not_allowed`});
-    return json({error:'Forbidden for role'},403);
+    return {response:json({error:'Forbidden for role'},403)};
   }
-  return null;
+
+  return {
+    actor:{user_id:actor.user_id,role},
+    scope:{organization_id:membership.organization_id,dba_id:membership.dba_id}
+  };
+}
+
+function isScopedCommercialPath(pathname) {
+  return pathname.startsWith('/api/crm/') || pathname === '/api/documents' || pathname.startsWith('/api/documents/') || pathname === '/api/accounting' || pathname.startsWith('/api/accounting/');
 }
 
 async function secureFetch(request,env,ctx) {
@@ -98,10 +116,20 @@ async function secureFetch(request,env,ctx) {
     }
   }
 
-  if (url.pathname.startsWith('/api/crm/') && url.pathname !== '/api/crm/health') {
+  const publicCrmHealth = url.pathname === '/api/crm/health' && request.method === 'GET';
+  if (isScopedCommercialPath(url.pathname) && !publicCrmHealth) {
     if (!env.DB) return json({operational:false,error:'D1 binding DB is not configured'},503);
-    const denied = await authorizeCrm(request,env,url);
-    if (denied) return denied;
+    const authz = await authorizeScopedRequest(request,env,url);
+    if (authz.response) return authz.response;
+
+    if (url.pathname === '/api/documents' || url.pathname.startsWith('/api/documents/') || url.pathname === '/api/accounting' || url.pathname.startsWith('/api/accounting/')) {
+      try {
+        const response = await handleCommercialModule(request,env,{actor:authz.actor,scope:authz.scope});
+        if (response) return response;
+      } catch (error) {
+        return json({operational:false,error:error.message},500);
+      }
+    }
   }
 
   return core.fetch(request,env,ctx);
