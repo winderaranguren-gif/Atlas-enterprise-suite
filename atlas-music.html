@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#050b13" />
+  <meta name="description" content="ATLAS Music — núcleo multimedia de música, video, biblioteca, derechos y ATLAS Originals." />
+  <title>ATLAS Music</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="stylesheet" href="atlas-music.css" />
+</head>
+<body>
+  <div class="music-app" data-theme="dark">
+    <aside class="music-sidebar" id="music-sidebar" aria-label="Navegación de ATLAS Music">
+      <a class="music-brand" href="index.html" aria-label="Volver a ATLAS Enterprise Suite">
+        <span class="music-brand-mark">A</span>
+        <span><strong>ATLAS</strong><small>Music</small></span>
+      </a>
+
+      <nav class="music-nav" id="music-nav">
+        <button class="music-nav-item active" data-view="home" type="button"><span>⌂</span>Inicio</button>
+        <button class="music-nav-item" data-view="discover" type="button"><span>⌕</span>Descubrir</button>
+        <button class="music-nav-item" data-view="videos" type="button"><span>▻</span>Videos</button>
+        <button class="music-nav-item" data-view="library" type="button"><span>♡</span>Mi biblioteca</button>
+        <button class="music-nav-item" data-view="creator" type="button"><span>✦</span>Creator Library</button>
+        <button class="music-nav-item" data-view="rights" type="button"><span>✓</span>Rights Intelligence</button>
+      </nav>
+
+      <section class="sidebar-section">
+        <div class="sidebar-section-head"><span>CARPETAS</span><button id="new-folder-btn" type="button" aria-label="Crear carpeta">＋</button></div>
+        <div id="folder-list" class="folder-list"></div>
+      </section>
+
+      <div class="sidebar-foot">
+        <div class="provider-status"><span class="status-dot"></span><div><strong>ATLAS Originals</strong><small>Reproducción local disponible</small></div></div>
+        <a class="back-link" href="index.html">← Volver a ATLAS</a>
+      </div>
+    </aside>
+
+    <section class="music-shell">
+      <header class="music-topbar">
+        <div class="topbar-left">
+          <button id="menu-toggle" class="icon-btn mobile-only" type="button" aria-label="Abrir navegación">☰</button>
+          <div><p class="eyebrow">ATLAS AUDIO + VIDEO CORE</p><h1 id="view-title">Music</h1></div>
+        </div>
+        <div class="topbar-actions">
+          <label class="global-search"><span>⌕</span><input id="search-input" type="search" placeholder="Buscar música, videos, colecciones..." autocomplete="off" /></label>
+          <button id="provider-btn" class="soft-btn" type="button">Proveedores</button>
+          <button id="theme-toggle" class="icon-btn" type="button" aria-label="Cambiar tema">◐</button>
+        </div>
+      </header>
+
+      <main id="music-content" class="music-content" tabindex="-1"></main>
+
+      <footer class="player-bar" id="player-bar" aria-live="polite">
+        <div class="player-track">
+          <div id="player-art" class="mini-art mini-art-origin">A</div>
+          <div class="player-copy"><strong id="player-title">First Light</strong><small id="player-subtitle">ATLAS Original · Ambient</small></div>
+          <button id="player-like" class="icon-btn" type="button" aria-label="Me gusta">♡</button>
+        </div>
+        <div class="player-controls">
+          <div class="transport-row">
+            <button id="shuffle-btn" type="button" class="transport-btn" aria-label="Aleatorio">⌘</button>
+            <button id="prev-btn" type="button" class="transport-btn" aria-label="Anterior">◀</button>
+            <button id="play-btn" type="button" class="play-btn" aria-label="Reproducir">▶</button>
+            <button id="next-btn" type="button" class="transport-btn" aria-label="Siguiente">▶</button>
+            <button id="visual-btn" type="button" class="transport-btn" aria-label="Abrir visual">◉</button>
+          </div>
+          <div class="progress-row"><span id="elapsed">0:00</span><input id="progress" type="range" min="0" max="100" value="0" aria-label="Progreso de reproducción" /><span id="duration">3:48</span></div>
+        </div>
+        <div class="player-extra">
+          <button id="queue-btn" class="transport-btn" type="button" aria-label="Cola">☷</button>
+          <label class="volume-control" aria-label="Volumen"><span>◔</span><input id="volume" type="range" min="0" max="1" step="0.01" value="0.55" /></label>
+          <button id="now-playing-btn" class="soft-btn compact" type="button">Now Playing</button>
+        </div>
+      </footer>
+    </section>
+  </div>
+
+  <div id="modal-root"></div>
+
+  <template id="track-card-template">
+    <article class="media-card">
+      <button class="media-art action-play" type="button" aria-label="Reproducir"><span class="art-symbol"></span><span class="play-overlay">▶</span></button>
+      <div class="media-card-copy"><strong class="media-title"></strong><small class="media-meta"></small></div>
+      <button class="more-btn" type="button" aria-label="Más opciones">•••</button>
+    </article>
+  </template>
+
+  <script src="atlas-music.js"></script>
+</body>
+</html>
