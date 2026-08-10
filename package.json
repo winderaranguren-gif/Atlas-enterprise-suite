@@ -7,7 +7,8 @@
   "scripts": {
     "test:worker": "node --check worker/index.js",
     "test:core": "node scripts/runtime-test.mjs",
-    "validate": "npm run test:worker && node scripts/validate.mjs && npm run test:core",
+    "test:cloudflare": "node scripts/validate-cloudflare.mjs",
+    "validate": "npm run test:worker && npm run test:cloudflare && node scripts/validate.mjs && npm run test:core",
     "build": "node scripts/build.mjs",
     "build:cloudflare": "node scripts/build.mjs",
     "build:dev": "npm run validate && npm run build",
