@@ -22,6 +22,7 @@
   "commercialPilot": {
     "status": "implemented-not-operational",
     "workerEntry": "worker/router.js",
+    "readinessEndpoint": "/api/system/readiness",
     "requiredBindings": ["D1:DB", "R2:BACKUPS", "secret:ATLAS_BOOTSTRAP_TOKEN", "var:ATLAS_DEPLOYED_SHA"],
     "requiredE2E": "npm run test:e2e:commercial-pilot",
     "modules": {
@@ -35,13 +36,15 @@
   "promotionGate": {
     "exactDeployedShaRequired": true,
     "runtimeFingerprintEndpoint": "/api/system/release-fingerprint",
+    "runtimeReadinessEndpoint": "/api/system/readiness",
     "cloudflareDeploymentRequired": true,
     "d1BindingRequired": true,
     "r2BackupBindingRequired": true,
     "bootstrapSecretRequired": true,
     "deployedShaVariableRequired": true,
+    "readinessPassRequired": true,
     "e2ePassRequired": true,
-    "automaticUpdateAllowedOnlyWhen": ["productionReady", "verifiedE2E", "autoApply", "expectedSourceShaMatchesRuntime"]
+    "automaticUpdateAllowedOnlyWhen": ["productionReady", "verifiedE2E", "autoApply", "expectedSourceShaMatchesRuntime", "readinessPasses"]
   },
   "native": {
     "strategy": "adapter",
