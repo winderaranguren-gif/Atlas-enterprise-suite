@@ -11,6 +11,8 @@ const APP_VERSION='0.5.0';
 const SUPPORT_VERSION='1.1.0';
 const RUNBOOK_VERSION='1.0.0';
 const MAX_JSON_BODY_BYTES=65536;
+const DEFAULT_OPENAI_MODEL='gpt-5.6';
+const MAX_AI_MESSAGES=12;
 
 function applySecurityHeaders(response, requestUrl) {
   const headers = new Headers(response.headers);
@@ -167,7 +169,45 @@ async function readJsonBody(request,base){
   }
 }
 
-async function handleApi(request,url){
+function normalizeAiMessages(body={}){
+  if(!Array.isArray(body.messages))return [];
+  return body.messages.slice(-MAX_AI_MESSAGES).flatMap(message=>{
+    const role=message?.role==='assistant'?'assistant':'user';
+    const content=String(message?.content||'').trim().slice(0,8000);
+    return content?[{role,content}]:[];
+  });
+}
+
+async function requestAtlasIntelligence(body,env){
+  if(!env.OPENAI_API_KEY)return {error:json({ok:false,error:'openai_not_configured',message:'ATLAS Intelligence requires OPENAI_API_KEY on the Worker.'},503)};
+  const messages=normalizeAiMessages(body);
+  if(!messages.length)return {error:json({ok:false,error:'message_required',message:'A message is required.'},400)};
+  const model=env.OPENAI_MODEL||DEFAULT_OPENAI_MODEL;
+  try{
+    const response=await fetch('https://api.openai.com/v1/responses',{
+      method:'POST',
+      headers:{'Authorization':`Bearer ${env.OPENAI_API_KEY}`,'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model,
+        instructions:'You are ATLAS Intelligence, the secure bilingual operating intelligence for ATLAS Enterprise Suite. Reply in the user\'s language. Be concise, accurate, action-oriented, privacy-aware, and transparent about uncertainty. Never claim to execute an external action unless the application provides verified evidence.',
+        input:messages,
+        store:false
+      })
+    });
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok){
+      const status=response.status===429?429:response.status>=500?502:400;
+      return {error:json({ok:false,error:'openai_request_failed',message:data.error?.message||'OpenAI request failed.'},status)};
+    }
+    const output=String(data.output_text||'').trim();
+    if(!output)return {error:json({ok:false,error:'openai_empty_response',message:'OpenAI returned an empty response.'},502)};
+    return {output,model:data.model||model,responseId:data.id||null};
+  }catch{
+    return {error:json({ok:false,error:'openai_unavailable',message:'OpenAI is temporarily unavailable.'},502)};
+  }
+}
+
+async function handleApi(request,url,env){
   const requestId=crypto.randomUUID();
   const base={requestId,at:new Date().toISOString()};
 
@@ -185,6 +225,19 @@ async function handleApi(request,url){
 
   if(request.method==='GET'&&url.pathname==='/api/support/runbooks'){
     return json({...base,ok:true,service:'ATLAS Technical Operations',runbookVersion:RUNBOOK_VERSION,classifications:['general','identity-access','deployment','network','performance','data-storage'],executionPolicy:'safe-reversible-only'});
+  }
+
+  if(request.method==='GET'&&url.pathname==='/api/atlas-ai/status'){
+    return json({...base,ok:true,service:'ATLAS Intelligence',configured:Boolean(env.OPENAI_API_KEY),model:env.OPENAI_MODEL||DEFAULT_OPENAI_MODEL});
+  }
+
+  if(request.method==='POST'&&url.pathname==='/api/atlas-ai/respond'){
+    const parsed=await readJsonBody(request,base);
+    if(parsed.error)return parsed.error;
+    if(!parsed.body||typeof parsed.body!=='object'||Array.isArray(parsed.body))return invalidBody(base).error;
+    const result=await requestAtlasIntelligence(parsed.body,env);
+    if(result.error)return result.error;
+    return json({...base,ok:true,...result});
   }
 
   if(request.method==='POST'&&url.pathname==='/api/support/analyze'){
@@ -208,7 +261,7 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if(url.pathname==='/healthz'||url.pathname.startsWith('/api/')){
-      return applySecurityHeaders(await handleApi(request,url),url);
+      return applySecurityHeaders(await handleApi(request,url,env),url);
     }
     const response = await env.ASSETS.fetch(request);
     return applySecurityHeaders(response, url);
