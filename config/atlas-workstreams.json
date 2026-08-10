@@ -1,0 +1,114 @@
+{
+  "schemaVersion": "1.0.0",
+  "program": "ATLAS",
+  "executionModel": "parallel",
+  "updatedAt": "2026-08-10",
+  "sharedContracts": [
+    "identity",
+    "permissions",
+    "audit",
+    "data-fabric",
+    "event-fabric",
+    "knowledge-graph",
+    "agent-fabric",
+    "design-system",
+    "update-fabric"
+  ],
+  "readinessStates": [
+    "design",
+    "build",
+    "integrated",
+    "tested",
+    "production-ready"
+  ],
+  "workstreams": [
+    {
+      "id": "core-security",
+      "name": "Core OS & Security",
+      "priority": "P0",
+      "state": "integrated",
+      "owns": ["identity", "authentication", "permissions", "security", "audit", "configuration", "backup", "resilience"],
+      "dependsOn": []
+    },
+    {
+      "id": "data-events",
+      "name": "Data & Event Fabric",
+      "priority": "P0",
+      "state": "integrated",
+      "owns": ["data-fabric", "event-fabric", "storage", "search-index", "knowledge-graph-contract", "data-governance"],
+      "dependsOn": ["core-security"]
+    },
+    {
+      "id": "intelligence-agents",
+      "name": "Intelligence & Agent Fabric",
+      "priority": "P0",
+      "state": "integrated",
+      "owns": ["intelligence", "agent-fabric", "context", "memory", "decisioning", "automation", "forecasting", "originality-audit"],
+      "dependsOn": ["core-security", "data-events"]
+    },
+    {
+      "id": "experience",
+      "name": "Web, Mobile & Experience",
+      "priority": "P0",
+      "state": "build",
+      "owns": ["web-shell", "mobile-shell", "desktop-shell", "voice", "spatial-ui", "accessibility", "multilingual", "design-studio", "dynamic-navigation"],
+      "dependsOn": ["core-security", "data-events", "intelligence-agents"]
+    },
+    {
+      "id": "enterprise",
+      "name": "Enterprise, Finance & Operations",
+      "priority": "P1",
+      "state": "build",
+      "owns": ["accounting", "ap", "ar", "gl", "payroll", "fpa", "tax", "inventory", "procurement", "sales", "logistics", "crm", "reporting"],
+      "dependsOn": ["core-security", "data-events", "intelligence-agents", "experience"]
+    },
+    {
+      "id": "people",
+      "name": "People, HR & Assessments",
+      "priority": "P1",
+      "state": "build",
+      "owns": ["recruiting", "candidate-assessments", "employee-records", "training", "certifications", "scheduling", "performance"],
+      "dependsOn": ["core-security", "data-events", "intelligence-agents", "experience"]
+    },
+    {
+      "id": "communications",
+      "name": "Mail, Calendar & Collaboration",
+      "priority": "P1",
+      "state": "design",
+      "owns": ["mail", "calendar", "contacts", "chat", "voice-calls", "video-calls", "notifications", "collaboration"],
+      "dependsOn": ["core-security", "data-events", "experience"]
+    },
+    {
+      "id": "health",
+      "name": "ATLAS Health",
+      "priority": "P1",
+      "state": "design",
+      "owns": ["patient-os", "smart-room", "clinical-timeline", "medication-safety", "virtual-care", "diagnostics", "health-research", "health-frontiers"],
+      "dependsOn": ["core-security", "data-events", "intelligence-agents", "experience"]
+    },
+    {
+      "id": "mobility-places-safety",
+      "name": "Mobility, Places & Public Safety",
+      "priority": "P2",
+      "state": "design",
+      "owns": ["ride", "navigation-4d", "fleet", "vehicle-health", "cars", "places", "maps", "digital-twins", "public-safety"],
+      "dependsOn": ["core-security", "data-events", "intelligence-agents", "experience"]
+    },
+    {
+      "id": "media-humanity",
+      "name": "Media & Humanity",
+      "priority": "P2",
+      "state": "design",
+      "owns": ["music", "video", "creator-studio", "streaming", "atlas-tv", "united-hands", "housing", "entrepreneurship", "community-health", "humanitarian-operations"],
+      "dependsOn": ["core-security", "data-events", "intelligence-agents", "experience"]
+    },
+    {
+      "id": "frontiers",
+      "name": "ATLAS Frontiers",
+      "priority": "P3",
+      "state": "design",
+      "owns": ["future-observatory", "humanity-frontier-lab", "robotics", "space", "energy", "future-society", "future-economy"],
+      "dependsOn": ["core-security", "data-events", "intelligence-agents"]
+    }
+  ]
+}
