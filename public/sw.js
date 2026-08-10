@@ -1,10 +1,12 @@
-const CACHE = 'atlas-core-services-v1.2.0-repertoire-app-20260810';
+const CACHE = 'atlas-environment-pilot-20260810';
 const APP_SHELL = [
   '/',
   '/index.html',
   '/pilot.html',
   '/pilot.css',
   '/pilot.js',
+  '/environment-core.css',
+  '/environment-core.js',
   '/styles.css',
   '/core-services.css',
   '/surface-mode.css',
@@ -19,7 +21,7 @@ const APP_SHELL = [
 ];
 
 function sameOrigin(url) { return url.origin === self.location.origin; }
-function networkOnly(url){return url.pathname==='/atlas.config.json'||url.pathname==='/atlas.release.json';}
+function networkOnly(url){return url.pathname==='/atlas.config.json'||url.pathname==='/atlas.release.json'||url.pathname==='/api/environment';}
 function cacheableStatic(url) {
   if (!sameOrigin(url)) return false;
   if (url.pathname.startsWith('/api/')) return false;
