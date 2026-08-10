@@ -31,6 +31,9 @@
       <aside class="rail" aria-label="Navegación principal">
         <nav class="rail-nav">
           <button class="nav active" data-view="home"><span>◉</span>Command Center</button>
+          <button class="nav" data-operational="status"><span>✓</span>Operational Core</button>
+          <button class="nav" data-operational="pages"><span>▧</span>Pages</button>
+          <button class="nav" data-operational="backups"><span>⇧</span>Backups</button>
           <button class="nav" data-view="repertoire"><span>⌘</span>Repertoire</button>
           <button class="nav" data-view="modules"><span>▦</span>Enterprise</button>
           <button class="nav" data-view="people"><span>◎</span>People</button>
@@ -44,7 +47,7 @@
         </nav>
         <div class="rail-status">
           <div><span class="status-dot"></span><strong>ATLAS OS</strong></div>
-          <small>v1.2.0</small><span class="healthy">Actualizado</span>
+          <small>v1.3.1</small><span class="healthy">Actualizado</span>
         </div>
         <div class="rail-status update-card">
           <div><span class="status-dot"></span><strong>Update Fabric</strong></div>
@@ -69,6 +72,8 @@
   <script src="/update-core.js" defer></script>
   <script src="/repertoire-ui.js" defer></script>
   <script src="/surface-mode.js" defer></script>
+  <script src="/operational-ui.js" defer></script>
   <script src="/app.js" defer></script>
+  <script src="/operational-routing.js" defer></script>
 </body>
 </html>
