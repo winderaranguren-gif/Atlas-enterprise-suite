@@ -7,8 +7,13 @@
   "scripts": {
     "validate": "node scripts/validate.mjs",
     "build": "node scripts/build.mjs",
+    "build:cloudflare": "node scripts/build.mjs",
+    "build:dev": "npm run validate && npm run build",
+    "build:prod": "npm run validate && npm run build",
     "start": "npx serve dist -l 4173",
-    "deploy": "npx wrangler@4 deploy"
+    "deploy": "npx wrangler@4 deploy",
+    "cloudflare:deploy": "npx wrangler@4 deploy",
+    "cloudflare:preview": "npx wrangler@4 versions upload"
   },
   "engines": {"node": ">=22"}
 }
