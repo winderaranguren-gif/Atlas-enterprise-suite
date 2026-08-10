@@ -72,12 +72,18 @@ jobs:
         run: |
           test -f wrangler.jsonc
           test -f worker/index.js
-          grep -q '"main": "worker/index.js"' wrangler.jsonc
+          test -f worker/secure-entry.js
+          test -f migrations/0001_commercial_pilot_core.sql
+          test -f migrations/0002_security_events.sql
+          grep -q '"main": "worker/secure-entry.js"' wrangler.jsonc
           grep -q '"binding": "DB"' wrangler.jsonc
           grep -q '"crons": \["\*/10 \* \* \* \*"\]' wrangler.jsonc
-          grep -q 'ATLAS_BOOTSTRAP_KEY' worker/index.js
+          grep -q 'ATLAS_BOOTSTRAP_KEY' worker/secure-entry.js
+          grep -q 'WRITE_ROLES' worker/secure-entry.js
+          grep -q 'atlas_security_events' worker/secure-entry.js
           grep -q 'atlas_memberships' worker/index.js
           grep -q 'authorization' worker/index.js
+          grep -q 'actor_user_id' migrations/0001_commercial_pilot_core.sql
 
   build:
     needs: [validate, cloudflare-contract]
