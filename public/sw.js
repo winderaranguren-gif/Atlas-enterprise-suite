@@ -1,4 +1,4 @@
-const CACHE = 'atlas-core-services-v1.2.0-repertoire-app-20260810';
+const CACHE = 'atlas-core-services-v1.3.0-voice-studio-20260810';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -8,6 +8,9 @@ const APP_SHELL = [
   '/core-services.js',
   '/surface-mode.js',
   '/music-core.js',
+  '/voice-core.js',
+  '/voice-studio.css',
+  '/voice-studio.js',
   '/update-core.js',
   '/repertoire-ui.js',
   '/atlas-repertoire.json',
