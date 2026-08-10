@@ -72,9 +72,13 @@ const matchingAmendment = (amendments.amendments || []).find(entry => entry.vers
 if (!matchingAmendment) fail(`no amendment/adoption ledger entry exists for constitutional version ${policy.version}`);
 for (const field of requiredAmendmentFields) {
   const value = matchingAmendment[field];
-  if (typeof value !== 'string' || value.trim().length < 4) {
+  const minimumLength = field === 'version' ? 3 : 4;
+  if (typeof value !== 'string' || value.trim().length < minimumLength) {
     fail(`constitutional ledger entry ${policy.version} is missing substantive field: ${field}`);
   }
+}
+if (!/^\d+\.\d+(?:\.\d+)?$/.test(matchingAmendment.version)) {
+  fail('constitutional amendment version must use numeric semantic format such as 1.1 or 1.1.0');
 }
 if (!/^\d{4}-\d{2}-\d{2}$/.test(matchingAmendment.date)) {
   fail('constitutional amendment date must use YYYY-MM-DD');
