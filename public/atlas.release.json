@@ -1,12 +1,14 @@
 {
   "product": "ATLAS Enterprise Suite",
   "channel": "candidate",
-  "version": "1.4.4-rc.1",
-  "releaseId": "2026-08-10-commercial-pilot-clean-rebuild-rc1",
-  "generatedAt": "2026-08-10T17:46:00-04:00",
+  "version": "1.4.4-rc.2",
+  "releaseId": "2026-08-10-commercial-pilot-clean-rebuild-rc2",
+  "generatedAt": "2026-08-10T18:44:36-04:00",
   "autoApply": false,
   "productionReady": false,
   "verifiedE2E": false,
+  "expectedSourceSha": null,
+  "runtimeFingerprintRequired": true,
   "rollbackCapable": true,
   "designLock": "ATLAS-COMMAND-CENTER-DL-1.0",
   "scope": ["commercial-pilot", "users-permissions", "crm", "documents", "accounting", "backups", "company-dba-scoping", "audit", "language-core", "update-fabric"],
@@ -20,7 +22,7 @@
   "commercialPilot": {
     "status": "implemented-not-operational",
     "workerEntry": "worker/router.js",
-    "requiredBindings": ["D1:DB", "R2:BACKUPS", "secret:ATLAS_BOOTSTRAP_TOKEN"],
+    "requiredBindings": ["D1:DB", "R2:BACKUPS", "secret:ATLAS_BOOTSTRAP_TOKEN", "var:ATLAS_DEPLOYED_SHA"],
     "requiredE2E": "npm run test:e2e:commercial-pilot",
     "modules": {
       "usersPermissions": "implemented-not-operational",
@@ -32,12 +34,14 @@
   },
   "promotionGate": {
     "exactDeployedShaRequired": true,
+    "runtimeFingerprintEndpoint": "/api/system/release-fingerprint",
     "cloudflareDeploymentRequired": true,
     "d1BindingRequired": true,
     "r2BackupBindingRequired": true,
     "bootstrapSecretRequired": true,
+    "deployedShaVariableRequired": true,
     "e2ePassRequired": true,
-    "automaticUpdateAllowedOnlyWhen": ["productionReady", "verifiedE2E", "autoApply"]
+    "automaticUpdateAllowedOnlyWhen": ["productionReady", "verifiedE2E", "autoApply", "expectedSourceShaMatchesRuntime"]
   },
   "native": {
     "strategy": "adapter",
