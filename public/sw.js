@@ -1,4 +1,4 @@
-const CACHE = 'atlas-core-services-v1.1.0';
+const CACHE = 'atlas-core-services-v1.1.0-repertoire-20260810';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -7,6 +7,8 @@ const APP_SHELL = [
   '/core-services.js',
   '/music-core.js',
   '/update-core.js',
+  '/repertoire-ui.js',
+  '/atlas-repertoire.json',
   '/app.js',
   '/manifest.webmanifest'
 ];
@@ -17,7 +19,7 @@ function cacheableStatic(url) {
   if (!sameOrigin(url)) return false;
   if (url.pathname.startsWith('/api/')) return false;
   if (networkOnly(url)) return false;
-  return /\.(?:css|js|mjs|png|jpe?g|gif|webp|svg|ico|woff2?|ttf|webmanifest)$/i.test(url.pathname);
+  return /\.(?:css|js|mjs|json|png|jpe?g|gif|webp|svg|ico|woff2?|ttf|webmanifest)$/i.test(url.pathname);
 }
 self.addEventListener('install', event => {event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));});
 self.addEventListener('activate', event => {event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim()));});
