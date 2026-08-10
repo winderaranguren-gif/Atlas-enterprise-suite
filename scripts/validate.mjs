@@ -3,7 +3,7 @@ import path from 'node:path';
 
 const root=process.cwd();
 const required=[
-  'package.json','atlas.config.json','public/index.html','public/styles.css','public/core-services.css',
+  'package.json','atlas.config.json','scripts/runtime-test.mjs','public/index.html','public/styles.css','public/core-services.css',
   'public/app.js','public/core-services.js','public/music-core.js','public/manifest.webmanifest','public/sw.js',
   'public/_headers','public/_redirects'
 ];
@@ -25,6 +25,7 @@ if(pkg.version!=='1.1.0')throw new Error('ATLAS Core Services release must be v1
 if(cfg.contact!=='atlashealthfrontiers@gmail.com')throw new Error('Operational contact mismatch');
 if(!Array.isArray(cfg.modules)||cfg.modules.length<25)throw new Error('Module registry is incomplete for v1.1');
 if(!Array.isArray(cfg.regions)||cfg.regions.length<10)throw new Error('Regional registry is incomplete');
+if(!String(pkg.scripts?.validate||'').includes('test:core'))throw new Error('Validation contract must execute ATLAS behavior tests');
 
 const requiredServices=['dataFabric','eventFabric','identity','intelligence','agentFabric','workGraph','music','integrations'];
 for(const name of requiredServices){
