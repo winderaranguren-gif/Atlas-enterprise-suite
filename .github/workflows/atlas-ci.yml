@@ -14,35 +14,64 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  validate-build:
+  install:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node 22
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-
-      - name: Install dependencies
+      - name: Reproducible install
         run: npm ci
 
+  validate:
+    needs: install
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
       - name: Validate ATLAS contracts and runtime
         run: npm run validate
 
-      - name: Production build
-        run: npm run build:prod
-
-      - name: Verify Cloudflare configuration exists
+  cloudflare-contract:
+    needs: install
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify Cloudflare-native production contract
         run: |
           test -f wrangler.jsonc
+          test -f worker/index.js
           grep -q '"main": "worker/index.js"' wrangler.jsonc
           grep -q '"binding": "DB"' wrangler.jsonc
           grep -q '"crons": \["\*/10 \* \* \* \*"\]' wrangler.jsonc
+          grep -q 'ATLAS_BOOTSTRAP_KEY' worker/index.js
+          grep -q 'atlas_memberships' worker/index.js
+          grep -q 'authorization' worker/index.js
 
+  build:
+    needs: [validate, cloudflare-contract]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Production build
+        run: npm run build:prod
+      - name: Require production artifact
+        run: test -d dist && test -f dist/index.html
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
