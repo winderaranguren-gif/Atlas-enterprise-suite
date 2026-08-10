@@ -10,6 +10,9 @@ const core = read('worker/index.js');
 const migration1 = read('migrations/0001_commercial_pilot_core.sql');
 const migration2 = read('migrations/0002_security_events.sql');
 const deploy = read('.github/workflows/atlas-deploy.yml');
+const backupWorkflow = read('.github/workflows/atlas-backup.yml');
+const backupScript = read('scripts/cloudflare-backup.mjs');
+const provisionScript = read('scripts/cloudflare-provision.mjs');
 
 for (const marker of [
   '"main": "worker/secure-entry.js"',
@@ -52,13 +55,38 @@ for (const marker of [
 
 for (const marker of [
   'cloudflare-provision.mjs',
+  'cloudflare-backup.mjs predeploy',
+  'actions/upload-artifact@v7',
   'd1 migrations apply DB --remote',
   'secret put ATLAS_BOOTSTRAP_KEY',
   'wrangler@4 deploy',
   '/api/system/health'
 ]) requireMarker(deploy,marker,'deployment workflow');
 
+for (const marker of [
+  'TZ=America/New_York',
+  'cloudflare-backup.mjs daily',
+  'Restore smoke test',
+  "sqlite3.connect(':memory:')",
+  'actions/upload-artifact@v7'
+]) requireMarker(backupWorkflow,marker,'backup workflow');
+
+for (const marker of [
+  "crypto.createHash('sha256')",
+  "wrangler@4','d1','export'",
+  'D1 backup export is missing or empty',
+  'manifestPath'
+]) requireMarker(backupScript,marker,'backup script');
+
+for (const marker of [
+  "wrangler@4', ...args, '--config', CONTROL_CONFIG",
+  "d1','list','--json",
+  "d1','create',DATABASE_NAME",
+  'database_id: databaseId'
+]) requireMarker(provisionScript,marker,'provision script');
+
 if (/session_token\s*[:=]\s*["'][^"']+["']/.test(core)) fail('hard-coded session token detected');
 if (/CLOUDFLARE_API_TOKEN\s*[:=]\s*["'][^"']+["']/.test(deploy)) fail('hard-coded Cloudflare API token detected');
+if (/ATLAS_BOOTSTRAP_KEY\s*[:=]\s*["'][^"']+["']/.test(deploy)) fail('hard-coded bootstrap key detected');
 
-console.log('ATLAS security contract passed: scoped identity, RBAC, auditability, D1 migrations and production deployment boundaries are present.');
+console.log('ATLAS security contract passed: scoped identity, RBAC, auditability, D1 migrations, verified backups and production deployment boundaries are present.');
