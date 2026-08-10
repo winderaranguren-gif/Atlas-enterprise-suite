@@ -12,8 +12,9 @@
   "description":"ATLAS Enterprise Suite — unified web, PWA and installed app surface",
   "categories":["business","productivity","finance","health","navigation"],
   "shortcuts":[
-    {"name":"Command Center","short_name":"Command","url":"/?view=home"},
-    {"name":"ATLAS Repertoire","short_name":"Repertoire","url":"/?view=repertoire"},
-    {"name":"Technical Support","short_name":"Support","url":"/?view=support"}
+    {"name":"ATLAS Live Pilot","short_name":"Pilot","url":"/pilot.html?surface=pwa"},
+    {"name":"Command Center","short_name":"Command","url":"/app.html"},
+    {"name":"ATLAS Repertoire","short_name":"Repertoire","url":"/app.html?view=repertoire"},
+    {"name":"Technical Support","short_name":"Support","url":"/app.html?view=support"}
   ]
 }
