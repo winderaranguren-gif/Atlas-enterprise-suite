@@ -1,0 +1,9 @@
+{
+  "product": "ATLAS Enterprise Suite",
+  "version": "1.0.0",
+  "contact": "atlashealthfrontiers@gmail.com",
+  "architecture": "ATLAS Global Core -> Region -> Country -> Organization -> User",
+  "defaultRegion": "north-america",
+  "regions": ["global","north-america","central-america","caribbean","south-america","europe","africa","asia","oceania","antarctica-research"],
+  "modules": ["Core","CRM & Sales","Accounts Receivable","Accounts Payable","Accounting & General Ledger","Inventory","HR & Payroll","Reports & Intelligence","Freight Network","Fleet Intelligence","Documents & Sign","Wallet","Ride","Marketplace","Rewards","Cars","Health","Public Safety","Community Hub","Calendar","GPS 4D","Technical Support","Settings"]
+}
