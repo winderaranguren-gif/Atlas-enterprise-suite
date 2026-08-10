@@ -3,6 +3,8 @@ const id=()=>crypto.randomUUID();
 const TYPES={accounts:'crm_accounts',contacts:'crm_contacts',leads:'crm_leads',opportunities:'crm_opportunities',tasks:'crm_tasks',activity:'crm_activity'};
 const READ_ROLES=new Set(['owner','admin','editor','viewer','auditor']);
 const WRITE_ROLES=new Set(['owner','admin','editor']);
+const MANAGE_ROLES=new Set(['owner','admin']);
+const ASSIGNABLE_ROLES=new Set(['admin','editor','viewer','auditor']);
 
 async function sha256(value){
  const bytes=new TextEncoder().encode(value);
@@ -49,6 +51,10 @@ async function ensureCoreSchema(env){
   id TEXT PRIMARY KEY,organization_id TEXT NOT NULL,dba_id TEXT NOT NULL,actor_user_id TEXT NOT NULL,
   action TEXT NOT NULL,resource_type TEXT NOT NULL,resource_id TEXT NOT NULL,payload TEXT NOT NULL DEFAULT '{}',created_at TEXT NOT NULL
  )`).run();
+ await env.DB.prepare(`CREATE TABLE IF NOT EXISTS atlas_bootstrap_state (
+  id TEXT PRIMARY KEY CHECK(id='primary'),completed_at TEXT NOT NULL,owner_user_id TEXT NOT NULL,
+  organization_id TEXT NOT NULL,dba_id TEXT NOT NULL
+ )`).run();
 }
 
 async function securityEvent(env,{userId='',org='',dba='',action,resourceType,resourceId='',decision,reason}){
@@ -94,7 +100,7 @@ async function authorize(request,env,mode='read'){
   return {error:json({error:'Forbidden'},403)};
  }
  const role=String(membership.role||'').toLowerCase();
- const allowed=mode==='read'?READ_ROLES.has(role):WRITE_ROLES.has(role);
+ const allowed=mode==='read'?READ_ROLES.has(role):mode==='manage'?MANAGE_ROLES.has(role):WRITE_ROLES.has(role);
  if(!allowed){
   await securityEvent(env,{userId:actor.user_id,org,dba,action:mode,resourceType:'scope',decision:'deny',reason:`role_${role}_not_allowed`});
   return {error:json({error:'Forbidden for role'},403)};
@@ -107,6 +113,10 @@ async function bootstrap(request,env){
  if(!env.ATLAS_BOOTSTRAP_TOKEN) return json({operational:false,error:'ATLAS_BOOTSTRAP_TOKEN is not configured'},503);
  const supplied=request.headers.get('x-atlas-bootstrap-token')||'';
  if(!supplied||supplied!==env.ATLAS_BOOTSTRAP_TOKEN) return json({error:'Unauthorized'},401);
+ const existingBootstrap=await env.DB.prepare("SELECT completed_at FROM atlas_bootstrap_state WHERE id='primary'").first();
+ if(existingBootstrap) return json({error:'Bootstrap already completed',completed_at:existingBootstrap.completed_at},409);
+ const existingOwner=await env.DB.prepare("SELECT id FROM atlas_memberships WHERE role='owner' AND status='active' LIMIT 1").first();
+ if(existingOwner) return json({error:'Active owner already exists; bootstrap refused'},409);
  const body=await request.json();
  const email=String(body.email||'').trim().toLowerCase();
  const org=String(body.organization_id||'').trim();
@@ -120,15 +130,62 @@ async function bootstrap(request,env){
    .bind(user.id,email,String(body.display_name||''),'active',now,now).run();
  }
  await env.DB.prepare(`INSERT INTO atlas_memberships(id,user_id,organization_id,dba_id,role,status,created_at,updated_at)
- VALUES(?,?,?,?,?,'active',?,?) ON CONFLICT(user_id,organization_id,dba_id) DO UPDATE SET role='owner',status='active',updated_at=excluded.updated_at`)
-  .bind(id(),user.id,org,dba,'owner',now,now).run();
+ VALUES(?,?,?,?,?,'active',?,?)`).bind(id(),user.id,org,dba,'owner',now,now).run();
  const rawToken=crypto.randomUUID()+crypto.randomUUID();
  const tokenHash=await sha256(rawToken);
  const expiresAt=new Date(Date.now()+12*60*60*1000).toISOString();
  await env.DB.prepare('INSERT INTO atlas_sessions(id,user_id,token_hash,expires_at,revoked_at,created_at,last_seen_at) VALUES(?,?,?,?,NULL,?,?)')
   .bind(id(),user.id,tokenHash,expiresAt,now,now).run();
+ await env.DB.prepare("INSERT INTO atlas_bootstrap_state(id,completed_at,owner_user_id,organization_id,dba_id) VALUES('primary',?,?,?,?)")
+  .bind(now,user.id,org,dba).run();
  await audit(env,{org,dba,userId:user.id,action:'bootstrap',resourceType:'user',resourceId:user.id,payload:{email}});
  return json({ok:true,user_id:user.id,session_token:rawToken,expires_at:expiresAt,organization_id:org,dba_id:dba},201);
+}
+
+async function createScopedUser(request,env){
+ const auth=await authorize(request,env,'manage'); if(auth.error) return auth.error;
+ const body=await request.json();
+ const email=String(body.email||'').trim().toLowerCase();
+ const role=String(body.role||'viewer').trim().toLowerCase();
+ if(!email) return json({error:'email is required'},400);
+ if(!ASSIGNABLE_ROLES.has(role)) return json({error:'role must be admin, editor, viewer, or auditor'},400);
+ if(auth.role==='admin'&&role==='admin') return json({error:'Only an owner can grant admin'},403);
+ const now=new Date().toISOString();
+ let user=await env.DB.prepare('SELECT id FROM atlas_users WHERE email=?').bind(email).first();
+ if(!user){
+  user={id:id()};
+  await env.DB.prepare('INSERT INTO atlas_users(id,email,display_name,status,created_at,updated_at) VALUES(?,?,?,?,?,?)')
+   .bind(user.id,email,String(body.display_name||''),'active',now,now).run();
+ }
+ const existing=await env.DB.prepare('SELECT id,role,status FROM atlas_memberships WHERE user_id=? AND organization_id=? AND dba_id=?')
+  .bind(user.id,auth.org,auth.dba).first();
+ if(existing) return json({error:'User already has a membership in this scope',membership_id:existing.id},409);
+ const membershipId=id();
+ await env.DB.prepare(`INSERT INTO atlas_memberships(id,user_id,organization_id,dba_id,role,status,created_at,updated_at)
+ VALUES(?,?,?,?,?,'active',?,?)`).bind(membershipId,user.id,auth.org,auth.dba,role,now,now).run();
+ await audit(env,{org:auth.org,dba:auth.dba,userId:auth.actor.user_id,action:'grant_membership',resourceType:'membership',resourceId:membershipId,payload:{target_user_id:user.id,email,role}});
+ return json({ok:true,user_id:user.id,membership_id:membershipId,role},201);
+}
+
+async function updateScopedUser(request,env,targetUserId){
+ const auth=await authorize(request,env,'manage'); if(auth.error) return auth.error;
+ if(targetUserId===auth.actor.user_id) return json({error:'Self role/status changes are not allowed'},409);
+ const membership=await env.DB.prepare('SELECT id,role,status FROM atlas_memberships WHERE user_id=? AND organization_id=? AND dba_id=?')
+  .bind(targetUserId,auth.org,auth.dba).first();
+ if(!membership) return json({error:'Membership not found in this scope'},404);
+ if(membership.role==='owner') return json({error:'Owner membership cannot be modified through this endpoint'},403);
+ if(auth.role==='admin'&&membership.role==='admin') return json({error:'Admins cannot modify another admin'},403);
+ const body=await request.json();
+ const nextRole=body.role===undefined?membership.role:String(body.role).trim().toLowerCase();
+ const nextStatus=body.status===undefined?membership.status:String(body.status).trim().toLowerCase();
+ if(!ASSIGNABLE_ROLES.has(nextRole)) return json({error:'role must be admin, editor, viewer, or auditor'},400);
+ if(!['active','suspended'].includes(nextStatus)) return json({error:'status must be active or suspended'},400);
+ if(auth.role==='admin'&&nextRole==='admin') return json({error:'Only an owner can grant admin'},403);
+ const now=new Date().toISOString();
+ await env.DB.prepare('UPDATE atlas_memberships SET role=?,status=?,updated_at=? WHERE id=?').bind(nextRole,nextStatus,now,membership.id).run();
+ if(nextStatus==='suspended') await env.DB.prepare('UPDATE atlas_sessions SET revoked_at=? WHERE user_id=? AND revoked_at IS NULL').bind(now,targetUserId).run();
+ await audit(env,{org:auth.org,dba:auth.dba,userId:auth.actor.user_id,action:'update_membership',resourceType:'membership',resourceId:membership.id,payload:{target_user_id:targetUserId,role:nextRole,status:nextStatus}});
+ return json({ok:true,user_id:targetUserId,membership_id:membership.id,role:nextRole,status:nextStatus});
 }
 
 export default {
@@ -141,7 +198,7 @@ export default {
    if(url.pathname==='/api/system/health'&&request.method==='GET'){
     const r=await env.DB.prepare("SELECT name FROM sqlite_schema WHERE type='table'").all();
     const names=new Set((r.results||[]).map(x=>x.name));
-    const required=[...Object.values(TYPES),'atlas_users','atlas_memberships','atlas_sessions','atlas_security_events','atlas_audit_events'];
+    const required=[...Object.values(TYPES),'atlas_users','atlas_memberships','atlas_sessions','atlas_security_events','atlas_audit_events','atlas_bootstrap_state'];
     const missing=required.filter(x=>!names.has(x));
     return json({operational:missing.length===0,service:'ATLAS Commercial Pilot Core',storage:'D1',missingTables:missing});
    }
@@ -156,6 +213,12 @@ export default {
     const r=await env.DB.prepare(`SELECT u.id,u.email,u.display_name,m.role,m.status FROM atlas_memberships m JOIN atlas_users u ON u.id=m.user_id
      WHERE m.organization_id=? AND m.dba_id=? ORDER BY u.email`).bind(auth.org,auth.dba).all();
     return json({users:r.results||[]});
+   }
+   if(url.pathname==='/api/users'&&request.method==='POST') return createScopedUser(request,env);
+   if(url.pathname.startsWith('/api/users/')&&request.method==='PATCH'){
+    const targetUserId=url.pathname.split('/').filter(Boolean)[2]||'';
+    if(!targetUserId) return json({error:'User id is required'},400);
+    return updateScopedUser(request,env,targetUserId);
    }
    if(url.pathname==='/api/audit'&&request.method==='GET'){
     const auth=await authorize(request,env,'read'); if(auth.error) return auth.error;
