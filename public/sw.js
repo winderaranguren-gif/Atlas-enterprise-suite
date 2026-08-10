@@ -1,8 +1,11 @@
-const CACHE = 'atlas-foundation-v1.0.1';
+const CACHE = 'atlas-core-services-v1.1.0';
 const APP_SHELL = [
   '/',
   '/index.html',
   '/styles.css',
+  '/core-services.css',
+  '/core-services.js',
+  '/music-core.js',
   '/app.js',
   '/manifest.webmanifest'
 ];
