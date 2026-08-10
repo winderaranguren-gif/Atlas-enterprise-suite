@@ -1,0 +1,2 @@
+# Use Python 3.11 for the reproducible ATLAS voice environment.
+chatterbox-tts
