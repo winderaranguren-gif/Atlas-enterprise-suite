@@ -3,10 +3,10 @@ import path from 'node:path';
 const root=process.cwd();
 const read=f=>fs.readFileSync(path.join(root,f),'utf8');
 const fail=m=>{console.error(`ATLAS v1.2 validation failed: ${m}`);process.exit(1)};
-const required=['package.json','atlas.config.json','wrangler.toml','scripts/build.mjs','scripts/runtime-test.mjs','public/index.html','public/styles.css','public/app.js','public/core-services.js','public/core-services.css','public/music-core.js','public/voice-core.js','public/voice-studio.html','public/voice-studio.css','public/voice-studio.js','public/repertoire-ui.js','public/update-core.js','public/surface-mode.js','public/surface-mode.css','public/atlas-repertoire.json','public/atlas.release.json','public/atlas.config.json','public/manifest.webmanifest','public/sw.js','public/_headers','public/_redirects'];
+const required=['package.json','atlas.config.json','wrangler.toml','scripts/build.mjs','scripts/runtime-test.mjs','public/index.html','public/app.html','public/styles.css','public/app.js','public/core-services.js','public/core-services.css','public/music-core.js','public/voice-core.js','public/voice-studio.html','public/voice-studio.css','public/voice-studio.js','public/repertoire-ui.js','public/update-core.js','public/surface-mode.js','public/surface-mode.css','public/atlas-repertoire.json','public/atlas.release.json','public/atlas.config.json','public/manifest.webmanifest','public/sw.js','public/_headers','public/_redirects'];
 for(const f of required)if(!fs.existsSync(path.join(root,f)))fail(`missing ${f}`);
 const pkg=JSON.parse(read('package.json'));const cfg=JSON.parse(read('atlas.config.json'));const pcfg=JSON.parse(read('public/atlas.config.json'));const release=JSON.parse(read('public/atlas.release.json'));const repertoire=JSON.parse(read('public/atlas-repertoire.json'));
-const html=read('public/index.html'),app=read('public/app.js'),core=read('public/core-services.js'),music=read('public/music-core.js'),voice=read('public/voice-core.js'),voiceStudio=read('public/voice-studio.html'),sw=read('public/sw.js'),headers=read('public/_headers'),wrangler=read('wrangler.toml'),redirects=read('public/_redirects');
+const marketing=read('public/index.html'),html=read('public/app.html'),app=read('public/app.js'),core=read('public/core-services.js'),music=read('public/music-core.js'),voice=read('public/voice-core.js'),voiceStudio=read('public/voice-studio.html'),sw=read('public/sw.js'),headers=read('public/_headers'),wrangler=read('wrangler.toml'),redirects=read('public/_redirects');
 if(pkg.version!=='1.2.0'||cfg.version!=='1.2.0'||release.version!=='1.2.0')fail('package/config/release version must be 1.2.0');
 if(JSON.stringify(cfg)!==JSON.stringify(pcfg))fail('root/public config mismatch');
 if(cfg.contact!=='atlashealthfrontiers@gmail.com')fail('operational contact mismatch');
@@ -14,9 +14,10 @@ if(!Array.isArray(cfg.modules)||cfg.modules.length<25)fail('production module re
 if(!Array.isArray(repertoire.modules)||repertoire.modules.length<40)fail('ATLAS Repertoire incomplete');
 if(release.autoApply!==true||release.rollbackCapable!==true)fail('Update Fabric release contract incomplete');
 if(!Array.isArray(release.scope)||!release.scope.includes('web')||!release.scope.includes('pwa')||!release.scope.includes('design'))fail('release scope incomplete');
-for(const marker of ['Command Center','Repertoire','Enterprise','People','Mobility','Health','Media','Research','Finance','Core Services','Settings','globalSearch','profileName'])if(!html.includes(marker))fail(`design-lock shell marker missing: ${marker}`);
-for(const asset of ['/core-services.js','/music-core.js','/update-core.js','/repertoire-ui.js','/surface-mode.js','/app.js']){if(!html.includes(`src="${asset}"`))fail(`missing script ${asset}`)}
-if(/<script(?![^>]*\bsrc=)[^>]*>/i.test(html))fail('inline scripts forbidden');
+for(const marker of ['ATLAS Enterprise Suite','Products & Services','ATLAS in Action','Access ATLAS'])if(!marketing.includes(marker))fail(`public website marker missing: ${marker}`);
+for(const marker of ['Command Center','Repertoire','Enterprise','People','Mobility','Health','Media','Research','Finance','Core Services','Settings','globalSearch','profileName','Voice Studio'])if(!html.includes(marker))fail(`design-lock shell marker missing: ${marker}`);
+for(const asset of ['/core-services.js','/music-core.js','/voice-core.js','/update-core.js','/repertoire-ui.js','/surface-mode.js','/app.js']){if(!html.includes(`src="${asset}"`))fail(`missing Command Center script ${asset}`)}
+if(/<script(?![^>]*\bsrc=)[^>]*>/i.test(html))fail('inline scripts forbidden in Command Center');
 if(/<script(?![^>]*\bsrc=)[^>]*>/i.test(voiceStudio))fail('inline scripts forbidden in Voice Studio');
 function walk(dir){return fs.readdirSync(dir,{withFileTypes:true}).flatMap(e=>{const p=path.join(dir,e.name);return e.isDirectory()?walk(p):[p]})}
 for(const f of walk(path.join(root,'public')).filter(f=>/\.(?:js|mjs)$/i.test(f))){try{new Function(fs.readFileSync(f,'utf8'))}catch(e){fail(`JavaScript syntax error in ${path.relative(root,f)}: ${e.message}`)}}
@@ -33,4 +34,4 @@ for(const marker of ["url.pathname.startsWith('/api/')","networkOnly(url)","fetc
 if(!sw.includes("const CACHE = 'atlas-core-services-v1.2.0-repertoire-app-voice-20260810'"))fail('service worker cache version mismatch');
 const activeRedirects=redirects.split(/\r?\n/).map(x=>x.trim()).filter(x=>x&&!x.startsWith('#'));if(activeRedirects.length)fail('catch-all redirects forbidden');
 for(const marker of ['ATLAS Command Center','Todo tu universo. Conectado. Inteligente. 4D.','Design Lock','Update Fabric','WEB + APP'])if(!app.includes(marker))fail(`approved dashboard marker missing: ${marker}`);
-console.log(`ATLAS validation passed: v${cfg.version}, ${cfg.modules.length} production modules, ${repertoire.modules.length} repertoire surfaces, ${services.length} core services, Design Lock + Update Fabric + Voice Studio verified.`);
+console.log(`ATLAS validation passed: v${cfg.version}, ${cfg.modules.length} production modules, ${repertoire.modules.length} repertoire surfaces, ${services.length} core services, public website + Design Lock + Update Fabric + Voice Studio verified.`);
