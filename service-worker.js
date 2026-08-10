@@ -1,4 +1,4 @@
-const VERSION = 'atlas-core-v18-music-providers';
+const VERSION = 'atlas-core-v19-music-security';
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 const APP_SHELL = [
@@ -39,6 +39,7 @@ const APP_SHELL = [
   '/atlas-music.css',
   '/atlas-music.js',
   '/atlas-music-providers.js',
+  '/atlas-music-fixes.js',
   '/atlas-config.js',
   '/atlas-calendar-system-events.js',
   '/atlas-calendar.js',
@@ -63,6 +64,9 @@ self.addEventListener('fetch', event => {
   const request = event.request;
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
+
+  // Authenticated/provider API responses must never enter shared PWA caches.
+  if (url.origin === self.location.origin && url.pathname.startsWith('/api/')) return;
 
   if (request.mode === 'navigate') {
     event.respondWith(
