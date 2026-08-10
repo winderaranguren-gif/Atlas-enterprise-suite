@@ -59,13 +59,15 @@ CREATE TABLE IF NOT EXISTS accounting_journal_entries (
   entry_number TEXT NOT NULL,
   entry_date TEXT NOT NULL,
   memo TEXT NOT NULL DEFAULT '',
+  currency TEXT NOT NULL DEFAULT 'USD' CHECK(length(currency) = 3),
   status TEXT NOT NULL CHECK(status IN ('draft','posted','void')) DEFAULT 'posted',
-  total_debits REAL NOT NULL DEFAULT 0 CHECK(total_debits >= 0),
-  total_credits REAL NOT NULL DEFAULT 0 CHECK(total_credits >= 0),
+  total_debit_cents INTEGER NOT NULL DEFAULT 0 CHECK(total_debit_cents >= 0),
+  total_credit_cents INTEGER NOT NULL DEFAULT 0 CHECK(total_credit_cents >= 0),
   created_by TEXT NOT NULL,
   created_at TEXT NOT NULL,
   posted_at TEXT,
-  UNIQUE(organization_id,dba_id,entry_number)
+  UNIQUE(organization_id,dba_id,entry_number),
+  CHECK(total_debit_cents = total_credit_cents)
 );
 CREATE INDEX IF NOT EXISTS idx_journal_entries_scope
   ON accounting_journal_entries(organization_id,dba_id,entry_date,created_at);
@@ -77,10 +79,10 @@ CREATE TABLE IF NOT EXISTS accounting_journal_lines (
   dba_id TEXT NOT NULL,
   account_id TEXT NOT NULL,
   description TEXT NOT NULL DEFAULT '',
-  debit REAL NOT NULL DEFAULT 0 CHECK(debit >= 0),
-  credit REAL NOT NULL DEFAULT 0 CHECK(credit >= 0),
+  debit_cents INTEGER NOT NULL DEFAULT 0 CHECK(debit_cents >= 0),
+  credit_cents INTEGER NOT NULL DEFAULT 0 CHECK(credit_cents >= 0),
   created_at TEXT NOT NULL,
-  CHECK((debit > 0 AND credit = 0) OR (credit > 0 AND debit = 0)),
+  CHECK((debit_cents > 0 AND credit_cents = 0) OR (credit_cents > 0 AND debit_cents = 0)),
   FOREIGN KEY(entry_id) REFERENCES accounting_journal_entries(id) ON DELETE RESTRICT,
   FOREIGN KEY(account_id) REFERENCES accounting_accounts(id) ON DELETE RESTRICT
 );
