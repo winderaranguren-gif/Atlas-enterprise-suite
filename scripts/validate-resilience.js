@@ -29,7 +29,8 @@ required(app.includes('resilience.onerror=loadSupport'),'ATLAS resilience loader
 required(app.includes('operational.onload=loadResilience'),'ATLAS operational runtime is not wired to load resilience first.');
 required(app.includes('operational.onerror=loadResilience'),'ATLAS operational fallback does not preserve resilience load order.');
 required(sw.includes("'/atlas-resilience.js'"),'Service Worker app shell is missing atlas-resilience.js.');
-required(/atlas-core-v\d+-resilience/.test(sw),'Service Worker cache version was not advanced for resilience.');
+const versionMatch=sw.match(/const\s+VERSION\s*=\s*['"]atlas-core-v(\d+)(?:-[^'"]+)?['"]/);
+required(versionMatch && Number(versionMatch[1])>=16,'Service Worker cache version does not satisfy the resilience baseline.');
 required(pkg.scripts?.['check:resilience']==='node scripts/validate-resilience.js','package.json is missing check:resilience.');
 required(pkg.scripts?.['check:js']?.includes('node --check atlas-resilience.js'),'check:js does not syntax-check atlas-resilience.js.');
 required(pkg.scripts?.validate?.includes('npm run check:resilience'),'Repository validation does not enforce ATLAS resilience.');
