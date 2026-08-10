@@ -17,7 +17,7 @@ concurrency:
 jobs:
   runner-probe:
     name: Runner Probe
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     timeout-minutes: 3
     steps:
       - name: Confirm GitHub-hosted runner can execute steps
@@ -34,7 +34,7 @@ jobs:
   validate:
     name: Validate and Build ATLAS
     needs: runner-probe
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     timeout-minutes: 15
     steps:
       - name: Checkout repository
