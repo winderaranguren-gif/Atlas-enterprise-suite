@@ -1,19 +1,25 @@
 {
   "product": "ATLAS Enterprise Suite",
   "channel": "stable",
-  "version": "1.4.1",
-  "releaseId": "2026-08-10-native-music-prompter-v1.4.1",
-  "generatedAt": "2026-08-10T07:50:00-04:00",
-  "minimumCompatibleVersion": "1.4.0",
+  "version": "1.4.2",
+  "releaseId": "2026-08-10-language-core-english-first-v1.4.2",
+  "generatedAt": "2026-08-10T07:58:00-04:00",
+  "minimumCompatibleVersion": "1.4.1",
   "autoApply": true,
   "rollbackCapable": true,
   "designLock": "ATLAS-COMMAND-CENTER-DL-1.0",
-  "scope": ["public-website", "private-app", "music-prompter", "native-recreation", "review-mode", "operational-core"],
+  "scope": ["public-website", "signin", "signup", "private-app", "music-prompter", "language-core", "review-mode", "operational-core"],
+  "language": {
+    "default": "en",
+    "supported": ["en", "es"],
+    "selector": true,
+    "persistentPreference": true,
+    "storageKey": "atlas.language"
+  },
   "musicPrompter": {
     "route": "/music-prompter.html",
     "sourceStrategy": "native-reimplementation",
-    "base44RuntimeRequired": false,
-    "features": ["script-crud", "words-per-minute", "font-size", "text-color", "background-color", "mirror", "loop", "start-pause-restart", "speed-control", "fullscreen"]
+    "base44RuntimeRequired": false
   },
   "publicWebsite": {
     "root": "/",
@@ -30,7 +36,7 @@
   },
   "reviewMode": {
     "enabled": true,
-    "requestTypes": ["Diseño", "Texto", "Función", "Datos", "Permisos", "Error"],
+    "requestTypes": ["Design", "Text", "Function", "Data", "Permissions", "Error"],
     "liveTextEdits": true,
     "persistentLocalOverrides": true
   },
