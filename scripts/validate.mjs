@@ -119,7 +119,8 @@ for (const marker of [
 if (/c\.put\(e\.request/i.test(sw) || /cache\.put\(request,copy\)/i.test(sw)) {
   fail('Service Worker must not blindly cache every GET response');
 }
-if (redirects.trim() !== '/* /index.html 200') fail('SPA redirect contract changed unexpectedly');
+const activeRedirects = redirects.split(/\r?\n/).map(line => line.trim()).filter(line => line && !line.startsWith('#'));
+if (activeRedirects.length) fail('SPA fallback must be handled by Workers assets.not_found_handling, not a catch-all _redirects proxy');
 
 const ignoredDirs = new Set(['.git', 'node_modules', 'dist']);
 function walkRepo(dir) {
