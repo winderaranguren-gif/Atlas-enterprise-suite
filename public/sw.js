@@ -1,10 +1,12 @@
-const CACHE = 'atlas-core-services-v1.1.0-repertoire-20260810';
+const CACHE = 'atlas-core-services-v1.2.0-repertoire-app-20260810';
 const APP_SHELL = [
   '/',
   '/index.html',
   '/styles.css',
   '/core-services.css',
+  '/surface-mode.css',
   '/core-services.js',
+  '/surface-mode.js',
   '/music-core.js',
   '/update-core.js',
   '/repertoire-ui.js',
