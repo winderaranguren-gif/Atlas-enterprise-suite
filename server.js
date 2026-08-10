@@ -10,6 +10,9 @@ const root = path.resolve(__dirname);
 const APP_VERSION = '0.5.0';
 const SUPPORT_VERSION = '1.1.0';
 const RUNBOOK_VERSION = '1.0.0';
+const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-5.6';
+const OPENAI_TIMEOUT_MS = 45000;
+const MAX_AI_MESSAGES = 12;
 const types = {
   '.html':'text/html; charset=utf-8',
   '.css':'text/css; charset=utf-8',
@@ -26,10 +29,14 @@ const types = {
 
 function networkUrls() {
   const urls = [];
-  for (const entries of Object.values(os.networkInterfaces())) {
-    for (const info of entries || []) {
-      if (info.family === 'IPv4' && !info.internal) urls.push(`http://${info.address}:${port}`);
+  try {
+    for (const entries of Object.values(os.networkInterfaces())) {
+      for (const info of entries || []) {
+        if (info.family === 'IPv4' && !info.internal) urls.push(`http://${info.address}:${port}`);
+      }
     }
+  } catch (error) {
+    console.warn(`Network address discovery unavailable: ${error.code || error.message}`);
   }
   return [...new Set(urls)];
 }
@@ -130,6 +137,49 @@ function readRequestJson(req,limit=65536){
   });
 }
 
+function normalizeAiMessages(body={}){
+  if(!Array.isArray(body.messages))return [];
+  return body.messages.slice(-MAX_AI_MESSAGES).flatMap(message=>{
+    const role=message?.role==='assistant'?'assistant':'user';
+    const content=String(message?.content||'').trim().slice(0,8000);
+    return content?[{role,content}]:[];
+  });
+}
+
+async function requestAtlasIntelligence(body={}){
+  const apiKey=process.env.OPENAI_API_KEY;
+  if(!apiKey)throw Object.assign(new Error('ATLAS Intelligence requires OPENAI_API_KEY on the server.'),{status:503,code:'openai_not_configured'});
+  const messages=normalizeAiMessages(body);
+  if(!messages.length)throw Object.assign(new Error('A message is required.'),{status:400,code:'message_required'});
+
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),OPENAI_TIMEOUT_MS);
+  try{
+    const response=await fetch('https://api.openai.com/v1/responses',{
+      method:'POST',
+      headers:{'Authorization':`Bearer ${apiKey}`,'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:OPENAI_MODEL,
+        instructions:'You are ATLAS Intelligence, the secure bilingual operating intelligence for ATLAS Enterprise Suite. Reply in the user\'s language. Be concise, accurate, action-oriented, privacy-aware, and transparent about uncertainty. Never claim to execute an external action unless the application provides verified evidence.',
+        input:messages,
+        store:false
+      }),
+      signal:controller.signal
+    });
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok){
+      const safeStatus=response.status===429?429:response.status>=500?502:400;
+      throw Object.assign(new Error(data.error?.message||'OpenAI request failed.'),{status:safeStatus,code:'openai_request_failed'});
+    }
+    const output=String(data.output_text||'').trim();
+    if(!output)throw Object.assign(new Error('OpenAI returned an empty response.'),{status:502,code:'openai_empty_response'});
+    return {output,model:data.model||OPENAI_MODEL,responseId:data.id||null};
+  }catch(error){
+    if(error.name==='AbortError')throw Object.assign(new Error('OpenAI request timed out.'),{status:504,code:'openai_timeout'});
+    throw error;
+  }finally{clearTimeout(timeout);}
+}
+
 const server = http.createServer(async (req, res) => {
   const pathname = decodeURIComponent((req.url || '/').split('?')[0]);
   const requestId=crypto.randomUUID();
@@ -149,6 +199,20 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method==='GET' && pathname === '/api/support/runbooks') {
     return sendJson(res,200,{...base,ok:true,service:'ATLAS Technical Operations',runbookVersion:RUNBOOK_VERSION,classifications:['general','identity-access','deployment','network','performance','data-storage'],executionPolicy:'safe-reversible-only'});
+  }
+
+  if (req.method==='GET' && pathname === '/api/atlas-ai/status') {
+    return sendJson(res,200,{...base,ok:true,service:'ATLAS Intelligence',configured:Boolean(process.env.OPENAI_API_KEY),model:OPENAI_MODEL});
+  }
+
+  if (req.method==='POST' && pathname === '/api/atlas-ai/respond') {
+    try{
+      const body=await readRequestJson(req,131072);
+      const result=await requestAtlasIntelligence(body);
+      return sendJson(res,200,{...base,ok:true,...result});
+    }catch(error){
+      return sendJson(res,error.status||500,{...base,ok:false,error:error.code||'atlas_ai_error',message:error.message||'ATLAS Intelligence request failed.'});
+    }
   }
 
   if (req.method==='POST' && pathname === '/api/support/analyze') {
