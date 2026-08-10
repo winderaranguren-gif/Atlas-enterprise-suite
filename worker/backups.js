@@ -48,6 +48,14 @@ async function tableRows(env,table,org,dba){
   throw error;
  }
 }
+async function loadManifestAndBody(env,auth,backupId){
+ const m=await env.DB.prepare(`SELECT * FROM atlas_backup_manifests WHERE id=? AND organization_id=? AND dba_id=?`).bind(backupId,auth.org,auth.dba).first();
+ if(!m) return {error:json({error:'Backup not found'},404)};
+ const object=await env.BACKUPS.get(m.object_key);
+ if(!object) return {error:json({ok:false,error:'Backup object missing'},409)};
+ const body=await object.text();
+ return {manifest:m,body};
+}
 async function createBackup(request,env){
  const auth=await authorize(request,env,'write'); if(auth.error) return auth.error;
  if(!env.BACKUPS) return json({operational:false,error:'R2 binding BACKUPS is not configured'},503);
@@ -65,14 +73,28 @@ async function createBackup(request,env){
 async function verifyBackup(request,env,backupId){
  const auth=await authorize(request,env,'read'); if(auth.error) return auth.error;
  if(!env.BACKUPS) return json({operational:false,error:'R2 binding BACKUPS is not configured'},503);
- const m=await env.DB.prepare(`SELECT * FROM atlas_backup_manifests WHERE id=? AND organization_id=? AND dba_id=?`).bind(backupId,auth.org,auth.dba).first();
- if(!m) return json({error:'Backup not found'},404);
- const object=await env.BACKUPS.get(m.object_key); if(!object) return json({ok:false,error:'Backup object missing'},409);
- const body=await object.text(); const digest=await sha256(body); const valid=digest===m.sha256;
+ const loaded=await loadManifestAndBody(env,auth,backupId); if(loaded.error) return loaded.error;
+ const {manifest:m,body}=loaded; const digest=await sha256(body); const valid=digest===m.sha256;
  const now=new Date().toISOString();
  await env.DB.prepare(`UPDATE atlas_backup_manifests SET status=?,verified_at=? WHERE id=?`).bind(valid?'verified':'failed',now,m.id).run();
  await audit(env,{org:auth.org,dba:auth.dba,userId:auth.actor.user_id,action:'backup_verify',resourceId:m.id,payload:{valid,sha256:digest}});
  return json({ok:valid,id:m.id,expected_sha256:m.sha256,actual_sha256:digest,byte_length:new TextEncoder().encode(body).byteLength},valid?200:409);
+}
+async function restoreTest(request,env,backupId){
+ const auth=await authorize(request,env,'write'); if(auth.error) return auth.error;
+ if(!env.BACKUPS) return json({operational:false,error:'R2 binding BACKUPS is not configured'},503);
+ const loaded=await loadManifestAndBody(env,auth,backupId); if(loaded.error) return loaded.error;
+ const {manifest:m,body}=loaded; const digest=await sha256(body);
+ if(digest!==m.sha256) return json({ok:false,error:'Backup integrity verification failed'},409);
+ let envelope; try{ envelope=JSON.parse(body); }catch{ return json({ok:false,error:'Backup payload is not valid JSON'},409); }
+ const validHeader=envelope?.format==='ATLAS_SCOPED_BACKUP'&&envelope?.schema_version==='1'&&envelope?.organization_id===auth.org&&envelope?.dba_id===auth.dba;
+ const validTables=envelope?.tables&&TABLES.every(table=>Array.isArray(envelope.tables[table]));
+ const restoredRecordCount=validTables?TABLES.reduce((sum,table)=>sum+envelope.tables[table].length,0):-1;
+ const valid=validHeader&&validTables&&restoredRecordCount===m.record_count;
+ const now=new Date().toISOString();
+ if(valid) await env.DB.prepare(`UPDATE atlas_backup_manifests SET status='restore-tested',restore_tested_at=? WHERE id=?`).bind(now,m.id).run();
+ await audit(env,{org:auth.org,dba:auth.dba,userId:auth.actor.user_id,action:'backup_restore_test',resourceId:m.id,payload:{valid,record_count:restoredRecordCount,non_destructive:true}});
+ return json({ok:valid,id:m.id,non_destructive:true,record_count:restoredRecordCount,actual_restore_performed:false},valid?200:409);
 }
 async function listBackups(request,env){
  const auth=await authorize(request,env,'read'); if(auth.error) return auth.error;
@@ -87,7 +109,9 @@ export async function handleBackups(request,env){
  }
  if(url.pathname==='/api/backups'&&request.method==='GET') return listBackups(request,env);
  if(url.pathname==='/api/backups'&&request.method==='POST') return createBackup(request,env);
- const match=url.pathname.match(/^\/api\/backups\/([^/]+)\/verify$/);
+ let match=url.pathname.match(/^\/api\/backups\/([^/]+)\/verify$/);
  if(match&&request.method==='POST') return verifyBackup(request,env,match[1]);
+ match=url.pathname.match(/^\/api\/backups\/([^/]+)\/restore-test$/);
+ if(match&&request.method==='POST') return restoreTest(request,env,match[1]);
  return null;
 }
