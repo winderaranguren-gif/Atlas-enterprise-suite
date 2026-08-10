@@ -1,4 +1,4 @@
-const VERSION = 'atlas-core-v16-resilience';
+const VERSION = 'atlas-core-v17-resilience';
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 const APP_SHELL = [
@@ -29,6 +29,7 @@ const APP_SHELL = [
   '/atlas-suite.js',
   '/atlas-os-operational.js',
   '/atlas-resilience.js',
+  '/atlas-resilience-ui-guard.js',
   '/atlas-technical-support.js',
   '/atlas-support-runbooks.js',
   '/atlas-fleet-intelligence.html',
