@@ -1,5 +1,6 @@
 const base=(process.env.ATLAS_E2E_BASE_URL||'').replace(/\/$/,'');
 const bootstrap=process.env.ATLAS_BOOTSTRAP_TOKEN||'';
+const expectedSha=String(process.env.ATLAS_E2E_EXPECTED_SHA||'').trim().toLowerCase();
 const ownerEmail=process.env.ATLAS_E2E_OWNER_EMAIL||'atlas-e2e-owner@example.invalid';
 const org=process.env.ATLAS_E2E_ORG||'atlas-e2e';
 const dba=process.env.ATLAS_E2E_DBA||'pilot';
@@ -7,6 +8,7 @@ const otherDba=process.env.ATLAS_E2E_OTHER_DBA||'forbidden-dba';
 
 if(!base) throw new Error('ATLAS_E2E_BASE_URL is required');
 if(!bootstrap) throw new Error('ATLAS_BOOTSTRAP_TOKEN is required');
+if(!/^[0-9a-f]{40}$/.test(expectedSha)) throw new Error('ATLAS_E2E_EXPECTED_SHA must be the exact 40-character deployed commit SHA');
 
 const checks=[];
 const mark=(name,ok,details='')=>{checks.push({name,ok,details});if(!ok)throw new Error(`${name}: ${details}`);};
@@ -21,6 +23,9 @@ async function call(path,{method='GET',token,scope=true,body,bootstrapToken,scop
   let data={};try{data=text?JSON.parse(text):{};}catch{data={raw:text};}
   return {status:response.status,data};
 }
+
+const fingerprint=await call('/api/system/release-fingerprint',{scope:false});
+mark('Exact deployed SHA fingerprint',fingerprint.status===200&&fingerprint.data.verified===true&&String(fingerprint.data.sourceSha||'').toLowerCase()===expectedSha,JSON.stringify(fingerprint));
 
 const health=await call('/api/system/health',{scope:false});
 mark('D1 core health',health.status===200&&health.data.operational===true,JSON.stringify(health));
@@ -124,4 +129,4 @@ mark('Revoked session rejected by Accounting',accountingAfterLogout.status===401
 const backupsAfterLogout=await call('/api/backups',{token:ownerToken});
 mark('Revoked session rejected by Backups',backupsAfterLogout.status===401,JSON.stringify(backupsAfterLogout));
 
-console.log(JSON.stringify({ok:true,base,organization:org,dba,checks},null,2));
+console.log(JSON.stringify({ok:true,base,expectedSha,organization:org,dba,checks},null,2));
