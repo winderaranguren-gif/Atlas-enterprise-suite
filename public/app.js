@@ -8,7 +8,7 @@ const titles={
   support:['Technical Support','Diagnostics prioritize safe, reversible actions and exact blocker reporting.'],
   settings:['Settings','Local preferences and environment-safe controls.']
 };
-const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#039;'}[m]));
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
 function card(title,body,tag='ATLAS',extra=''){return `<article class="card"><h3>${esc(title)}</h3><p>${esc(body)}</p><span class="tag">${esc(tag)}</span>${extra}</article>`}
 function serviceLabel(service){return String(service?.status||'unknown').toUpperCase();}
 function bindMusic(){document.querySelectorAll('[data-track]').forEach(btn=>btn.addEventListener('click',()=>{try{window.ATLASMusicCore.play(btn.dataset.track,{duration:18});btn.textContent='Playing';setTimeout(()=>{btn.textContent='Play original'},1800);}catch(error){btn.textContent=error.message;}}));document.querySelector('#stop-music')?.addEventListener('click',()=>window.ATLASMusicCore.stop());}
@@ -21,7 +21,7 @@ function render(){
       `<article class="card"><div class="metric">${state.config.modules.length}</div><h3>Registered modules</h3><p>Controlled by the ATLAS v1.1 configuration registry.</p></article>`,
       `<article class="card"><div class="metric">${green}</div><h3>Core services ready</h3><p>Active, backend-verified, or adapter-ready services in the clean foundation.</p></article>`,
       card('Data + Event Fabric','Backend-verified data boundary plus ATLAS-native event runtime.',`${serviceLabel(services.dataFabric)} / ${serviceLabel(services.eventFabric)}`),
-      card('Identity boundary','Verified backend; client authentication attaches through a provider adapter. ',serviceLabel(services.identity)),
+      card('Identity boundary','Verified backend; client authentication attaches through a provider adapter.',serviceLabel(services.identity)),
       card('Intelligence + Agents','ATLAS-native rules, skills, policy gates and provider-independent orchestration.',`${serviceLabel(services.intelligence)} / ${serviceLabel(services.agentFabric)}`),
       card('Work Graph','Projects, work units, dependencies, evidence and execution planning.',serviceLabel(services.workGraph)),
       card('ATLAS Music','Six ATLAS Originals can play without a commercial catalog provider.',serviceLabel(services.music)),
