@@ -30,8 +30,8 @@ const packageJson = readJson('package.json');
 const gitignore = readText('.gitignore');
 const buildScript = readText('scripts/build-cloudflare.js');
 const routerScript = readText('scripts/cloudflare-build-router.js');
-const iosWorkflow = readText('.github/workflows/atlas-ios-build.yml');
-const productionWorkflow = readText('.github/workflows/deploy-production.yml');
+const iosWorkflow = readText('.github/workflows/atlas-ios-v2.yml');
+const productionWorkflow = readText('.github/workflows/atlas-ci-v2.yml');
 
 if (wrangler.assets?.directory !== 'dist') fail('Cloudflare assets.directory must remain "dist"');
 if (wrangler.build?.command !== 'node scripts/cloudflare-build-router.js') fail('Wrangler custom build must remain bound to the ATLAS build router');
@@ -72,9 +72,14 @@ if (!String(scripts['check:js'] || '').includes('scripts/cloudflare-build-router
 if (!iosWorkflow.includes('run: npm run build:dev')) fail('iOS simulator workflow must use build:dev');
 if (/run:\s*npm run build:prod\s*(\n|$)/.test(iosWorkflow)) fail('iOS simulator workflow must not use build:prod');
 
-if (!productionWorkflow.includes('run: npm run build:prod')) fail('production GitHub workflow must create its package through build:prod');
-if (/run:\s*npm run (?:build|build:dev|build:cloudflare)\s*(\n|$)/.test(productionWorkflow)) fail('production workflow must not use a preview or direct asset build path');
-if (!productionWorkflow.includes('run: npx wrangler@4 deploy')) fail('production workflow must retain the expected Cloudflare deploy step');
-if (!productionWorkflow.includes('path: dist')) fail('GitHub Pages fallback must publish only dist');
+const productionJobStart = productionWorkflow.indexOf('\n  deploy-production:');
+const productionJobEnd = productionWorkflow.indexOf('\n  production-verification:', productionJobStart);
+if (productionJobStart < 0 || productionJobEnd < 0) fail('v2 production deployment job boundary is missing');
+const productionJob = productionWorkflow.slice(productionJobStart, productionJobEnd);
+if (!productionJob.includes('run: npm run build:prod')) fail('production GitHub workflow must create its package through build:prod');
+if (/run:\s*npm run (?:build|build:dev|build:cloudflare)\s*(\n|$)/.test(productionJob)) fail('production deployment job must not use a preview or direct asset build path');
+if (!productionJob.includes('run: npx wrangler@4 deploy')) fail('production workflow must retain the expected Cloudflare deploy step');
+if (!productionWorkflow.includes("if: github.event_name == 'push' && github.ref == 'refs/heads/main'")) fail('production deployment must remain restricted to pushes on main');
+if (!productionWorkflow.includes('needs: validate')) fail('production deployment must remain gated by the validation job');
 
-console.log('ATLAS deployment boundary gate passed: generic CI/preview build is separated from explicit build:prod, and every production deployment path remains constitutionally gated.');
+console.log('ATLAS deployment boundary gate passed: v2 CI/preview build is separated from explicit build:prod, and production deployment remains validation- and main-gated.');
