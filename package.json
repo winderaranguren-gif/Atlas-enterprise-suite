@@ -2,13 +2,18 @@
   "name": "atlas-enterprise-suite",
   "version": "1.0.0",
   "private": true,
-  "description": "ATLAS Enterprise Suite clean production foundation for Cloudflare",
+  "description": "ATLAS Enterprise Suite clean production foundation for Cloudflare Workers Static Assets",
   "author": "ATLAS Health Frontiers <atlashealthfrontiers@gmail.com>",
   "scripts": {
     "validate": "node scripts/validate.mjs",
     "build": "node scripts/build.mjs",
+    "build:cloudflare": "node scripts/build.mjs",
+    "build:dev": "npm run validate && npm run build",
+    "build:prod": "npm run validate && npm run build",
     "start": "npx serve dist -l 4173",
-    "deploy": "npx wrangler@4 pages deploy dist --project-name atlas-enterprise-suite"
+    "deploy": "npx wrangler@4 deploy",
+    "cloudflare:deploy": "npx wrangler@4 deploy",
+    "cloudflare:preview": "npx wrangler@4 versions upload"
   },
   "engines": {"node": ">=22"}
 }

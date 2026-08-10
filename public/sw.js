@@ -1,1 +1,76 @@
-const CACHE='atlas-v1';const ASSETS=['/','/styles.css','/app.js','/atlas.config.json','/manifest.webmanifest'];self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS))));self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))))));self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(fetch(e.request).then(r=>{const copy=r.clone();caches.open(CACHE).then(c=>c.put(e.request,copy));return r}).catch(()=>caches.match(e.request).then(r=>r||caches.match('/'))))});
+const CACHE = 'atlas-foundation-v1.0.1';
+const APP_SHELL = [
+  '/',
+  '/index.html',
+  '/styles.css',
+  '/app.js',
+  '/manifest.webmanifest'
+];
+
+function sameOrigin(url) {
+  return url.origin === self.location.origin;
+}
+
+function cacheableStatic(url) {
+  if (!sameOrigin(url)) return false;
+  if (url.pathname.startsWith('/api/')) return false;
+  if (url.pathname === '/atlas.config.json') return false;
+  return /\.(?:css|js|mjs|png|jpe?g|gif|webp|svg|ico|woff2?|ttf|webmanifest)$/i.test(url.pathname);
+}
+
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE)
+      .then(cache => cache.addAll(APP_SHELL))
+      .then(() => self.skipWaiting())
+  );
+});
+
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys()
+      .then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key))))
+      .then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener('fetch', event => {
+  const request = event.request;
+  if (request.method !== 'GET') return;
+
+  const url = new URL(request.url);
+  if (!sameOrigin(url) || url.pathname.startsWith('/api/')) return;
+
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request, { cache: 'no-store' })
+        .then(response => response.ok ? response : Promise.reject(new Error(`navigation_${response.status}`)))
+        .catch(async () => (await caches.match(request)) || caches.match('/index.html') || caches.match('/'))
+    );
+    return;
+  }
+
+  if (url.pathname === '/atlas.config.json') {
+    event.respondWith(fetch(request, { cache: 'no-store' }));
+    return;
+  }
+
+  if (!cacheableStatic(url)) return;
+
+  event.respondWith(
+    caches.match(request).then(cached => {
+      const refresh = fetch(request, { cache: 'no-cache' })
+        .then(response => {
+          if (response.ok && response.type === 'basic') {
+            caches.open(CACHE).then(cache => cache.put(request, response.clone()));
+          }
+          return response;
+        });
+      return cached || refresh;
+    })
+  );
+});
+
+self.addEventListener('message', event => {
+  if (event.data === 'SKIP_WAITING') self.skipWaiting();
+});
