@@ -1,4 +1,4 @@
-const VERSION = 'atlas-core-v17-music';
+const VERSION = 'atlas-core-v18-music-providers';
 const STATIC_CACHE = `${VERSION}-static`;
 const RUNTIME_CACHE = `${VERSION}-runtime`;
 const APP_SHELL = [
@@ -38,6 +38,7 @@ const APP_SHELL = [
   '/atlas-music.html',
   '/atlas-music.css',
   '/atlas-music.js',
+  '/atlas-music-providers.js',
   '/atlas-config.js',
   '/atlas-calendar-system-events.js',
   '/atlas-calendar.js',
