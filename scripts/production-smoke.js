@@ -63,6 +63,28 @@ async function main() {
   assert.equal(runbooks.runbookVersion, '1.0.0');
   assert.ok(runbooks.classifications.includes('deployment'));
 
+  const aiStatusResponse = await request('/api/atlas-ai/status');
+  assert.equal(aiStatusResponse.status, 200);
+  const aiStatus = await aiStatusResponse.json();
+  assert.equal(aiStatus.ok, true);
+  assert.equal(aiStatus.service, 'ATLAS Intelligence');
+  assert.equal(aiStatus.configured, false);
+
+  const aiResponse = await request('/api/atlas-ai/respond', {
+    method:'POST',
+    headers:{'content-type':'application/json'},
+    body:JSON.stringify({messages:[{role:'user',content:'Hello ATLAS'}]})
+  });
+  assert.equal(aiResponse.status, 503);
+  const aiUnavailable = await aiResponse.json();
+  assert.equal(aiUnavailable.error, 'openai_not_configured');
+
+  const aiPageResponse = await request('/atlas-intelligence.html');
+  assert.equal(aiPageResponse.status, 200);
+  const aiPage = await aiPageResponse.text();
+  assert.match(aiPage, /ATLAS Intelligence/);
+  assert.match(aiPage, /atlas-intelligence\.js/);
+
   const planResponse = await request('/api/support/plan', {
     method:'POST',
     headers:{'content-type':'application/json'},
