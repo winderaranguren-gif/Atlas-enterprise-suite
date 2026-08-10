@@ -1,0 +1,15 @@
+{
+  "product": "ATLAS Enterprise Suite",
+  "release": "1.3.0",
+  "operationalCore": "0.1.0",
+  "status": "code-linked",
+  "modules": {
+    "authentication": "service-real-ready-for-binding",
+    "pages": "service-real-ready-for-binding",
+    "publication": "service-real-ready-for-binding",
+    "backups": "service-real-ready-for-binding"
+  },
+  "autoUpdate": true,
+  "source": "main",
+  "note": "Cloudflare D1/R2 bindings must be provisioned before production health can turn green."
+}
