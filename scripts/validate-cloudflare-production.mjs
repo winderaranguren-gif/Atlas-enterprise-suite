@@ -50,4 +50,11 @@ if(!backups){
   fail('R2 BACKUPS bucket_name is missing. Configure the real Cloudflare R2 bucket name; do not invent one.');
 }
 
-if (!process.exitCode) console.log('ATLAS Cloudflare production configuration is structurally ready.');
+const deployedSha=String(process.env.ATLAS_DEPLOYED_SHA||'').trim();
+if(!deployedSha){
+  fail('ATLAS_DEPLOYED_SHA is missing. Production/preview deployment must carry the exact source commit SHA at runtime.');
+}else if(!/^[0-9a-f]{40}$/i.test(deployedSha)){
+  fail('ATLAS_DEPLOYED_SHA must be an exact 40-character Git commit SHA.');
+}
+
+if (!process.exitCode) console.log(`ATLAS Cloudflare production configuration is structurally ready for ${deployedSha}.`);
