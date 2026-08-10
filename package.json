@@ -5,7 +5,8 @@
   "description": "ATLAS Enterprise Suite clean production foundation with provider-independent core services",
   "author": "ATLAS Health Frontiers <atlashealthfrontiers@gmail.com>",
   "scripts": {
-    "validate": "node scripts/validate.mjs",
+    "test:core": "node scripts/runtime-test.mjs",
+    "validate": "node scripts/validate.mjs && npm run test:core",
     "build": "node scripts/build.mjs",
     "start": "npx serve dist -l 4173",
     "deploy": "npx wrangler@4 pages deploy dist --project-name atlas-enterprise-suite"
