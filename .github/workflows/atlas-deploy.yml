@@ -48,6 +48,17 @@ jobs:
       - name: Resolve or provision D1 and generate runtime config
         run: node scripts/cloudflare-provision.mjs
 
+      - name: Create verified pre-migration D1 backup
+        run: node scripts/cloudflare-backup.mjs predeploy
+
+      - name: Preserve pre-migration backup
+        uses: actions/upload-artifact@v7
+        with:
+          name: atlas-d1-predeploy-${{ github.sha }}
+          path: backups/
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Apply D1 migrations
         run: npx --yes wrangler@4 d1 migrations apply DB --remote --config .wrangler.runtime.json
 
