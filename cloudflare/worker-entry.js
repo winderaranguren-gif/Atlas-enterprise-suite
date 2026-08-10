@@ -1,7 +1,8 @@
 import baseWorker from './worker.js';
 import {handleGpsApi} from './gps-gateway.js';
+import {handleMusicApi} from './music-gateway.js';
 
-const GPS_HEADERS=Object.freeze({
+const EDGE_HEADERS=Object.freeze({
   'X-Content-Type-Options':'nosniff',
   'Referrer-Policy':'strict-origin-when-cross-origin',
   'X-Frame-Options':'DENY',
@@ -13,7 +14,7 @@ const GPS_HEADERS=Object.freeze({
 
 function secure(response){
   const headers=new Headers(response.headers);
-  for(const [name,value] of Object.entries(GPS_HEADERS))headers.set(name,value);
+  for(const [name,value] of Object.entries(EDGE_HEADERS))headers.set(name,value);
   return new Response(response.body,{status:response.status,statusText:response.statusText,headers});
 }
 
@@ -23,6 +24,11 @@ export default {
     if(url.pathname.startsWith('/api/gps/')){
       const base={requestId:crypto.randomUUID(),at:new Date().toISOString()};
       const response=await handleGpsApi(request,url,env,base);
+      if(response)return secure(response);
+    }
+    if(url.pathname.startsWith('/api/music/')){
+      const base={requestId:crypto.randomUUID(),at:new Date().toISOString()};
+      const response=await handleMusicApi(request,url,env,base);
       if(response)return secure(response);
     }
     return baseWorker.fetch(request,env);
