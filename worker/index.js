@@ -22,6 +22,40 @@ async function ensureRepairTables(env){
  )`).run();
 }
 
+async function ensureCrmTable(env,table){
+ await env.DB.prepare(`CREATE TABLE IF NOT EXISTS ${table} (
+   id TEXT PRIMARY KEY,
+   organization_id TEXT NOT NULL,
+   dba_id TEXT NOT NULL,
+   name TEXT NOT NULL DEFAULT '',
+   email TEXT DEFAULT '',
+   status TEXT DEFAULT 'active',
+   stage TEXT DEFAULT 'new',
+   owner TEXT DEFAULT '',
+   amount REAL,
+   payload TEXT DEFAULT '{}',
+   created_at TEXT NOT NULL,
+   updated_at TEXT NOT NULL
+ )`).run();
+ await env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_${table}_scope ON ${table}(organization_id,dba_id,updated_at)`).run();
+}
+
+async function ensureCoreSchema(env){
+ await ensureRepairTables(env);
+ for(const table of Object.values(TYPES)) await ensureCrmTable(env,table);
+ await env.DB.prepare(`CREATE TABLE IF NOT EXISTS audit_log (
+   id TEXT PRIMARY KEY,
+   organization_id TEXT NOT NULL,
+   dba_id TEXT NOT NULL,
+   action TEXT NOT NULL,
+   resource_type TEXT NOT NULL,
+   resource_id TEXT NOT NULL,
+   payload TEXT DEFAULT '{}',
+   created_at TEXT NOT NULL
+ )`).run();
+ await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_audit_scope ON audit_log(organization_id,dba_id,created_at)').run();
+}
+
 async function logRepair(env,component,action,result,details={}){
  await env.DB.prepare('INSERT INTO atlas_repair_log(id,component,action,result,details,created_at) VALUES(?,?,?,?,?,?)')
   .bind(id(),component,action,result,JSON.stringify(details),new Date().toISOString()).run();
@@ -36,7 +70,6 @@ async function setHealth(env,component,status,details={}){
 
 async function selfRepair(env){
  if(!env.DB) return {operational:false,error:'D1 binding DB is not configured'};
- await ensureRepairTables(env);
  const report={checkedAt:new Date().toISOString(),repairs:[],blocked:[]};
 
  try{
@@ -47,16 +80,26 @@ async function selfRepair(env){
   return report;
  }
 
- const schema=await env.DB.prepare("SELECT name FROM sqlite_schema WHERE type='table'").all();
- const existing=new Set((schema.results||[]).map(r=>r.name));
- for(const table of EXPECTED_TABLES){
-  if(!existing.has(table)){
-   await logRepair(env,'schema','detect_missing_table','blocked',{table});
-   report.blocked.push({component:'schema',table,reason:'migration_required'});
-  }
+ try{
+  await ensureCoreSchema(env);
+  report.repairs.push({component:'schema',action:'ensure_core_schema',result:'ok'});
+  await logRepair(env,'schema','ensure_core_schema','ok',{tables:EXPECTED_TABLES});
+ }catch(e){
+  report.blocked.push({component:'schema',error:e.message});
+  await ensureRepairTables(env);
+  await logRepair(env,'schema','ensure_core_schema','blocked',{error:e.message});
  }
 
- // Safe, reversible maintenance only.
+ const schema=await env.DB.prepare("SELECT name FROM sqlite_schema WHERE type='table'").all();
+ const existing=new Set((schema.results||[]).map(r=>r.name));
+ const missing=EXPECTED_TABLES.filter(table=>!existing.has(table));
+ if(missing.length){
+  report.blocked.push({component:'schema',reason:'tables_missing_after_repair',tables:missing});
+  await setHealth(env,'schema','blocked',{missing});
+ }else{
+  await setHealth(env,'schema','healthy',{tables:EXPECTED_TABLES.length});
+ }
+
  try{
   const staleCutoff=new Date(Date.now()-24*60*60*1000).toISOString();
   const cleanup=await env.DB.prepare('DELETE FROM atlas_repair_log WHERE created_at < ?').bind(staleCutoff).run();
@@ -66,10 +109,9 @@ async function selfRepair(env){
   report.blocked.push({component:'repair-log',error:e.message});
  }
 
- const crmTables=Object.values(TYPES);
- const missingCrm=crmTables.filter(t=>!existing.has(t));
+ const missingCrm=Object.values(TYPES).filter(t=>!existing.has(t));
  if(missingCrm.length===0){
-  await setHealth(env,'crm','healthy',{tables:crmTables.length});
+  await setHealth(env,'crm','healthy',{tables:Object.values(TYPES).length});
  }else{
   await setHealth(env,'crm','blocked',{missingTables:missingCrm});
  }
@@ -91,7 +133,7 @@ export default {
   }
   if(url.pathname==='/api/system/health' && request.method==='GET'){
    if(!env.DB) return json({operational:false,error:'D1 binding DB is not configured'},503);
-   await ensureRepairTables(env);
+   await ensureCoreSchema(env);
    const r=await env.DB.prepare('SELECT * FROM atlas_system_health ORDER BY component').all();
    return json({operational:true,components:r.results||[]});
   }
@@ -99,8 +141,8 @@ export default {
   if(!url.pathname.startsWith('/api/crm/')) return env.ASSETS?env.ASSETS.fetch(request):new Response('Not found',{status:404});
   if(!env.DB) return json({operational:false,error:'D1 binding DB is not configured'},503);
   try{
+   await ensureCoreSchema(env);
    if(url.pathname==='/api/crm/health'){
-    await env.DB.prepare('SELECT 1 AS ok').first();
     const schema=await env.DB.prepare("SELECT name FROM sqlite_schema WHERE type='table'").all();
     const existing=new Set((schema.results||[]).map(r=>r.name));
     const missing=Object.values(TYPES).filter(t=>!existing.has(t));
