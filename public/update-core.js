@@ -1,6 +1,7 @@
 (()=>{
   const RELEASE_URL='/atlas.release.json';
   const FINGERPRINT_URL='/api/system/release-fingerprint';
+  const READINESS_URL='/api/system/readiness';
   const POLL_MS=60_000;
   const storageKey='atlas.release.id';
   let applying=false;
@@ -19,6 +20,13 @@
     return fingerprint;
   }
 
+  async function fetchRuntimeReadiness(){
+    const res=await fetch(`${READINESS_URL}?t=${Date.now()}`,{cache:'no-store',headers:{'cache-control':'no-cache'}});
+    const readiness=await res.json().catch(()=>({}));
+    if(!res.ok||readiness?.operational!==true) throw new Error('runtime_not_ready');
+    return readiness;
+  }
+
   function canAutoApply(release){
     return release?.autoApply===true&&
       release?.productionReady===true&&
@@ -29,13 +37,13 @@
 
   async function releaseMatchesRuntime(release){
     if(!canAutoApply(release)) return false;
-    const fingerprint=await fetchRuntimeFingerprint();
-    return String(fingerprint.sourceSha).toLowerCase()===String(release.expectedSourceSha).toLowerCase();
+    const [fingerprint,readiness]=await Promise.all([fetchRuntimeFingerprint(),fetchRuntimeReadiness()]);
+    return readiness.operational===true&&String(fingerprint.sourceSha).toLowerCase()===String(release.expectedSourceSha).toLowerCase();
   }
 
   async function applyWebUpdate(release){
     if(!canAutoApply(release)) throw new Error('release_not_promoted_for_auto_apply');
-    if(!(await releaseMatchesRuntime(release))) throw new Error('release_runtime_sha_mismatch');
+    if(!(await releaseMatchesRuntime(release))) throw new Error('release_runtime_sha_or_readiness_mismatch');
     if(applying) return;
     applying=true;
     try{
@@ -60,7 +68,7 @@
         if(canAutoApply(release)){
           const matches=await releaseMatchesRuntime(release);
           if(matches) await applyWebUpdate(release);
-          else window.dispatchEvent(new CustomEvent('atlas:update-blocked',{detail:{release,reason:'runtime_sha_mismatch'}}));
+          else window.dispatchEvent(new CustomEvent('atlas:update-blocked',{detail:{release,reason:'runtime_sha_or_readiness_mismatch'}}));
         }else{
           window.dispatchEvent(new CustomEvent('atlas:update-blocked',{detail:{release,reason:'production_e2e_or_fingerprint_gate_not_met'}}));
         }
@@ -72,7 +80,7 @@
     }
   }
 
-  window.ATLASUpdateCore={check,fetchRelease,fetchRuntimeFingerprint,applyWebUpdate,canAutoApply,releaseMatchesRuntime};
+  window.ATLASUpdateCore={check,fetchRelease,fetchRuntimeFingerprint,fetchRuntimeReadiness,applyWebUpdate,canAutoApply,releaseMatchesRuntime};
   addEventListener('load',()=>{check();setInterval(check,POLL_MS)});
   addEventListener('online',check);
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')check()});
