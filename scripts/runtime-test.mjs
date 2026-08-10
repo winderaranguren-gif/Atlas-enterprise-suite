@@ -1,0 +1,80 @@
+import fs from 'node:fs';
+import vm from 'node:vm';
+import cryptoMod from 'node:crypto';
+
+const memory=new Map();
+const sessionStorage={
+  getItem:key=>memory.has(key)?memory.get(key):null,
+  setItem:(key,value)=>memory.set(key,String(value)),
+  removeItem:key=>memory.delete(key)
+};
+class CustomEvent{constructor(type,{detail}={}){this.type=type;this.detail=detail;}}
+const dispatched=[];
+const window={dispatchEvent:event=>{dispatched.push(event);return true;},addEventListener(){}};
+const context={
+  window,sessionStorage,CustomEvent,navigator:{onLine:true},crypto:cryptoMod.webcrypto,console,setTimeout,clearTimeout,
+  Map,Set,Date,Math,JSON,String,Boolean,Error,TypeError,Object,Array,Promise
+};
+vm.createContext(context);
+vm.runInContext(fs.readFileSync('public/core-services.js','utf8'),context);
+
+const core=window.ATLASCoreServices;
+const config=JSON.parse(fs.readFileSync('atlas.config.json','utf8'));
+core.configure(config);
+const assertions=[];
+const ok=(name,condition)=>{if(!condition)throw new Error(`FAILED: ${name}`);assertions.push(name);};
+
+ok('core service API exists',Boolean(core?.DataFabric&&core?.EventFabric&&core?.Identity&&core?.Intelligence&&core?.AgentFabric&&core?.WorkGraph&&core?.Integrations));
+ok('Data Fabric backend is verified',core.DataFabric.status().backendVerified===true);
+let dataBlocked=false;
+try{await core.DataFabric.list('customers');}catch(error){dataBlocked=/not connected/.test(error.message);}
+ok('Data Fabric fails closed without adapter',dataBlocked);
+
+core.EventFabric.emit('inventory.stock.low','inventory',{payload:{sku:'A-1',qty:1}});
+ok('Intelligence creates low-stock signal',core.Intelligence.signals().some(signal=>signal.signalType==='reorder-required'));
+
+const project=core.WorkGraph.createProject('Runtime validation');
+const a=core.WorkGraph.createWorkUnit(project.id,'A');
+const b=core.WorkGraph.createWorkUnit(project.id,'B');
+const c=core.WorkGraph.createWorkUnit(project.id,'C');
+core.WorkGraph.addDependency(a.id,b.id);
+core.WorkGraph.addDependency(b.id,c.id);
+let cycleBlocked=false;
+try{core.WorkGraph.addDependency(c.id,a.id);}catch(error){cycleBlocked=/cycle/.test(error.message);}
+ok('Work Graph rejects dependency cycle',cycleBlocked);
+core.WorkGraph.addEvidence(a.id,'test','runtime evidence',{passed:true});
+ok('Work Graph records evidence',core.WorkGraph.snapshot().evidence.length===1);
+
+let plan=core.AgentFabric.plan('deploy production',{approved:true});
+ok('high-risk skill stays plan-only without Identity permission',plan.mode==='plan-only');
+core.Identity.registerAdapter({
+  current:()=>({userId:'u1',permissions:['organization.manage','core.read']}),
+  can:permission=>['organization.manage','core.read'].includes(permission)
+});
+plan=core.AgentFabric.plan('deploy production',{approved:false});
+ok('high-risk skill requires explicit approval',plan.mode==='plan-only');
+plan=core.AgentFabric.plan('deploy production',{approved:true});
+ok('high-risk skill executes after permission plus approval',plan.mode==='execute');
+core.AgentFabric.registerHandler('deployment',async()=>({ok:true,detail:'validated deployment handler'}));
+const run=await core.AgentFabric.execute('deploy production',{approved:true});
+ok('Agent Fabric executes handler with fresh verification',run.status==='completed'&&run.verification?.performed===true);
+
+core.Integrations.register('example',{kind:'api'});
+let unhealthyBlocked=false;
+try{await core.Integrations.connect('example',{health:async()=>({ok:false})});}catch{unhealthyBlocked=true;}
+ok('integration rejects failed health check',unhealthyBlocked&&core.Integrations.status().connected===0);
+await core.Integrations.connect('example',{health:async()=>({ok:true})});
+ok('integration connects only after verified health',core.Integrations.status().connected===1);
+core.Integrations.disconnect('example');
+ok('integration disconnect clears verified state',core.Integrations.status().connected===0);
+
+const musicContext={window:{dispatchEvent:()=>true},CustomEvent,console,Math,Object,Array,String,Error};
+vm.createContext(musicContext);
+vm.runInContext(fs.readFileSync('public/music-core.js','utf8'),musicContext);
+const music=musicContext.window.ATLASMusicCore;
+const catalog=music.catalog();
+ok('Music has six ATLAS Originals',catalog.length===6);
+ok('Music catalog is provider-independent',music.status().providerIndependent===true&&catalog.every(track=>track.rights.externalProvider===false));
+
+console.log(`ATLAS runtime tests passed: ${assertions.length}`);
+for(const name of assertions)console.log(`PASS ${name}`);
