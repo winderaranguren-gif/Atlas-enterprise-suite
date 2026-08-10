@@ -1,19 +1,37 @@
 {
   "product": "ATLAS Enterprise Suite",
-  "version": "1.2.0",
+  "version": "1.4.4-rc.1",
   "contact": "atlashealthfrontiers@gmail.com",
-  "architecture": "ATLAS Global Core -> Region -> Country -> Organization -> User",
-  "defaultRegion": "north-america",
-  "regions": ["global","north-america","central-america","caribbean","south-america","europe","africa","asia","oceania","antarctica-research"],
-  "modules": ["Core","CRM & Sales","Accounts Receivable","Accounts Payable","Accounting & General Ledger","Inventory","HR & Payroll","Reports & Intelligence","Freight Network","Fleet Intelligence","Documents & Sign","Wallet","Ride","Marketplace","Rewards","Cars","Health","Public Safety","Community Hub","Calendar","GPS 4D","Technical Support","Work Graph","Agent Fabric","Music","Settings"],
-  "services": {
-    "dataFabric": {"status":"verified","backendVerified":true,"mode":"same-origin-adapter"},
-    "eventFabric": {"status":"active","backendVerified":true,"mode":"atlas-native"},
-    "identity": {"status":"verified","backendVerified":true,"mode":"same-origin-adapter"},
-    "intelligence": {"status":"active","mode":"atlas-native"},
-    "agentFabric": {"status":"active","mode":"atlas-native"},
-    "workGraph": {"status":"active","backendVerified":true,"mode":"atlas-native"},
-    "music": {"status":"active","mode":"atlas-originals"},
-    "integrations": {"status":"ready","mode":"verified-same-origin-adapters"}
+  "architecture": "ATLAS Global Core -> Region -> Country -> Organization -> DBA -> User",
+  "defaultLanguage": "en",
+  "supportedLanguages": ["en", "es"],
+  "languageSelector": true,
+  "commercialPilot": {
+    "status": "implemented-not-operational",
+    "storage": "Cloudflare D1",
+    "worker": "Cloudflare Workers",
+    "backupStorage": "Cloudflare R2",
+    "scope": "organization_id + dba_id",
+    "modules": {
+      "usersPermissions": "implemented-not-operational",
+      "crm": "implemented-not-operational",
+      "documents": "implemented-not-operational",
+      "accounting": "implemented-not-operational",
+      "backups": "implemented-not-operational"
+    },
+    "blockers": [
+      "real D1 database_name",
+      "real D1 database_id",
+      "real R2 BACKUPS bucket binding",
+      "ATLAS_BOOTSTRAP_TOKEN deployment secret",
+      "exact-SHA Cloudflare deployment",
+      "successful production E2E"
+    ]
+  },
+  "updateFabric": {
+    "status": "gated",
+    "manifest": "/atlas.release.json",
+    "automaticApplyRequires": ["productionReady", "verifiedE2E", "autoApply"],
+    "currentCandidateAutoApply": false
   }
 }
