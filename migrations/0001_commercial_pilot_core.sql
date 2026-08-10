@@ -53,24 +53,84 @@ CREATE TABLE IF NOT EXISTS crm_accounts (
 );
 CREATE INDEX IF NOT EXISTS idx_crm_accounts_scope ON crm_accounts(organization_id, dba_id, updated_at);
 
-CREATE TABLE IF NOT EXISTS crm_contacts AS SELECT * FROM crm_accounts WHERE 0;
-CREATE UNIQUE INDEX IF NOT EXISTS idx_crm_contacts_id ON crm_contacts(id);
+CREATE TABLE IF NOT EXISTS crm_contacts (
+  id TEXT PRIMARY KEY,
+  organization_id TEXT NOT NULL,
+  dba_id TEXT NOT NULL,
+  name TEXT NOT NULL DEFAULT '',
+  email TEXT DEFAULT '',
+  status TEXT DEFAULT 'active',
+  stage TEXT DEFAULT 'new',
+  owner TEXT DEFAULT '',
+  amount REAL,
+  payload TEXT DEFAULT '{}',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
 CREATE INDEX IF NOT EXISTS idx_crm_contacts_scope ON crm_contacts(organization_id, dba_id, updated_at);
 
-CREATE TABLE IF NOT EXISTS crm_leads AS SELECT * FROM crm_accounts WHERE 0;
-CREATE UNIQUE INDEX IF NOT EXISTS idx_crm_leads_id ON crm_leads(id);
+CREATE TABLE IF NOT EXISTS crm_leads (
+  id TEXT PRIMARY KEY,
+  organization_id TEXT NOT NULL,
+  dba_id TEXT NOT NULL,
+  name TEXT NOT NULL DEFAULT '',
+  email TEXT DEFAULT '',
+  status TEXT DEFAULT 'active',
+  stage TEXT DEFAULT 'new',
+  owner TEXT DEFAULT '',
+  amount REAL,
+  payload TEXT DEFAULT '{}',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
 CREATE INDEX IF NOT EXISTS idx_crm_leads_scope ON crm_leads(organization_id, dba_id, updated_at);
 
-CREATE TABLE IF NOT EXISTS crm_opportunities AS SELECT * FROM crm_accounts WHERE 0;
-CREATE UNIQUE INDEX IF NOT EXISTS idx_crm_opportunities_id ON crm_opportunities(id);
+CREATE TABLE IF NOT EXISTS crm_opportunities (
+  id TEXT PRIMARY KEY,
+  organization_id TEXT NOT NULL,
+  dba_id TEXT NOT NULL,
+  name TEXT NOT NULL DEFAULT '',
+  email TEXT DEFAULT '',
+  status TEXT DEFAULT 'active',
+  stage TEXT DEFAULT 'new',
+  owner TEXT DEFAULT '',
+  amount REAL,
+  payload TEXT DEFAULT '{}',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
 CREATE INDEX IF NOT EXISTS idx_crm_opportunities_scope ON crm_opportunities(organization_id, dba_id, updated_at);
 
-CREATE TABLE IF NOT EXISTS crm_tasks AS SELECT * FROM crm_accounts WHERE 0;
-CREATE UNIQUE INDEX IF NOT EXISTS idx_crm_tasks_id ON crm_tasks(id);
+CREATE TABLE IF NOT EXISTS crm_tasks (
+  id TEXT PRIMARY KEY,
+  organization_id TEXT NOT NULL,
+  dba_id TEXT NOT NULL,
+  name TEXT NOT NULL DEFAULT '',
+  email TEXT DEFAULT '',
+  status TEXT DEFAULT 'active',
+  stage TEXT DEFAULT 'new',
+  owner TEXT DEFAULT '',
+  amount REAL,
+  payload TEXT DEFAULT '{}',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
 CREATE INDEX IF NOT EXISTS idx_crm_tasks_scope ON crm_tasks(organization_id, dba_id, updated_at);
 
-CREATE TABLE IF NOT EXISTS crm_activity AS SELECT * FROM crm_accounts WHERE 0;
-CREATE UNIQUE INDEX IF NOT EXISTS idx_crm_activity_id ON crm_activity(id);
+CREATE TABLE IF NOT EXISTS crm_activity (
+  id TEXT PRIMARY KEY,
+  organization_id TEXT NOT NULL,
+  dba_id TEXT NOT NULL,
+  name TEXT NOT NULL DEFAULT '',
+  email TEXT DEFAULT '',
+  status TEXT DEFAULT 'active',
+  stage TEXT DEFAULT 'new',
+  owner TEXT DEFAULT '',
+  amount REAL,
+  payload TEXT DEFAULT '{}',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
 CREATE INDEX IF NOT EXISTS idx_crm_activity_scope ON crm_activity(organization_id, dba_id, updated_at);
 
 CREATE TABLE IF NOT EXISTS audit_log (
