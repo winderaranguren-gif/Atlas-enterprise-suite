@@ -28,6 +28,8 @@ const documentsHealth=await call('/api/documents/health',{scope:false});
 mark('Documents D1 health',documentsHealth.status===200&&documentsHealth.data.operational===true,JSON.stringify(documentsHealth));
 const accountingHealth=await call('/api/accounting/health',{scope:false});
 mark('Accounting D1 health',accountingHealth.status===200&&accountingHealth.data.operational===true&&accountingHealth.data.money_model==='integer-cents',JSON.stringify(accountingHealth));
+const backupsHealth=await call('/api/backups/health',{scope:false});
+mark('Backups D1 + R2 health',backupsHealth.status===200&&backupsHealth.data.operational===true&&backupsHealth.data.storage==='R2'&&backupsHealth.data.restore_operational===false,JSON.stringify(backupsHealth));
 
 const unauth=await call('/api/crm/accounts');
 mark('CRM rejects missing session',unauth.status===401,JSON.stringify(unauth));
@@ -35,6 +37,8 @@ const unauthDocuments=await call('/api/documents');
 mark('Documents rejects missing session',unauthDocuments.status===401,JSON.stringify(unauthDocuments));
 const unauthAccounting=await call('/api/accounting/accounts');
 mark('Accounting rejects missing session',unauthAccounting.status===401,JSON.stringify(unauthAccounting));
+const unauthBackups=await call('/api/backups');
+mark('Backups rejects missing session',unauthBackups.status===401,JSON.stringify(unauthBackups));
 
 const boot=await call('/api/admin/bootstrap',{method:'POST',scope:false,bootstrapToken:bootstrap,body:{email:ownerEmail,display_name:'ATLAS E2E Owner',organization_id:org,dba_id:dba}});
 mark('Owner bootstrap',boot.status===201&&typeof boot.data.session_token==='string',JSON.stringify({...boot,data:{...boot.data,session_token:boot.data.session_token?'[redacted]':undefined}}));
@@ -48,6 +52,8 @@ const crossDocuments=await call('/api/documents',{token:ownerToken,scopeDba:othe
 mark('Documents cross-DBA access denied',crossDocuments.status===403,JSON.stringify(crossDocuments));
 const crossAccounting=await call('/api/accounting/accounts',{token:ownerToken,scopeDba:otherDba});
 mark('Accounting cross-DBA access denied',crossAccounting.status===403,JSON.stringify(crossAccounting));
+const crossBackups=await call('/api/backups',{token:ownerToken,scopeDba:otherDba});
+mark('Backups cross-DBA access denied',crossBackups.status===403,JSON.stringify(crossBackups));
 
 const createdUser=await call('/api/users',{method:'POST',token:ownerToken,body:{email:'atlas-e2e-viewer@example.invalid',display_name:'ATLAS E2E Viewer',role:'viewer'}});
 mark('Scoped user creation',createdUser.status===201&&createdUser.data.user_id,JSON.stringify(createdUser));
@@ -79,23 +85,31 @@ const cash=await call('/api/accounting/accounts',{method:'POST',token:ownerToken
 mark('Accounting creates debit-normal account',cash.status===201&&cash.data.normal_balance==='debit',JSON.stringify(cash));
 const revenue=await call('/api/accounting/accounts',{method:'POST',token:ownerToken,body:{code:'4000',name:'Service Revenue',account_type:'revenue'}});
 mark('Accounting creates credit-normal account',revenue.status===201&&revenue.data.normal_balance==='credit',JSON.stringify(revenue));
-
 const unbalanced=await call('/api/accounting/journal',{method:'POST',token:ownerToken,body:{entry_number:'E2E-UNBALANCED',entry_date:'2026-08-10',currency:'USD',lines:[{account_id:cash.data.id,debit_cents:10000,credit_cents:0},{account_id:revenue.data.id,debit_cents:0,credit_cents:9000}]}});
 mark('Accounting rejects unbalanced journal',unbalanced.status===400,JSON.stringify(unbalanced));
-
 const posted=await call('/api/accounting/journal',{method:'POST',token:ownerToken,body:{entry_number:'E2E-0001',entry_date:'2026-08-10',memo:'ATLAS E2E balanced entry',currency:'USD',lines:[{account_id:cash.data.id,description:'Cash received',debit_cents:10000,credit_cents:0},{account_id:revenue.data.id,description:'Revenue earned',debit_cents:0,credit_cents:10000}]}});
 mark('Accounting posts balanced journal',posted.status===201&&posted.data.total_debit_cents===10000&&posted.data.total_credit_cents===10000,JSON.stringify(posted));
-
 const journalDetail=await call(`/api/accounting/journal/${posted.data.id}`,{token:ownerToken});
 mark('Accounting reads posted journal',journalDetail.status===200&&journalDetail.data.entry?.id===posted.data.id&&Array.isArray(journalDetail.data.lines)&&journalDetail.data.lines.length===2,JSON.stringify(journalDetail));
-
 const trialBalance=await call('/api/accounting/trial-balance',{token:ownerToken});
 mark('Accounting trial balance remains balanced',trialBalance.status===200&&trialBalance.data.balanced===true&&trialBalance.data.total_debit_cents===10000&&trialBalance.data.total_credit_cents===10000,JSON.stringify(trialBalance));
+
+const backup=await call('/api/backups',{method:'POST',token:ownerToken});
+mark('Scoped R2 backup created',backup.status===201&&backup.data.id&&typeof backup.data.sha256==='string'&&backup.data.record_count>0,JSON.stringify(backup));
+const backupId=backup.data.id;
+const verifyBackup=await call(`/api/backups/${backupId}/verify`,{method:'POST',token:ownerToken});
+mark('Backup object SHA-256 verified',verifyBackup.status===200&&verifyBackup.data.ok===true&&verifyBackup.data.expected_sha256===backup.data.sha256&&verifyBackup.data.actual_sha256===backup.data.sha256,JSON.stringify(verifyBackup));
+const restoreTest=await call(`/api/backups/${backupId}/restore-test`,{method:'POST',token:ownerToken});
+mark('Backup non-destructive restore test passes',restoreTest.status===200&&restoreTest.data.ok===true&&restoreTest.data.non_destructive===true&&restoreTest.data.actual_restore_performed===false,JSON.stringify(restoreTest));
+const backupList=await call('/api/backups',{token:ownerToken});
+mark('Backup manifest recorded',backupList.status===200&&Array.isArray(backupList.data.backups)&&backupList.data.backups.some(x=>x.id===backupId&&x.status==='restore-tested'),JSON.stringify(backupList));
 
 const audit=await call('/api/audit',{token:ownerToken});
 mark('Audit trail contains CRM create',audit.status===200&&Array.isArray(audit.data.events)&&audit.data.events.some(x=>x.action==='create'&&x.resource_id===createdCrm.data.id),JSON.stringify(audit));
 mark('Audit trail contains Document version',audit.status===200&&audit.data.events.some(x=>x.action==='create_version'&&x.resource_id===documentId),JSON.stringify(audit));
 mark('Audit trail contains posted journal',audit.status===200&&audit.data.events.some(x=>x.action==='post'&&x.resource_id===posted.data.id),JSON.stringify(audit));
+mark('Audit trail contains backup verification',audit.status===200&&audit.data.events.some(x=>x.action==='backup_verify'&&x.resource_id===backupId),JSON.stringify(audit));
+mark('Audit trail contains restore test',audit.status===200&&audit.data.events.some(x=>x.action==='backup_restore_test'&&x.resource_id===backupId),JSON.stringify(audit));
 
 const suspend=await call(`/api/users/${viewerId}`,{method:'PATCH',token:ownerToken,body:{status:'suspended'}});
 mark('Membership suspension',suspend.status===200&&suspend.data.status==='suspended',JSON.stringify(suspend));
@@ -107,5 +121,7 @@ const documentsAfterLogout=await call('/api/documents',{token:ownerToken});
 mark('Revoked session rejected by Documents',documentsAfterLogout.status===401,JSON.stringify(documentsAfterLogout));
 const accountingAfterLogout=await call('/api/accounting/accounts',{token:ownerToken});
 mark('Revoked session rejected by Accounting',accountingAfterLogout.status===401,JSON.stringify(accountingAfterLogout));
+const backupsAfterLogout=await call('/api/backups',{token:ownerToken});
+mark('Revoked session rejected by Backups',backupsAfterLogout.status===401,JSON.stringify(backupsAfterLogout));
 
 console.log(JSON.stringify({ok:true,base,organization:org,dba,checks},null,2));
