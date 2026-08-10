@@ -1,6 +1,7 @@
 import core from './index.js';
 import { handleDocuments } from './documents.js';
 import { handleAccounting } from './accounting.js';
+import { handleBackups } from './backups.js';
 
 export default {
   async fetch(request,env,ctx){
@@ -11,6 +12,10 @@ export default {
     }
     if(url.pathname.startsWith('/api/accounting')){
       const response=await handleAccounting(request,env,ctx);
+      if(response) return response;
+    }
+    if(url.pathname.startsWith('/api/backups')){
+      const response=await handleBackups(request,env,ctx);
       if(response) return response;
     }
     return core.fetch(request,env,ctx);
