@@ -20,7 +20,10 @@ try {
 }
 
 if (config.name !== 'atlas-enterprise-suite') fail('Worker name must remain atlas-enterprise-suite.');
-if (config.main !== 'worker/index.js') fail('Worker entry point must be worker/index.js.');
+if (config.main !== 'worker/router.js') fail('Worker entry point must be worker/router.js.');
+if (!fs.existsSync(new URL('../worker/router.js', import.meta.url))) fail('worker/router.js is missing.');
+if (!fs.existsSync(new URL('../worker/index.js', import.meta.url))) fail('worker/index.js is missing.');
+if (!fs.existsSync(new URL('../worker/documents.js', import.meta.url))) fail('worker/documents.js is missing.');
 if (config.assets?.binding !== 'ASSETS') fail('Static assets binding ASSETS is required.');
 if (config.assets?.run_worker_first !== true) fail('run_worker_first must be true so API routes cannot be bypassed by assets.');
 
