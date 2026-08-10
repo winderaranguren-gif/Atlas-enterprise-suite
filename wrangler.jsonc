@@ -3,7 +3,7 @@
   "name": "atlas-enterprise-suite",
   "main": "cloudflare/worker-entry.js",
   "compatibility_date": "2026-07-30",
-  "workers_dev": true,
+  "workers_dev": false,
   "build": {
     "command": "node scripts/cloudflare-build-router.js"
   },
@@ -15,6 +15,20 @@
     {
       "pattern": "www.atlasenterprisesuite.com",
       "custom_domain": true
+    }
+  ],
+  "vars": {
+    "ATLAS_SUPABASE_URL": "https://ggmanzcgtlrvqfoccgsh.supabase.co",
+    "ATLAS_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_wicVjdsduxa5FAnRW9k0Lw_HxtBW72d"
+  },
+  "ratelimits": [
+    {
+      "name": "ATLAS_API_RATE_LIMITER",
+      "namespace_id": "821907451",
+      "simple": {
+        "limit": 120,
+        "period": 60
+      }
     }
   ],
   "assets": {
