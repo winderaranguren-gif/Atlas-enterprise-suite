@@ -1,10 +1,13 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ATLAS Enterprise Suite</title>
-<style>body{font-family:Inter,system-ui,sans-serif;margin:0;background:#0b1020;color:#eef2ff}header{display:flex;justify-content:space-between;align-items:center;padding:20px 28px;border-bottom:1px solid #24304d}main{padding:28px;max-width:1100px;margin:auto}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}.card{background:#121a2f;border:1px solid #273453;border-radius:16px;padding:18px}.muted{color:#a7b0c5}select{background:#121a2f;color:#eef2ff;border:1px solid #465474;border-radius:10px;padding:8px}</style></head>
-<body><header><strong>ATLAS Enterprise Suite</strong><label><span id="languageLabel">Language</span> <select id="locale"><option value="en">English</option><option value="es">Español</option></select></label></header>
-<main><h1 id="title">Commercial Pilot</h1><p id="subtitle" class="muted">Production modules backed by Cloudflare Workers, D1 and R2.</p><div class="grid" id="modules"></div></main>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ATLAS</title></head>
+<body>
+<main><h1>ATLAS</h1><p>Production deployment baseline</p><label>Language <select id="language"><option value="en">English</option><option value="es">Español</option></select></label></main>
 <script>
-const copy={en:{language:'Language',title:'Commercial Pilot',subtitle:'Production modules backed by Cloudflare Workers, D1 and R2.',modules:['Users & Permissions','CRM','Documents','Accounting','Backups','Audit Trail']},es:{language:'Idioma',title:'Piloto Comercial',subtitle:'Módulos de producción respaldados por Cloudflare Workers, D1 y R2.',modules:['Usuarios y Permisos','CRM','Documentos','Contabilidad','Respaldos','Auditoría']}};
-const select=document.querySelector('#locale');select.value=localStorage.getItem('atlas_locale')||'en';function render(){const c=copy[select.value]||copy.en;document.documentElement.lang=select.value;document.querySelector('#languageLabel').textContent=c.language;document.querySelector('#title').textContent=c.title;document.querySelector('#subtitle').textContent=c.subtitle;document.querySelector('#modules').innerHTML=c.modules.map(x=>`<section class="card"><h2>${x}</h2><p class="muted">API-backed module</p></section>`).join('');localStorage.setItem('atlas_locale',select.value)}select.addEventListener('change',render);render();
-</script></body></html>
+const language=document.getElementById('language');
+const saved=localStorage.getItem('atlas.language');
+language.value=saved==='es'?'es':'en';
+document.documentElement.lang=language.value;
+language.addEventListener('change',()=>{localStorage.setItem('atlas.language',language.value);document.documentElement.lang=language.value;});
+</script>
+</body></html>
