@@ -3,6 +3,8 @@ import fs from 'node:fs';
 const release=JSON.parse(fs.readFileSync(new URL('../public/atlas.release.json',import.meta.url),'utf8'));
 const update=fs.readFileSync(new URL('../public/update-core.js',import.meta.url),'utf8');
 const readiness=fs.readFileSync(new URL('../worker/system-readiness.js',import.meta.url),'utf8');
+const e2e=fs.readFileSync(new URL('./e2e-commercial-pilot.mjs',import.meta.url),'utf8');
+const productionWorkflow=fs.readFileSync(new URL('../.github/workflows/atlas-production-release.yml',import.meta.url),'utf8');
 const errors=[];
 const assert=(condition,message)=>{if(!condition) errors.push(message);};
 
@@ -15,11 +17,19 @@ assert(release.productionReady===false,'Unverified release candidate must have p
 assert(release.verifiedE2E===false,'Unverified release candidate must have verifiedE2E=false');
 assert(release.expectedSourceSha===null,'Unverified release candidate must not claim an expected source SHA');
 for(const token of ['productionReady','verifiedE2E','expectedSourceSha','releaseIsEligible','fetchFingerprint','fetchReadiness','release_not_eligible_for_auto_apply']) assert(update.includes(token),`Update core missing gate: ${token}`);
-for(const token of ['/api/system/readiness','/api/system/release-fingerprint','ATLAS_DEPLOYED_SHA','ATLAS_BOOTSTRAP_TOKEN','BACKUPS']) assert(readiness.includes(token),`Readiness module missing requirement: ${token}`);
+for(const token of ['/api/system/readiness','/api/system/release-fingerprint','ATLAS_DEPLOYED_SHA','ATLAS_RELEASE_VERIFIED_SHA','ATLAS_BOOTSTRAP_TOKEN','BACKUPS','infrastructureReady','releaseVerified']) assert(readiness.includes(token),`Readiness module missing requirement: ${token}`);
+assert(e2e.includes('/api/system/readiness?phase=preflight'),'Commercial E2E must use infrastructure preflight before release verification');
+assert(e2e.includes('infrastructureReady===true'),'Commercial E2E must require infrastructureReady before exercising production');
+for(const token of ['ATLAS_RELEASE_VERIFIED_SHA','Run exact-SHA commercial pilot E2E','Run password authentication E2E','Mark exact deployed SHA verified','Require final operational readiness','body.releaseVerified!==true','body.operational!==true']) assert(productionWorkflow.includes(token),`Production workflow missing runtime verification gate: ${token}`);
+const markIndex=productionWorkflow.indexOf('Mark exact deployed SHA verified');
+const commercialIndex=productionWorkflow.indexOf('Run exact-SHA commercial pilot E2E');
+const passwordIndex=productionWorkflow.indexOf('Run password authentication E2E');
+const finalIndex=productionWorkflow.indexOf('Require final operational readiness');
+assert(commercialIndex>=0&&passwordIndex>commercialIndex&&markIndex>passwordIndex&&finalIndex>markIndex,'Production verification marker must be written only after both E2E suites and before final readiness');
 
 if(errors.length){
   console.error(errors.join('\n'));
   process.exitCode=1;
 }else{
-  console.log('ATLAS update flow and English-first release gates validated.');
+  console.log('ATLAS update flow, exact-SHA runtime verification, and English-first release gates validated.');
 }
