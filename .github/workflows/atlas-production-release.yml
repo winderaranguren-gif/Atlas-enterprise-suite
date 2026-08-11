@@ -86,6 +86,7 @@ jobs:
         run: printf '%s' "$ATLAS_RELEASE_VERIFICATION_TOKEN" | npx --yes wrangler@4 secret put ATLAS_RELEASE_VERIFICATION_TOKEN --config wrangler.production.jsonc
 
       - name: Deploy exact SHA to Cloudflare Workers
+        id: deploy_exact_sha
         run: npx --yes wrangler@4 deploy --config wrangler.production.jsonc
 
       - name: Run exact-SHA commercial pilot E2E
@@ -140,3 +141,12 @@ jobs:
           path: release-evidence/production-verification.json
           if-no-files-found: error
           retention-days: 30
+
+      - name: Roll back failed Worker release
+        if: failure() && steps.deploy_exact_sha.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Post-deploy verification failed for ${GITHUB_SHA}; rolling Worker code back to the previously uploaded version."
+          npx --yes wrangler@4 rollback --message "ATLAS automated rollback after failed verification for ${GITHUB_SHA}" --config wrangler.production.jsonc
+          echo "Worker rollback command completed. D1 migrations are intentionally not reversed automatically."
