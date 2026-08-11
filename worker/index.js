@@ -1,5 +1,6 @@
 import { json, health } from '../platform/runtime/health.js';
 import { identityRoutes } from '../modules/identity/routes.js';
+import { crmRoutes } from '../modules/crm/routes.js';
 
 export default {
   async fetch(request,env){
@@ -8,6 +9,9 @@ export default {
 
     const identityResponse=await identityRoutes(request,env,url);
     if(identityResponse) return identityResponse;
+
+    const crmResponse=await crmRoutes(request,env,url);
+    if(crmResponse) return crmResponse;
 
     if(url.pathname.startsWith('/api/')) return json({ok:false,error:'not_implemented'},501);
     return env.ASSETS?env.ASSETS.fetch(request):new Response('ATLAS',{status:200});
