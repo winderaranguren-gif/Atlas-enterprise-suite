@@ -167,15 +167,25 @@ async function backups(request, env) {
     return json({backups:rows.results});
   }
   const tables={};
-  for(const [name,sql] of Object.entries({crm_contacts:`SELECT * FROM crm_contacts WHERE organization_id=? AND dba_id=?`,documents:`SELECT * FROM documents WHERE organization_id=? AND dba_id=?`,accounts:`SELECT * FROM accounts WHERE organization_id=? AND dba_id=?`,journal_entries:`SELECT * FROM journal_entries WHERE organization_id=? AND dba_id=?`})) {
+  const scopedQueries={
+    memberships:`SELECT * FROM memberships WHERE organization_id=? AND dba_id=?`,
+    users:`SELECT u.* FROM users u JOIN memberships m ON m.user_id=u.id WHERE m.organization_id=? AND m.dba_id=?`,
+    crm_contacts:`SELECT * FROM crm_contacts WHERE organization_id=? AND dba_id=?`,
+    documents:`SELECT * FROM documents WHERE organization_id=? AND dba_id=?`,
+    accounts:`SELECT * FROM accounts WHERE organization_id=? AND dba_id=?`,
+    journal_entries:`SELECT * FROM journal_entries WHERE organization_id=? AND dba_id=?`,
+    journal_lines:`SELECT jl.* FROM journal_lines jl JOIN journal_entries je ON je.id=jl.entry_id WHERE je.organization_id=? AND je.dba_id=?`,
+    audit_events:`SELECT * FROM audit_events WHERE organization_id=? AND dba_id=?`
+  };
+  for(const [name,sql] of Object.entries(scopedQueries)) {
     tables[name]=(await env.ATLAS_DB.prepare(sql).bind(auth.scope.organizationId,auth.scope.dbaId).all()).results;
   }
-  const serialized=JSON.stringify({schema_version:1,organization_id:auth.scope.organizationId,dba_id:auth.scope.dbaId,created_at:nowIso(),tables});
+  const serialized=JSON.stringify({schema_version:2,organization_id:auth.scope.organizationId,dba_id:auth.scope.dbaId,created_at:nowIso(),tables});
   const digest=await sha256(serialized), id=uid(), key=`${auth.scope.organizationId}/${auth.scope.dbaId}/${id}.json`;
-  await env.ATLAS_BACKUPS.put(key,serialized,{httpMetadata:{contentType:'application/json'},customMetadata:{sha256:digest}});
+  await env.ATLAS_BACKUPS.put(key,serialized,{httpMetadata:{contentType:'application/json'},customMetadata:{sha256:digest,schema_version:'2'}});
   await env.ATLAS_DB.prepare(`INSERT INTO backup_manifests(id,organization_id,dba_id,object_key,sha256,created_by) VALUES (?,?,?,?,?,?)`).bind(id,auth.scope.organizationId,auth.scope.dbaId,key,digest,auth.user.user_id).run();
   await audit(env,{...auth.scope,userId:auth.user.user_id,action:'create',resourceType:'backup',resourceId:id,decision:'allow'});
-  return json({id,object_key:key,sha256:digest},201);
+  return json({id,object_key:key,sha256:digest,schema_version:2},201);
 }
 
 async function auditApi(request, env) {
