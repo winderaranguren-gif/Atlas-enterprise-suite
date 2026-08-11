@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "validate": "node tests/validate-structure.mjs",
+    "validate": "node tests/validate-structure.mjs && node tests/validate-identity.mjs",
     "build": "node tests/build-check.mjs",
     "build:prod": "npm run validate && npm run build"
   },
