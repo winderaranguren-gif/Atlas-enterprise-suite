@@ -1,8 +1,0 @@
-{
-  "id": "dashboard",
-  "name": "ATLAS Dashboard",
-  "version": "0.1.0",
-  "status": "active",
-  "owns": ["home-shell", "module-launcher", "system-status"],
-  "publicRoutes": ["/"]
-}
