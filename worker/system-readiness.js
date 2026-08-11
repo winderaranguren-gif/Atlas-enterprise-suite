@@ -1,5 +1,5 @@
 const json=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{'content-type':'application/json;charset=UTF-8','cache-control':'no-store'}});
-const REQUIRED_TABLES=['atlas_users','atlas_memberships','atlas_sessions','atlas_security_events','atlas_audit_events','atlas_bootstrap_state','atlas_documents','atlas_document_versions','atlas_accounts','atlas_journal_entries','atlas_journal_lines','atlas_backup_manifests'];
+const REQUIRED_TABLES=['atlas_users','atlas_memberships','atlas_sessions','atlas_security_events','atlas_audit_events','atlas_bootstrap_state','atlas_password_credentials','atlas_activation_tokens','atlas_documents','atlas_document_versions','atlas_accounts','atlas_journal_entries','atlas_journal_lines','atlas_backup_manifests'];
 const SHA40=/^[0-9a-f]{40}$/i;
 
 async function tableStatus(env){
@@ -27,6 +27,7 @@ export async function handleSystemReadiness(request,env){
     d1:!!env.DB,
     backupsR2:!!env.BACKUPS,
     bootstrapSecret:typeof env.ATLAS_BOOTSTRAP_TOKEN==='string'&&env.ATLAS_BOOTSTRAP_TOKEN.length>=24,
+    releaseVerificationSecret:typeof env.ATLAS_RELEASE_VERIFICATION_TOKEN==='string'&&env.ATLAS_RELEASE_VERIFICATION_TOKEN.length>=32,
     deployedSha:SHA40.test(sha),
     requiredTables:tables.ok
   };
