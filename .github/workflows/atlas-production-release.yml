@@ -21,6 +21,7 @@ jobs:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       ATLAS_BOOTSTRAP_TOKEN: ${{ secrets.ATLAS_BOOTSTRAP_TOKEN }}
+      ATLAS_RELEASE_VERIFICATION_TOKEN: ${{ secrets.ATLAS_RELEASE_VERIFICATION_TOKEN }}
       ATLAS_D1_DATABASE_NAME: ${{ vars.ATLAS_D1_DATABASE_NAME }}
       ATLAS_D1_DATABASE_ID: ${{ vars.ATLAS_D1_DATABASE_ID }}
       ATLAS_BACKUPS_BUCKET_NAME: ${{ vars.ATLAS_BACKUPS_BUCKET_NAME }}
@@ -49,6 +50,7 @@ jobs:
           test -n "$CLOUDFLARE_API_TOKEN"
           test -n "$CLOUDFLARE_ACCOUNT_ID"
           test -n "$ATLAS_BOOTSTRAP_TOKEN"
+          test ${#ATLAS_RELEASE_VERIFICATION_TOKEN} -ge 32
           test -n "$ATLAS_D1_DATABASE_NAME"
           test -n "$ATLAS_D1_DATABASE_ID"
           test -n "$ATLAS_BACKUPS_BUCKET_NAME"
@@ -66,6 +68,10 @@ jobs:
       - name: Configure bootstrap secret
         shell: bash
         run: printf '%s' "$ATLAS_BOOTSTRAP_TOKEN" | npx wrangler@4 secret put ATLAS_BOOTSTRAP_TOKEN --config wrangler.production.jsonc
+
+      - name: Configure release verification secret
+        shell: bash
+        run: printf '%s' "$ATLAS_RELEASE_VERIFICATION_TOKEN" | npx wrangler@4 secret put ATLAS_RELEASE_VERIFICATION_TOKEN --config wrangler.production.jsonc
 
       - name: Deploy exact SHA to Cloudflare Workers
         run: npx wrangler@4 deploy --config wrangler.production.jsonc
@@ -85,7 +91,8 @@ jobs:
             "verified": true,
             "sourceSha": "${GITHUB_SHA}",
             "workflowRunId": "${GITHUB_RUN_ID}",
-            "environment": "production"
+            "environment": "production",
+            "verificationMode": "exact-sha-repeatable-e2e"
           }
           EOF
 
