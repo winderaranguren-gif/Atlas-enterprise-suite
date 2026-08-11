@@ -1,0 +1,53 @@
+name: Deploy ATLAS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: atlas-production
+  cancel-in-progress: false
+
+jobs:
+  deploy-verify:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      ATLAS_D1_DATABASE_NAME: ${{ secrets.ATLAS_D1_DATABASE_NAME }}
+      ATLAS_D1_DATABASE_ID: ${{ secrets.ATLAS_D1_DATABASE_ID }}
+      ATLAS_BACKUPS_BUCKET_NAME: ${{ secrets.ATLAS_BACKUPS_BUCKET_NAME }}
+      ATLAS_BOOTSTRAP_TOKEN: ${{ secrets.ATLAS_BOOTSTRAP_TOKEN }}
+      ATLAS_PRODUCTION_BASE_URL: ${{ secrets.ATLAS_PRODUCTION_BASE_URL }}
+      ATLAS_E2E_BEARER_TOKEN: ${{ secrets.ATLAS_E2E_BEARER_TOKEN }}
+      ATLAS_E2E_ORGANIZATION_ID: ${{ secrets.ATLAS_E2E_ORGANIZATION_ID }}
+      ATLAS_E2E_DBA_ID: ${{ secrets.ATLAS_E2E_DBA_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate repository
+        run: npm run build:prod
+      - name: Require production secrets
+        run: |
+          for key in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID ATLAS_D1_DATABASE_NAME ATLAS_D1_DATABASE_ID ATLAS_BACKUPS_BUCKET_NAME ATLAS_BOOTSTRAP_TOKEN ATLAS_PRODUCTION_BASE_URL ATLAS_E2E_BEARER_TOKEN ATLAS_E2E_ORGANIZATION_ID ATLAS_E2E_DBA_ID; do
+            test -n "${!key}" || { echo "Missing $key"; exit 1; }
+          done
+      - name: Install Wrangler
+        run: npm install --no-save wrangler@4
+      - name: Render production bindings
+        run: node scripts/render-production-wrangler.mjs
+      - name: Apply D1 migrations
+        run: npx wrangler d1 migrations apply DB --remote --config wrangler.production.jsonc
+      - name: Configure bootstrap secret
+        run: printf '%s' "$ATLAS_BOOTSTRAP_TOKEN" | npx wrangler secret put ATLAS_BOOTSTRAP_TOKEN --config wrangler.production.jsonc
+      - name: Deploy exact commit
+        run: npx wrangler deploy --config wrangler.production.jsonc
+      - name: Verify production end to end
+        run: node scripts/e2e-production.mjs
