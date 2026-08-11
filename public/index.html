@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ATLAS</title>
+</head>
+<body>
+  <main>
+    <h1>ATLAS</h1>
+    <p id="status">Core deployment baseline</p>
+    <label for="language">Language</label>
+    <select id="language">
+      <option value="en">English</option>
+      <option value="es">Español</option>
+    </select>
+  </main>
+  <script>
+    const key='atlas.language';
+    const select=document.getElementById('language');
+    const saved=localStorage.getItem(key);
+    select.value=saved==='es'?'es':'en';
+    document.documentElement.lang=select.value;
+    select.addEventListener('change',()=>{
+      localStorage.setItem(key,select.value);
+      document.documentElement.lang=select.value;
+    });
+  </script>
+</body>
+</html>

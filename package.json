@@ -1,0 +1,12 @@
+{
+  "name": "atlas-enterprise-suite",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "validate": "node tests/validate-structure.mjs",
+    "build": "node tests/build-check.mjs",
+    "build:prod": "npm run validate && npm run build"
+  },
+  "engines": {"node": ">=22"}
+}
