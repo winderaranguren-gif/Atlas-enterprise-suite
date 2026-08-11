@@ -1,21 +1,26 @@
 const base=(process.env.ATLAS_E2E_BASE_URL||'').replace(/\/$/,'');
 const bootstrap=process.env.ATLAS_BOOTSTRAP_TOKEN||'';
+const releaseVerification=process.env.ATLAS_RELEASE_VERIFICATION_TOKEN||'';
 const expectedSha=String(process.env.ATLAS_E2E_EXPECTED_SHA||'').trim().toLowerCase();
 const ownerEmail=process.env.ATLAS_E2E_OWNER_EMAIL||'atlas-e2e-owner@example.invalid';
 const org=process.env.ATLAS_E2E_ORG||'atlas-e2e';
 const dba=process.env.ATLAS_E2E_DBA||'pilot';
 const otherDba=process.env.ATLAS_E2E_OTHER_DBA||'forbidden-dba';
+const runId=`${expectedSha.slice(0,8)}-${Date.now().toString(36)}`;
 if(!base) throw new Error('ATLAS_E2E_BASE_URL is required');
 if(!bootstrap) throw new Error('ATLAS_BOOTSTRAP_TOKEN is required');
+if(releaseVerification.length<32) throw new Error('ATLAS_RELEASE_VERIFICATION_TOKEN must be configured for repeatable production verification');
 if(!/^[0-9a-f]{40}$/.test(expectedSha)) throw new Error('ATLAS_E2E_EXPECTED_SHA must be the exact deployed commit SHA');
+if(org!=='atlas-e2e'||dba!=='pilot') throw new Error('Production release verification is restricted to atlas-e2e / pilot');
 const checks=[];
 const mark=(name,ok,details='')=>{checks.push({name,ok,details});if(!ok)throw new Error(`${name}: ${details}`);};
-async function call(path,{method='GET',token,scope=true,body,bootstrapToken,scopeDba=dba}={}){
+async function call(path,{method='GET',token,scope=true,body,bootstrapToken,releaseToken,scopeDba=dba}={}){
   const headers={accept:'application/json'};
   if(body!==undefined)headers['content-type']='application/json';
   if(token)headers.authorization=`Bearer ${token}`;
   if(scope){headers['x-atlas-organization']=org;headers['x-atlas-dba']=scopeDba;}
   if(bootstrapToken)headers['x-atlas-bootstrap-token']=bootstrapToken;
+  if(releaseToken)headers['x-atlas-release-verification-token']=releaseToken;
   const response=await fetch(`${base}${path}`,{method,headers,body:body===undefined?undefined:JSON.stringify(body)});
   const text=await response.text();let data={};try{data=text?JSON.parse(text):{};}catch{data={raw:text};}
   return {status:response.status,data};
@@ -31,31 +36,42 @@ for(const [name,path] of [['CRM','/api/crm/accounts'],['Documents','/api/documen
   const unauth=await call(path);mark(`${name} rejects missing session`,unauth.status===401,JSON.stringify(unauth));
 }
 const boot=await call('/api/admin/bootstrap',{method:'POST',scope:false,bootstrapToken:bootstrap,body:{email:ownerEmail,display_name:'ATLAS E2E Owner',organization_id:org,dba_id:dba}});
-mark('Owner bootstrap',boot.status===201&&typeof boot.data.session_token==='string',JSON.stringify({...boot,data:{...boot.data,session_token:boot.data.session_token?'[redacted]':undefined}}));
-const ownerToken=boot.data.session_token;
-const repeatBoot=await call('/api/admin/bootstrap',{method:'POST',scope:false,bootstrapToken:bootstrap,body:{email:'second-owner@example.invalid',organization_id:org,dba_id:dba}});
-mark('Bootstrap one-time',repeatBoot.status===409,JSON.stringify(repeatBoot));
+let ownerToken='';
+if(boot.status===201&&typeof boot.data.session_token==='string'){
+  mark('Owner bootstrap or existing bootstrap',true,'first bootstrap completed');
+  ownerToken=boot.data.session_token;
+  const repeatBoot=await call('/api/admin/bootstrap',{method:'POST',scope:false,bootstrapToken:bootstrap,body:{email:`second-owner-${runId}@example.invalid`,organization_id:org,dba_id:dba}});
+  mark('Bootstrap one-time',repeatBoot.status===409,JSON.stringify(repeatBoot));
+}else{
+  mark('Owner bootstrap or existing bootstrap',boot.status===409,JSON.stringify(boot));
+  const verification=await call('/api/admin/release-verification-session',{method:'POST',scope:false,releaseToken:releaseVerification,body:{expected_sha:expectedSha,organization_id:org,dba_id:dba}});
+  mark('Ephemeral release verification session',verification.status===201&&typeof verification.data.session_token==='string'&&String(verification.data.deployed_sha||'').toLowerCase()===expectedSha,JSON.stringify({...verification,data:{...verification.data,session_token:verification.data.session_token?'[redacted]':undefined}}));
+  ownerToken=verification.data.session_token;
+}
 for(const [name,path] of [['CRM','/api/crm/accounts'],['Documents','/api/documents'],['Accounting','/api/accounting/accounts'],['Backups','/api/backups']]){
   const cross=await call(path,{token:ownerToken,scopeDba:otherDba});mark(`${name} cross-DBA denied`,cross.status===403,JSON.stringify(cross));
 }
-const createdUser=await call('/api/users',{method:'POST',token:ownerToken,body:{email:'atlas-e2e-viewer@example.invalid',display_name:'ATLAS E2E Viewer',role:'viewer'}});
+const viewerEmail=`atlas-e2e-viewer-${runId}@example.invalid`;
+const createdUser=await call('/api/users',{method:'POST',token:ownerToken,body:{email:viewerEmail,display_name:'ATLAS E2E Viewer',role:'viewer'}});
 mark('Scoped user creation',createdUser.status===201&&createdUser.data.user_id,JSON.stringify(createdUser));
-const createdCrm=await call('/api/crm/accounts',{method:'POST',token:ownerToken,body:{name:'ATLAS E2E Account',status:'active'}});
+const createdCrm=await call('/api/crm/accounts',{method:'POST',token:ownerToken,body:{name:`ATLAS E2E Account ${runId}`,status:'active'}});
 mark('CRM create',createdCrm.status===201&&createdCrm.data.id,JSON.stringify(createdCrm));
 const readCrm=await call('/api/crm/accounts',{token:ownerToken});
 mark('CRM read',readCrm.status===200&&Array.isArray(readCrm.data.accounts)&&readCrm.data.accounts.some(x=>x.id===createdCrm.data.id),JSON.stringify(readCrm));
-const doc=await call('/api/documents',{method:'POST',token:ownerToken,body:{title:'ATLAS E2E Document',mime_type:'text/plain',content_text:'Version one'}});
+const doc=await call('/api/documents',{method:'POST',token:ownerToken,body:{title:`ATLAS E2E Document ${runId}`,mime_type:'text/plain',content_text:'Version one'}});
 mark('Document create + hash',doc.status===201&&doc.data.id&&doc.data.current_version===1&&typeof doc.data.current_hash==='string',JSON.stringify(doc));
 const doc2=await call(`/api/documents/${doc.data.id}/versions`,{method:'POST',token:ownerToken,body:{content_text:'Version two'}});
 mark('Document version append',doc2.status===201&&doc2.data.current_version===2&&doc2.data.current_hash!==doc.data.current_hash,JSON.stringify(doc2));
 const archived=await call(`/api/documents/${doc.data.id}`,{method:'DELETE',token:ownerToken});
 mark('Document soft archive',archived.status===200&&archived.data.status==='archived',JSON.stringify(archived));
-const cash=await call('/api/accounting/accounts',{method:'POST',token:ownerToken,body:{code:'1000',name:'Cash',account_type:'asset'}});
-const revenue=await call('/api/accounting/accounts',{method:'POST',token:ownerToken,body:{code:'4000',name:'Service Revenue',account_type:'revenue'}});
+const codeSuffix=String(Date.now()).slice(-6);
+const cash=await call('/api/accounting/accounts',{method:'POST',token:ownerToken,body:{code:`1${codeSuffix}`,name:`Cash ${runId}`,account_type:'asset'}});
+const revenue=await call('/api/accounting/accounts',{method:'POST',token:ownerToken,body:{code:`4${codeSuffix}`,name:`Service Revenue ${runId}`,account_type:'revenue'}});
 mark('Accounting accounts created',cash.status===201&&revenue.status===201,JSON.stringify({cash,revenue}));
-const unbalanced=await call('/api/accounting/journal',{method:'POST',token:ownerToken,body:{entry_number:'E2E-UNBALANCED',entry_date:'2026-08-10',currency:'USD',lines:[{account_id:cash.data.id,debit_cents:10000,credit_cents:0},{account_id:revenue.data.id,debit_cents:0,credit_cents:9000}]}});
+const today=new Date().toISOString().slice(0,10);
+const unbalanced=await call('/api/accounting/journal',{method:'POST',token:ownerToken,body:{entry_number:`E2E-U-${runId}`,entry_date:today,currency:'USD',lines:[{account_id:cash.data.id,debit_cents:10000,credit_cents:0},{account_id:revenue.data.id,debit_cents:0,credit_cents:9000}]}});
 mark('Unbalanced journal rejected',unbalanced.status===400,JSON.stringify(unbalanced));
-const posted=await call('/api/accounting/journal',{method:'POST',token:ownerToken,body:{entry_number:'E2E-0001',entry_date:'2026-08-10',currency:'USD',lines:[{account_id:cash.data.id,debit_cents:10000,credit_cents:0},{account_id:revenue.data.id,debit_cents:0,credit_cents:10000}]}});
+const posted=await call('/api/accounting/journal',{method:'POST',token:ownerToken,body:{entry_number:`E2E-${runId}`,entry_date:today,currency:'USD',lines:[{account_id:cash.data.id,debit_cents:10000,credit_cents:0},{account_id:revenue.data.id,debit_cents:0,credit_cents:10000}]}});
 mark('Balanced journal posted',posted.status===201&&posted.data.total_debit_cents===10000&&posted.data.total_credit_cents===10000,JSON.stringify(posted));
 const trial=await call('/api/accounting/trial-balance',{token:ownerToken});
 mark('Trial balance balanced',trial.status===200&&trial.data.balanced===true,JSON.stringify(trial));
@@ -72,4 +88,4 @@ mark('Session logout',logout.status===200&&logout.data.ok===true,JSON.stringify(
 for(const [name,path] of [['CRM','/api/crm/accounts'],['Documents','/api/documents'],['Accounting','/api/accounting/accounts'],['Backups','/api/backups']]){
   const revoked=await call(path,{token:ownerToken});mark(`${name} rejects revoked session`,revoked.status===401,JSON.stringify(revoked));
 }
-console.log(JSON.stringify({ok:true,base,expectedSha,organization:org,dba,checks},null,2));
+console.log(JSON.stringify({ok:true,base,expectedSha,runId,organization:org,dba,checks},null,2));
