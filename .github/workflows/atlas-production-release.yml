@@ -86,6 +86,25 @@ jobs:
           ATLAS_E2E_BASE_URL: ${{ vars.ATLAS_PRODUCTION_BASE_URL }}
         run: npm run test:e2e:password-auth
 
+      - name: Mark exact deployed SHA verified
+        shell: bash
+        run: printf '%s' "$GITHUB_SHA" | npx wrangler@4 secret put ATLAS_RELEASE_VERIFIED_SHA --config wrangler.production.jsonc
+
+      - name: Require final operational readiness
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          const base=process.env.ATLAS_PRODUCTION_BASE_URL.replace(/\/$/,'');
+          const expected=process.env.GITHUB_SHA.toLowerCase();
+          const response=await fetch(`${base}/api/system/readiness`,{headers:{accept:'application/json'}});
+          const body=await response.json().catch(()=>({}));
+          if(response.status!==200||body.operational!==true||body.releaseVerified!==true||String(body.deployedSha||'').toLowerCase()!==expected||String(body.verifiedSha||'').toLowerCase()!==expected){
+            console.error(JSON.stringify({status:response.status,body},null,2));
+            process.exit(1);
+          }
+          console.log(JSON.stringify({operational:true,deployedSha:body.deployedSha,verifiedSha:body.verifiedSha},null,2));
+          NODE
+
       - name: Record verified release evidence
         if: success()
         shell: bash
@@ -97,7 +116,7 @@ jobs:
             "sourceSha": "${GITHUB_SHA}",
             "workflowRunId": "${GITHUB_RUN_ID}",
             "environment": "production",
-            "verificationMode": "exact-sha-repeatable-e2e-plus-password-auth"
+            "verificationMode": "exact-sha-repeatable-e2e-plus-password-auth-plus-runtime-marker"
           }
           EOF
 
