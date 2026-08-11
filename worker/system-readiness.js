@@ -17,13 +17,20 @@ async function tableStatus(env){
 export async function handleSystemReadiness(request,env){
   const url=new URL(request.url);
   if(request.method!=='GET') return null;
-  const sha=String(env.ATLAS_DEPLOYED_SHA||'').trim();
+  const sha=String(env.ATLAS_DEPLOYED_SHA||'').trim().toLowerCase();
+  const verifiedSha=String(env.ATLAS_RELEASE_VERIFIED_SHA||'').trim().toLowerCase();
   if(url.pathname==='/api/system/release-fingerprint'){
-    return json({service:'ATLAS Commercial Pilot',deployedSha:SHA40.test(sha)?sha:null,shaConfigured:SHA40.test(sha)});
+    return json({
+      service:'ATLAS Commercial Pilot',
+      deployedSha:SHA40.test(sha)?sha:null,
+      shaConfigured:SHA40.test(sha),
+      verifiedSha:SHA40.test(verifiedSha)?verifiedSha:null,
+      releaseVerified:SHA40.test(sha)&&verifiedSha===sha
+    });
   }
   if(url.pathname!=='/api/system/readiness') return null;
   const tables=await tableStatus(env);
-  const checks={
+  const infrastructureChecks={
     d1:!!env.DB,
     backupsR2:!!env.BACKUPS,
     bootstrapSecret:typeof env.ATLAS_BOOTSTRAP_TOKEN==='string'&&env.ATLAS_BOOTSTRAP_TOKEN.length>=24,
@@ -31,13 +38,20 @@ export async function handleSystemReadiness(request,env){
     deployedSha:SHA40.test(sha),
     requiredTables:tables.ok
   };
-  const operational=Object.values(checks).every(Boolean);
+  const infrastructureReady=Object.values(infrastructureChecks).every(Boolean);
+  const releaseVerified=SHA40.test(verifiedSha)&&SHA40.test(sha)&&verifiedSha===sha;
+  const operational=infrastructureReady&&releaseVerified;
+  const preflight=url.searchParams.get('phase')==='preflight';
   return json({
     operational,
+    infrastructureReady,
+    releaseVerified,
     service:'ATLAS Commercial Pilot',
-    deployedSha:checks.deployedSha?sha:null,
-    checks,
+    deployedSha:infrastructureChecks.deployedSha?sha:null,
+    verifiedSha:SHA40.test(verifiedSha)?verifiedSha:null,
+    checks:{...infrastructureChecks,releaseVerified},
     missingTables:tables.missing,
-    tableCheckError:tables.error||null
-  },operational?200:503);
+    tableCheckError:tables.error||null,
+    phase:preflight?'preflight':'operational'
+  },preflight?(infrastructureReady?200:503):(operational?200:503));
 }
