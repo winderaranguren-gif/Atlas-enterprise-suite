@@ -98,11 +98,17 @@ async function verifyBackup(request,env,backupId){
  const auth=await authorize(request,env,'read'); if(auth.error) return auth.error;
  if(!env.BACKUPS) return json({operational:false,error:'R2 binding BACKUPS is not configured'},503);
  const loaded=await loadManifestAndBody(env,auth,backupId); if(loaded.error) return loaded.error;
- const {manifest:m,body}=loaded; const digest=await sha256(body); const valid=digest===m.sha256;
+ const {manifest:m,body}=loaded; const digest=await sha256(body); const hashValid=digest===m.sha256;
+ let envelope=null; try{ envelope=JSON.parse(body); }catch{}
+ const headerValid=envelope?.format==='ATLAS_SCOPED_BACKUP'&&envelope?.schema_version==='2'&&envelope?.organization_id===auth.org&&envelope?.dba_id===auth.dba;
+ const tablesValid=headerValid&&BACKUP_TABLES.every(table=>Array.isArray(envelope.tables?.[table]));
+ const exclusionsValid=headerValid&&Array.isArray(envelope.excluded_ephemeral_tables)&&EXCLUDED_EPHEMERAL_TABLES.every(table=>envelope.excluded_ephemeral_tables.includes(table));
+ const valid=hashValid&&headerValid&&tablesValid&&exclusionsValid;
  const now=new Date().toISOString();
  await env.DB.prepare(`UPDATE atlas_backup_manifests SET status=?,verified_at=? WHERE id=? AND organization_id=? AND dba_id=?`).bind(valid?'verified':'failed',now,m.id,auth.org,auth.dba).run();
- await audit(env,{org:auth.org,dba:auth.dba,userId:auth.actor.user_id,action:'backup_verify',resourceId:m.id,payload:{valid,sha256:digest}});
- return json({ok:valid,id:m.id,expected_sha256:m.sha256,actual_sha256:digest,byte_length:new TextEncoder().encode(body).byteLength},valid?200:409);
+ const includedTables=valid?Object.keys(envelope.tables):[];
+ await audit(env,{org:auth.org,dba:auth.dba,userId:auth.actor.user_id,action:'backup_verify',resourceId:m.id,payload:{valid,sha256:digest,schema_version:envelope?.schema_version||null,included_tables:includedTables}});
+ return json({ok:valid,id:m.id,expected_sha256:m.sha256,actual_sha256:digest,byte_length:new TextEncoder().encode(body).byteLength,schema_version:envelope?.schema_version||null,included_tables:includedTables,excluded_ephemeral_tables:valid?envelope.excluded_ephemeral_tables:[]},valid?200:409);
 }
 async function restoreTest(request,env,backupId){
  const auth=await authorize(request,env,'write'); if(auth.error) return auth.error;
