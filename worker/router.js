@@ -4,10 +4,15 @@ import { handleDocuments } from './documents.js';
 import { handleAccounting } from './accounting.js';
 import { handleBackups } from './backups.js';
 import { handleSystemReadiness } from './system-readiness.js';
+import { handleReleaseVerification } from './release-verification.js';
 
 export default {
   async fetch(request,env,ctx){
     const url=new URL(request.url);
+    if(url.pathname==='/api/admin/release-verification-session'){
+      const response=await handleReleaseVerification(request,env,ctx);
+      if(response) return response;
+    }
     if(url.pathname.startsWith('/api/system/')){
       const response=await handleSystemReadiness(request,env,ctx);
       if(response) return response;
