@@ -38,10 +38,22 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Verify dependency-free runtime contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const pkg=JSON.parse(fs.readFileSync('package.json','utf8'));
+          const runtimeDeps=Object.keys(pkg.dependencies||{});
+          const devDeps=Object.keys(pkg.devDependencies||{});
+          if(runtimeDeps.length||devDeps.length){
+            console.error(JSON.stringify({error:'Dependencies declared without a committed lockfile',runtimeDeps,devDeps},null,2));
+            process.exit(1);
+          }
+          console.log('ATLAS repository is dependency-free; npm install/ci is intentionally not required.');
+          NODE
 
       - name: Fail closed if production inputs are missing
         shell: bash
@@ -63,18 +75,18 @@ jobs:
         run: npm run prepare:cloudflare:prod
 
       - name: Apply D1 migrations remotely
-        run: npx wrangler@4 d1 migrations apply "$ATLAS_D1_DATABASE_NAME" --remote --config wrangler.production.jsonc
+        run: npx --yes wrangler@4 d1 migrations apply "$ATLAS_D1_DATABASE_NAME" --remote --config wrangler.production.jsonc
 
       - name: Configure bootstrap secret
         shell: bash
-        run: printf '%s' "$ATLAS_BOOTSTRAP_TOKEN" | npx wrangler@4 secret put ATLAS_BOOTSTRAP_TOKEN --config wrangler.production.jsonc
+        run: printf '%s' "$ATLAS_BOOTSTRAP_TOKEN" | npx --yes wrangler@4 secret put ATLAS_BOOTSTRAP_TOKEN --config wrangler.production.jsonc
 
       - name: Configure release verification secret
         shell: bash
-        run: printf '%s' "$ATLAS_RELEASE_VERIFICATION_TOKEN" | npx wrangler@4 secret put ATLAS_RELEASE_VERIFICATION_TOKEN --config wrangler.production.jsonc
+        run: printf '%s' "$ATLAS_RELEASE_VERIFICATION_TOKEN" | npx --yes wrangler@4 secret put ATLAS_RELEASE_VERIFICATION_TOKEN --config wrangler.production.jsonc
 
       - name: Deploy exact SHA to Cloudflare Workers
-        run: npx wrangler@4 deploy --config wrangler.production.jsonc
+        run: npx --yes wrangler@4 deploy --config wrangler.production.jsonc
 
       - name: Run exact-SHA commercial pilot E2E
         env:
@@ -88,7 +100,7 @@ jobs:
 
       - name: Mark exact deployed SHA verified
         shell: bash
-        run: printf '%s' "$GITHUB_SHA" | npx wrangler@4 secret put ATLAS_RELEASE_VERIFIED_SHA --config wrangler.production.jsonc
+        run: printf '%s' "$GITHUB_SHA" | npx --yes wrangler@4 secret put ATLAS_RELEASE_VERIFIED_SHA --config wrangler.production.jsonc
 
       - name: Require final operational readiness
         shell: bash
