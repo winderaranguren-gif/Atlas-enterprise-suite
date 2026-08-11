@@ -1,0 +1,8 @@
+{
+  "id": "users-permissions",
+  "name": "Users & Permissions",
+  "version": "0.1.0",
+  "status": "active",
+  "owns": ["identity","memberships","roles","sessions","authorization-audit"],
+  "publicRoutes": ["/api/bootstrap","/api/auth/me","/api/users","/api/memberships","/api/audit"]
+}
