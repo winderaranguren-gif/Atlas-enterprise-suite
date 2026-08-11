@@ -10,6 +10,12 @@ async function sha256(value){
   return [...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('');
 }
 
+async function securityEvent(env,{userId='',org='',dba='',action,decision,reason}){
+  await env.DB.prepare(`INSERT INTO atlas_security_events(id,user_id,organization_id,dba_id,action,resource_type,resource_id,decision,reason,created_at)
+    VALUES(?,?,?,?,?,'document_scope','',?,?,?)`)
+    .bind(id(),userId,org,dba,action,decision,reason,new Date().toISOString()).run();
+}
+
 async function authenticate(request,env){
   const header=request.headers.get('authorization')||'';
   if(!header.startsWith('Bearer ')) return null;
@@ -24,18 +30,31 @@ async function authenticate(request,env){
 }
 
 async function authorize(request,env,mode){
-  const actor=await authenticate(request,env);
-  if(!actor) return {error:json({error:'Unauthorized'},401)};
   const org=request.headers.get('x-atlas-organization')||'';
   const dba=request.headers.get('x-atlas-dba')||'';
-  if(!org||!dba) return {error:json({error:'Organization and DBA scope are required'},400)};
+  const actor=await authenticate(request,env);
+  if(!actor){
+    await securityEvent(env,{org,dba,action:mode,decision:'deny',reason:'invalid_session'});
+    return {error:json({error:'Unauthorized'},401)};
+  }
+  if(!org||!dba){
+    await securityEvent(env,{userId:actor.user_id,org,dba,action:mode,decision:'deny',reason:'missing_scope'});
+    return {error:json({error:'Organization and DBA scope are required'},400)};
+  }
   const membership=await env.DB.prepare(`SELECT role FROM atlas_memberships
     WHERE user_id=? AND organization_id=? AND dba_id=? AND status='active'`)
     .bind(actor.user_id,org,dba).first();
-  if(!membership) return {error:json({error:'Forbidden'},403)};
+  if(!membership){
+    await securityEvent(env,{userId:actor.user_id,org,dba,action:mode,decision:'deny',reason:'membership_missing'});
+    return {error:json({error:'Forbidden'},403)};
+  }
   const role=String(membership.role||'').toLowerCase();
   const allowed=mode==='read'?READ_ROLES.has(role):WRITE_ROLES.has(role);
-  if(!allowed) return {error:json({error:'Forbidden for role'},403)};
+  if(!allowed){
+    await securityEvent(env,{userId:actor.user_id,org,dba,action:mode,decision:'deny',reason:`role_${role}_not_allowed`});
+    return {error:json({error:'Forbidden for role'},403)};
+  }
+  await securityEvent(env,{userId:actor.user_id,org,dba,action:mode,decision:'allow',reason:`role_${role}`});
   return {actor,org,dba,role};
 }
 
