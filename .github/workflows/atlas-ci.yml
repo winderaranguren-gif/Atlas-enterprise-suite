@@ -43,6 +43,17 @@ jobs:
           grep -q '"binding": "DB"' wrangler.jsonc
           grep -q '"crons": \["\*/10 \* \* \* \*"\]' wrangler.jsonc
 
+      - name: Verify CRM tenant security gates
+        run: |
+          grep -q 'ATLAS_API_KEY' worker/index.js
+          grep -q 'authorization' worker/index.js
+          grep -q 'x-atlas-organization' worker/index.js
+          grep -q 'x-atlas-dba' worker/index.js
+          grep -q 'x-atlas-actor' worker/index.js
+          grep -q 'actor TEXT NOT NULL' worker/index.js
+          if grep -q "||'atlas'" worker/index.js; then echo 'Unsafe default organization scope detected'; exit 1; fi
+          if grep -q "||'default'" worker/index.js; then echo 'Unsafe default DBA scope detected'; exit 1; fi
+
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
