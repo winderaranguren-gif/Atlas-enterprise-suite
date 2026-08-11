@@ -20,16 +20,22 @@ for(const token of ['productionReady','verifiedE2E','expectedSourceSha','release
 for(const token of ['/api/system/readiness','/api/system/release-fingerprint','ATLAS_DEPLOYED_SHA','ATLAS_RELEASE_VERIFIED_SHA','ATLAS_BOOTSTRAP_TOKEN','BACKUPS','infrastructureReady','releaseVerified']) assert(readiness.includes(token),`Readiness module missing requirement: ${token}`);
 assert(e2e.includes('/api/system/readiness?phase=preflight'),'Commercial E2E must use infrastructure preflight before release verification');
 assert(e2e.includes('infrastructureReady===true'),'Commercial E2E must require infrastructureReady before exercising production');
-for(const token of ['ATLAS_RELEASE_VERIFIED_SHA','Run exact-SHA commercial pilot E2E','Run password authentication E2E','Mark exact deployed SHA verified','Require final operational readiness','body.releaseVerified!==true','body.operational!==true']) assert(productionWorkflow.includes(token),`Production workflow missing runtime verification gate: ${token}`);
+for(const token of ['ATLAS_RELEASE_VERIFIED_SHA','Run exact-SHA commercial pilot E2E','Run password authentication E2E','Mark exact deployed SHA verified','Require final operational readiness','body.releaseVerified!==true','body.operational!==true','id: deploy_exact_sha','Roll back failed Worker release','wrangler@4 rollback','D1 migrations are intentionally not reversed automatically']) assert(productionWorkflow.includes(token),`Production workflow missing runtime verification/rollback gate: ${token}`);
+const deployIndex=productionWorkflow.indexOf('Deploy exact SHA to Cloudflare Workers');
 const markIndex=productionWorkflow.indexOf('Mark exact deployed SHA verified');
 const commercialIndex=productionWorkflow.indexOf('Run exact-SHA commercial pilot E2E');
 const passwordIndex=productionWorkflow.indexOf('Run password authentication E2E');
 const finalIndex=productionWorkflow.indexOf('Require final operational readiness');
-assert(commercialIndex>=0&&passwordIndex>commercialIndex&&markIndex>passwordIndex&&finalIndex>markIndex,'Production verification marker must be written only after both E2E suites and before final readiness');
+const evidenceIndex=productionWorkflow.indexOf('Upload release evidence');
+const rollbackIndex=productionWorkflow.indexOf('Roll back failed Worker release');
+assert(deployIndex>=0&&commercialIndex>deployIndex&&passwordIndex>commercialIndex&&markIndex>passwordIndex&&finalIndex>markIndex,'Production verification marker must be written only after both E2E suites and before final readiness');
+assert(evidenceIndex>finalIndex,'Release evidence must only be uploaded after final readiness');
+assert(rollbackIndex>evidenceIndex,'Rollback handler must remain after all post-deploy verification/evidence steps');
+assert(productionWorkflow.includes("if: failure() && steps.deploy_exact_sha.outcome == 'success'"),'Rollback must run only after a successful deployment followed by a failure');
 
 if(errors.length){
   console.error(errors.join('\n'));
   process.exitCode=1;
 }else{
-  console.log('ATLAS update flow, exact-SHA runtime verification, and English-first release gates validated.');
+  console.log('ATLAS update flow, exact-SHA runtime verification, rollback protection, and English-first release gates validated.');
 }
