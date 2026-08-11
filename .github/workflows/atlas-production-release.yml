@@ -81,6 +81,11 @@ jobs:
           ATLAS_E2E_BASE_URL: ${{ vars.ATLAS_PRODUCTION_BASE_URL }}
         run: npm run test:e2e:commercial-pilot
 
+      - name: Run password authentication E2E
+        env:
+          ATLAS_E2E_BASE_URL: ${{ vars.ATLAS_PRODUCTION_BASE_URL }}
+        run: npm run test:e2e:password-auth
+
       - name: Record verified release evidence
         if: success()
         shell: bash
@@ -92,7 +97,7 @@ jobs:
             "sourceSha": "${GITHUB_SHA}",
             "workflowRunId": "${GITHUB_RUN_ID}",
             "environment": "production",
-            "verificationMode": "exact-sha-repeatable-e2e"
+            "verificationMode": "exact-sha-repeatable-e2e-plus-password-auth"
           }
           EOF
 
