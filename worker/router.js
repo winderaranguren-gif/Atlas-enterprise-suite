@@ -6,6 +6,7 @@ import { handleBackups } from './backups.js';
 import { handleSystemReadiness } from './system-readiness.js';
 import { handleReleaseVerification } from './release-verification.js';
 import { handlePasswordAuth } from './password-auth.js';
+import { handleSecurityEvents } from './security-events.js';
 import { enforceScopedAuthorization,authorizationMode } from './authorization-guard.js';
 
 export default {
@@ -21,6 +22,10 @@ export default {
     }
     if(url.pathname.startsWith('/api/system/')){
       const response=await handleSystemReadiness(request,env,ctx);
+      if(response) return response;
+    }
+    if(url.pathname==='/api/security-events'){
+      const response=await handleSecurityEvents(request,env,ctx);
       if(response) return response;
     }
     if(url.pathname.startsWith('/api/documents')){
