@@ -178,7 +178,6 @@ async function updateScopedUser(request,env,targetUserId){
   if(auth.role==='admin'&&nextRole==='admin') return json({error:'Only an owner can grant admin'},403);
   const now=new Date().toISOString();
   await env.DB.prepare('UPDATE atlas_memberships SET role=?,status=?,updated_at=? WHERE id=?').bind(nextRole,nextStatus,now,membership.id).run();
-  if(nextStatus==='suspended') await env.DB.prepare('UPDATE atlas_sessions SET revoked_at=? WHERE user_id=? AND revoked_at IS NULL').bind(now,targetUserId).run();
   await audit(env,{org:auth.org,dba:auth.dba,userId:auth.actor.user_id,action:'update_membership',resourceType:'membership',resourceId:membership.id,payload:{target_user_id:targetUserId,role:nextRole,status:nextStatus}});
   return json({ok:true,user_id:targetUserId,membership_id:membership.id,role:nextRole,status:nextStatus});
 }
