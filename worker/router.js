@@ -6,6 +6,7 @@ import { handleBackups } from './backups.js';
 import { handleSystemReadiness } from './system-readiness.js';
 import { handleReleaseVerification } from './release-verification.js';
 import { handlePasswordAuth } from './password-auth.js';
+import { enforceScopedAuthorization,authorizationMode } from './authorization-guard.js';
 
 export default {
   async fetch(request,env,ctx){
@@ -27,10 +28,18 @@ export default {
       if(response) return response;
     }
     if(url.pathname.startsWith('/api/accounting')){
+      if(url.pathname!=='/api/accounting/health'){
+        const denied=await enforceScopedAuthorization(request,env,{resourceType:'accounting',mode:authorizationMode(request)});
+        if(denied) return denied;
+      }
       const response=await handleAccounting(request,env,ctx);
       if(response) return response;
     }
     if(url.pathname.startsWith('/api/backups')){
+      if(url.pathname!=='/api/backups/health'){
+        const denied=await enforceScopedAuthorization(request,env,{resourceType:'backup',mode:authorizationMode(request)});
+        if(denied) return denied;
+      }
       const response=await handleBackups(request,env,ctx);
       if(response) return response;
     }
