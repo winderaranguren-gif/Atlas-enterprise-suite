@@ -76,31 +76,31 @@ async function authenticate(request,env){
   return session||null;
 }
 
-async function authorize(request,env,mode='read'){
+async function authorize(request,env,mode='read',resourceType='scope'){
   const actor=await authenticate(request,env);
   const org=request.headers.get('x-atlas-organization')||'';
   const dba=request.headers.get('x-atlas-dba')||'';
   if(!actor){
-    await securityEvent(env,{org,dba,action:mode,resourceType:'scope',decision:'deny',reason:'invalid_session'});
+    await securityEvent(env,{org,dba,action:mode,resourceType,decision:'deny',reason:'invalid_session'});
     return {error:json({error:'Unauthorized'},401)};
   }
   if(!org||!dba){
-    await securityEvent(env,{userId:actor.user_id,org,dba,action:mode,resourceType:'scope',decision:'deny',reason:'missing_scope'});
+    await securityEvent(env,{userId:actor.user_id,org,dba,action:mode,resourceType,decision:'deny',reason:'missing_scope'});
     return {error:json({error:'Organization and DBA scope are required'},400)};
   }
   const membership=await env.DB.prepare(`SELECT role FROM atlas_memberships
     WHERE user_id=? AND organization_id=? AND dba_id=? AND status='active'`).bind(actor.user_id,org,dba).first();
   if(!membership){
-    await securityEvent(env,{userId:actor.user_id,org,dba,action:mode,resourceType:'scope',decision:'deny',reason:'membership_missing'});
+    await securityEvent(env,{userId:actor.user_id,org,dba,action:mode,resourceType,decision:'deny',reason:'membership_missing'});
     return {error:json({error:'Forbidden'},403)};
   }
   const role=String(membership.role||'').toLowerCase();
   const allowed=mode==='read'?READ_ROLES.has(role):mode==='manage'?MANAGE_ROLES.has(role):mode==='audit'?AUDIT_ROLES.has(role):mode==='directory'?MANAGE_ROLES.has(role):WRITE_ROLES.has(role);
   if(!allowed){
-    await securityEvent(env,{userId:actor.user_id,org,dba,action:mode,resourceType:'scope',decision:'deny',reason:`role_${role}_not_allowed`});
+    await securityEvent(env,{userId:actor.user_id,org,dba,action:mode,resourceType,decision:'deny',reason:`role_${role}_not_allowed`});
     return {error:json({error:'Forbidden for role'},403)};
   }
-  await securityEvent(env,{userId:actor.user_id,org,dba,action:mode,resourceType:'scope',decision:'allow',reason:`role_${role}`});
+  await securityEvent(env,{userId:actor.user_id,org,dba,action:mode,resourceType,decision:'allow',reason:`role_${role}`});
   return {actor,org,dba,role};
 }
 
@@ -139,7 +139,7 @@ async function bootstrap(request,env){
 }
 
 async function createScopedUser(request,env){
-  const auth=await authorize(request,env,'manage'); if(auth.error) return auth.error;
+  const auth=await authorize(request,env,'manage','user_scope'); if(auth.error) return auth.error;
   const body=await request.json();
   const email=String(body.email||'').trim().toLowerCase();
   const role=String(body.role||'viewer').trim().toLowerCase();
@@ -163,7 +163,7 @@ async function createScopedUser(request,env){
 }
 
 async function updateScopedUser(request,env,targetUserId){
-  const auth=await authorize(request,env,'manage'); if(auth.error) return auth.error;
+  const auth=await authorize(request,env,'manage','user_scope'); if(auth.error) return auth.error;
   if(targetUserId===auth.actor.user_id) return json({error:'Self role/status changes are not allowed'},409);
   const membership=await env.DB.prepare('SELECT id,role,status FROM atlas_memberships WHERE user_id=? AND organization_id=? AND dba_id=?')
     .bind(targetUserId,auth.org,auth.dba).first();
@@ -194,12 +194,12 @@ async function handleCrm(request,env,url){
   const table=TYPES[type];
   if(!table) return json({error:'Unknown CRM resource'},404);
   if(request.method==='GET'){
-    const auth=await authorize(request,env,'read'); if(auth.error) return auth.error;
+    const auth=await authorize(request,env,'read','crm_scope'); if(auth.error) return auth.error;
     const r=await env.DB.prepare(`SELECT * FROM ${table} WHERE organization_id=? AND dba_id=? ORDER BY updated_at DESC`).bind(auth.org,auth.dba).all();
     return json({[type]:r.results||[]});
   }
   if(request.method==='POST'){
-    const auth=await authorize(request,env,'write'); if(auth.error) return auth.error;
+    const auth=await authorize(request,env,'write','crm_scope'); if(auth.error) return auth.error;
     const body=await request.json(); const recordId=id(); const now=new Date().toISOString();
     await env.DB.prepare(`INSERT INTO ${table}(id,organization_id,dba_id,name,email,status,stage,owner,amount,payload,created_at,updated_at)
       VALUES(?,?,?,?,?,?,?,?,?,?,?,?)`).bind(recordId,auth.org,auth.dba,body.name||body.title||'',body.email||'',body.status||'active',body.stage||'new',body.owner||'',body.amount??null,JSON.stringify(body),now,now).run();
@@ -222,7 +222,7 @@ export async function handleCommercialCore(request,env){
     return json({ok:true});
   }
   if(url.pathname==='/api/users'&&request.method==='GET'){
-    const auth=await authorize(request,env,'directory'); if(auth.error) return auth.error;
+    const auth=await authorize(request,env,'directory','user_scope'); if(auth.error) return auth.error;
     const r=await env.DB.prepare(`SELECT u.id,u.email,u.display_name,m.role,m.status FROM atlas_memberships m JOIN atlas_users u ON u.id=m.user_id
       WHERE m.organization_id=? AND m.dba_id=? ORDER BY u.email`).bind(auth.org,auth.dba).all();
     return json({users:r.results||[]});
@@ -234,7 +234,7 @@ export async function handleCommercialCore(request,env){
     return updateScopedUser(request,env,targetUserId);
   }
   if(url.pathname==='/api/audit'&&request.method==='GET'){
-    const auth=await authorize(request,env,'audit'); if(auth.error) return auth.error;
+    const auth=await authorize(request,env,'audit','audit_scope'); if(auth.error) return auth.error;
     const r=await env.DB.prepare('SELECT * FROM atlas_audit_events WHERE organization_id=? AND dba_id=? ORDER BY created_at DESC LIMIT 200').bind(auth.org,auth.dba).all();
     return json({events:r.results||[]});
   }
