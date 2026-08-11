@@ -1,0 +1,51 @@
+const base=(process.env.ATLAS_E2E_BASE_URL||'').replace(/\/$/,'');
+const releaseVerification=process.env.ATLAS_RELEASE_VERIFICATION_TOKEN||'';
+const expectedSha=String(process.env.ATLAS_E2E_EXPECTED_SHA||'').trim().toLowerCase();
+const org='atlas-e2e',dba='pilot';
+if(!base) throw new Error('ATLAS_E2E_BASE_URL is required');
+if(releaseVerification.length<32) throw new Error('ATLAS_RELEASE_VERIFICATION_TOKEN must be configured');
+if(!/^[0-9a-f]{40}$/.test(expectedSha)) throw new Error('ATLAS_E2E_EXPECTED_SHA must be exact deployed SHA');
+const runId=`auth-${expectedSha.slice(0,8)}-${Date.now().toString(36)}`;
+const password=`Aa!9-${crypto.randomUUID()}-Zz!7`;
+const checks=[];
+const mark=(name,ok,details='')=>{checks.push({name,ok,details});if(!ok)throw new Error(`${name}: ${details}`);};
+async function call(path,{method='GET',token,body,scope=true,releaseToken}={}){
+ const headers={accept:'application/json'};
+ if(body!==undefined) headers['content-type']='application/json';
+ if(token) headers.authorization=`Bearer ${token}`;
+ if(scope){headers['x-atlas-organization']=org;headers['x-atlas-dba']=dba;}
+ if(releaseToken) headers['x-atlas-release-verification-token']=releaseToken;
+ const response=await fetch(`${base}${path}`,{method,headers,body:body===undefined?undefined:JSON.stringify(body)});
+ const text=await response.text();let data={};try{data=text?JSON.parse(text):{};}catch{data={raw:text};}
+ return {status:response.status,data};
+}
+const verification=await call('/api/admin/release-verification-session',{method:'POST',scope:false,releaseToken:releaseVerification,body:{expected_sha:expectedSha,organization_id:org,dba_id:dba}});
+mark('Release verifier session',verification.status===201&&typeof verification.data.session_token==='string',JSON.stringify({...verification,data:{...verification.data,session_token:verification.data.session_token?'[redacted]':undefined}}));
+const managerToken=verification.data.session_token;
+const email=`atlas-e2e-auth-${runId}@example.invalid`;
+const created=await call('/api/users',{method:'POST',token:managerToken,body:{email,display_name:'ATLAS Password E2E Viewer',role:'viewer'}});
+mark('Viewer user created',created.status===201&&created.data.user_id,JSON.stringify(created));
+const activation=await call('/api/auth/activation-tokens',{method:'POST',token:managerToken,body:{user_id:created.data.user_id}});
+mark('One-time activation issued',activation.status===201&&typeof activation.data.activation_token==='string',JSON.stringify({...activation,data:{...activation.data,activation_token:activation.data.activation_token?'[redacted]':undefined}}));
+const activated=await call('/api/auth/activate',{method:'POST',scope:false,body:{activation_token:activation.data.activation_token,password}});
+mark('Password activated',activated.status===200&&activated.data.ok===true,JSON.stringify(activated));
+const reused=await call('/api/auth/activate',{method:'POST',scope:false,body:{activation_token:activation.data.activation_token,password:`Bb!8-${crypto.randomUUID()}-Yy!6`}});
+mark('Activation cannot be reused',reused.status===401,JSON.stringify(reused));
+const badLogin=await call('/api/auth/login',{method:'POST',scope:false,body:{email,password:`wrong-${crypto.randomUUID()}`}});
+mark('Wrong password denied',badLogin.status===401,JSON.stringify(badLogin));
+const login=await call('/api/auth/login',{method:'POST',scope:false,body:{email,password}});
+mark('Password login succeeds',login.status===200&&login.data.ok===true&&typeof login.data.session_token==='string'&&Array.isArray(login.data.memberships)&&login.data.memberships.some(m=>m.organization_id===org&&m.dba_id===dba&&m.role==='viewer'),JSON.stringify({...login,data:{...login.data,session_token:login.data.session_token?'[redacted]':undefined}}));
+const viewerToken=login.data.session_token;
+const me=await call('/api/auth/me',{token:viewerToken,scope:false});
+mark('Authenticated identity resolves',me.status===200&&me.data.user?.email===email&&Array.isArray(me.data.memberships),JSON.stringify(me));
+const read=await call('/api/crm/accounts',{token:viewerToken});
+mark('Viewer can read CRM',read.status===200&&Array.isArray(read.data.accounts),JSON.stringify(read));
+const write=await call('/api/crm/accounts',{method:'POST',token:viewerToken,body:{name:`Denied viewer write ${runId}`}});
+mark('Viewer cannot write CRM',write.status===403,JSON.stringify(write));
+const cross=await fetch(`${base}/api/crm/accounts`,{headers:{authorization:`Bearer ${viewerToken}`,'x-atlas-organization':org,'x-atlas-dba':'forbidden-dba'}});
+mark('Viewer cross-DBA denied',cross.status===403,`status=${cross.status}`);
+const logout=await call('/api/auth/logout',{method:'POST',token:viewerToken,scope:false});
+mark('Viewer logout',logout.status===200&&logout.data.ok===true,JSON.stringify(logout));
+const after=await call('/api/auth/me',{token:viewerToken,scope:false});
+mark('Revoked viewer session denied',after.status===401,JSON.stringify(after));
+console.log(JSON.stringify({ok:true,runId,expectedSha,checks},null,2));
