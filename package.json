@@ -6,7 +6,9 @@
   "author": "ATLAS Health Frontiers <atlashealthfrontiers@gmail.com>",
   "scripts": {
     "test:core": "node scripts/runtime-test.mjs",
-    "validate": "node scripts/validate.mjs && npm run test:core",
+    "test:accounting": "node scripts/validate-accounting.mjs",
+    "test:backups": "node scripts/validate-backups.mjs",
+    "validate": "node scripts/validate.mjs && npm run test:core && npm run test:accounting && npm run test:backups",
     "build": "node scripts/build.mjs",
     "build:cloudflare": "node scripts/build.mjs",
     "build:dev": "npm run validate && npm run build",
