@@ -3,10 +3,15 @@ import { handleCommercialCore } from './commercial-core.js';
 import { handleDocuments } from './documents.js';
 import { handleAccounting } from './accounting.js';
 import { handleBackups } from './backups.js';
+import { handleSystemReadiness } from './system-readiness.js';
 
 export default {
   async fetch(request,env,ctx){
     const url=new URL(request.url);
+    if(url.pathname.startsWith('/api/system/')){
+      const response=await handleSystemReadiness(request,env,ctx);
+      if(response) return response;
+    }
     if(url.pathname.startsWith('/api/documents')){
       const response=await handleDocuments(request,env,ctx);
       if(response) return response;
