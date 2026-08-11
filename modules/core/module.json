@@ -1,0 +1,8 @@
+{
+  "id": "core",
+  "name": "ATLAS Core",
+  "version": "0.1.0",
+  "status": "active",
+  "owns": ["runtime", "module-registry", "health"],
+  "publicRoutes": ["/api/status", "/api/modules"]
+}
