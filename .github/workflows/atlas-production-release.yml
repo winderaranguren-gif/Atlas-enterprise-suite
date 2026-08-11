@@ -1,0 +1,100 @@
+name: ATLAS Production Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+environment:
+  name: production
+
+concurrency:
+  group: atlas-production-release
+  cancel-in-progress: false
+
+jobs:
+  deploy-and-verify:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      ATLAS_BOOTSTRAP_TOKEN: ${{ secrets.ATLAS_BOOTSTRAP_TOKEN }}
+      ATLAS_D1_DATABASE_NAME: ${{ vars.ATLAS_D1_DATABASE_NAME }}
+      ATLAS_D1_DATABASE_ID: ${{ vars.ATLAS_D1_DATABASE_ID }}
+      ATLAS_BACKUPS_BUCKET_NAME: ${{ vars.ATLAS_BACKUPS_BUCKET_NAME }}
+      ATLAS_PRODUCTION_BASE_URL: ${{ vars.ATLAS_PRODUCTION_BASE_URL }}
+      ATLAS_DEPLOYED_SHA: ${{ github.sha }}
+      ATLAS_E2E_EXPECTED_SHA: ${{ github.sha }}
+    steps:
+      - name: Checkout exact main SHA
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Fail closed if production inputs are missing
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          test -n "$ATLAS_BOOTSTRAP_TOKEN"
+          test -n "$ATLAS_D1_DATABASE_NAME"
+          test -n "$ATLAS_D1_DATABASE_ID"
+          test -n "$ATLAS_BACKUPS_BUCKET_NAME"
+          test -n "$ATLAS_PRODUCTION_BASE_URL"
+
+      - name: Validate and build exact SHA
+        run: npm run build:prod
+
+      - name: Generate production Cloudflare config
+        run: npm run prepare:cloudflare:prod
+
+      - name: Apply D1 migrations remotely
+        run: npx wrangler@4 d1 migrations apply "$ATLAS_D1_DATABASE_NAME" --remote --config wrangler.production.jsonc
+
+      - name: Configure bootstrap secret
+        shell: bash
+        run: printf '%s' "$ATLAS_BOOTSTRAP_TOKEN" | npx wrangler@4 secret put ATLAS_BOOTSTRAP_TOKEN --config wrangler.production.jsonc
+
+      - name: Deploy exact SHA to Cloudflare Workers
+        run: npx wrangler@4 deploy --config wrangler.production.jsonc
+
+      - name: Run exact-SHA commercial pilot E2E
+        env:
+          ATLAS_E2E_BASE_URL: ${{ vars.ATLAS_PRODUCTION_BASE_URL }}
+        run: npm run test:e2e:commercial-pilot
+
+      - name: Record verified release evidence
+        if: success()
+        shell: bash
+        run: |
+          mkdir -p release-evidence
+          cat > release-evidence/production-verification.json <<EOF
+          {
+            "verified": true,
+            "sourceSha": "${GITHUB_SHA}",
+            "workflowRunId": "${GITHUB_RUN_ID}",
+            "environment": "production"
+          }
+          EOF
+
+      - name: Upload release evidence
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: atlas-production-verification-${{ github.sha }}
+          path: release-evidence/production-verification.json
+          if-no-files-found: error
+          retention-days: 30
