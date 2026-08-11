@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-atlas-auth="pending">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
@@ -12,6 +12,8 @@
   <link rel="stylesheet" href="/core-services.css" />
   <link rel="stylesheet" href="/surface-mode.css" />
   <link rel="stylesheet" href="/universal-access.css" />
+  <style>html[data-atlas-auth="pending"] body{visibility:hidden}html[data-atlas-auth="ready"] body{visibility:visible}</style>
+  <script src="/auth-core.js" defer></script>
   <title>ATLAS Enterprise Suite</title>
 </head>
 <body>
@@ -25,7 +27,7 @@
         <button class="top-icon" title="Screens" aria-label="Open ATLAS Multi-Pane Workspace">▣</button>
         <button class="top-icon" title="Calendar">▦</button>
         <button class="top-icon" title="Notifications">◔</button>
-        <div class="profile"><span class="avatar">E</span><div><strong id="profileName">Esther</strong><small>Admin</small></div></div>
+        <div class="profile"><span class="avatar">A</span><div><strong id="profileName">ATLAS User</strong><small>ROLE</small></div></div>
       </div>
     </header>
 
@@ -51,11 +53,11 @@
         </nav>
         <div class="rail-status">
           <div><span class="status-dot"></span><strong>ATLAS OS</strong></div>
-          <small>v1.4.4</small><span class="healthy">Updated</span>
+          <small>v1.4.4 RC</small><span>Verification required</span>
         </div>
         <div class="rail-status update-card">
           <div><span class="status-dot"></span><strong>Update Fabric</strong></div>
-          <small>AUTO-UPDATE</small><span class="healthy">Active</span>
+          <small>RELEASE GATED</small><span>Candidate</span>
         </div>
       </aside>
 
@@ -63,9 +65,9 @@
     </div>
 
     <footer class="market-strip">
-      <span class="live-chip">✦ LIVE</span>
+      <span class="live-chip">✦ PILOT</span>
       <span>ATLAS Secure Network</span>
-      <span>Update Fabric: active</span>
+      <span>Update Fabric: release gated</span>
       <span>Web + App surface</span>
       <span id="footerClock"></span>
     </footer>
