@@ -33,14 +33,16 @@ jobs:
       - name: Validate ATLAS contracts and runtime
         run: npm run validate
 
-      - name: Production build
+      - name: Reproducible production build
         run: npm run build:prod
 
-      - name: Verify Cloudflare configuration exists
+      - name: Verify Cloudflare contract
         run: |
           test -f wrangler.jsonc
-          grep -q '"main": "worker/index.js"' wrangler.jsonc
+          grep -q '"main": "worker/router.js"' wrangler.jsonc
           grep -q '"binding": "DB"' wrangler.jsonc
+          grep -q '"migrations_dir": "migrations"' wrangler.jsonc
+          grep -q '"run_worker_first": true' wrangler.jsonc
           grep -q '"crons": \["\*/10 \* \* \* \*"\]' wrangler.jsonc
 
       - name: Upload build artifact
