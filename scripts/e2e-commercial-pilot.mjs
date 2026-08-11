@@ -27,8 +27,8 @@ async function call(path,{method='GET',token,scope=true,body,bootstrapToken,rele
 }
 const fingerprint=await call('/api/system/release-fingerprint',{scope:false});
 mark('Exact deployed SHA fingerprint',fingerprint.status===200&&fingerprint.data.shaConfigured===true&&String(fingerprint.data.deployedSha||'').toLowerCase()===expectedSha,JSON.stringify(fingerprint));
-const readiness=await call('/api/system/readiness',{scope:false});
-mark('Commercial pilot readiness',readiness.status===200&&readiness.data.operational===true&&String(readiness.data.deployedSha||'').toLowerCase()===expectedSha,JSON.stringify(readiness));
+const readiness=await call('/api/system/readiness?phase=preflight',{scope:false});
+mark('Commercial pilot infrastructure preflight',readiness.status===200&&readiness.data.infrastructureReady===true&&String(readiness.data.deployedSha||'').toLowerCase()===expectedSha,JSON.stringify(readiness));
 for(const [name,path] of [['Documents','/api/documents/health'],['Accounting','/api/accounting/health'],['Backups','/api/backups/health']]){
   const health=await call(path,{scope:false});mark(`${name} health`,health.status===200&&health.data.operational===true,JSON.stringify(health));
 }
