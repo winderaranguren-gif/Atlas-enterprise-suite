@@ -4,6 +4,7 @@ const TYPES={accounts:'crm_accounts',contacts:'crm_contacts',leads:'crm_leads',o
 const READ_ROLES=new Set(['owner','admin','editor','viewer','auditor']);
 const WRITE_ROLES=new Set(['owner','admin','editor']);
 const MANAGE_ROLES=new Set(['owner','admin']);
+const AUDIT_ROLES=new Set(['owner','admin','auditor']);
 const ASSIGNABLE_ROLES=new Set(['admin','editor','viewer','auditor']);
 
 async function sha256(value){
@@ -94,7 +95,7 @@ async function authorize(request,env,mode='read'){
     return {error:json({error:'Forbidden'},403)};
   }
   const role=String(membership.role||'').toLowerCase();
-  const allowed=mode==='read'?READ_ROLES.has(role):mode==='manage'?MANAGE_ROLES.has(role):WRITE_ROLES.has(role);
+  const allowed=mode==='read'?READ_ROLES.has(role):mode==='manage'?MANAGE_ROLES.has(role):mode==='audit'?AUDIT_ROLES.has(role):mode==='directory'?MANAGE_ROLES.has(role):WRITE_ROLES.has(role);
   if(!allowed){
     await securityEvent(env,{userId:actor.user_id,org,dba,action:mode,resourceType:'scope',decision:'deny',reason:`role_${role}_not_allowed`});
     return {error:json({error:'Forbidden for role'},403)};
@@ -222,7 +223,7 @@ export async function handleCommercialCore(request,env){
     return json({ok:true});
   }
   if(url.pathname==='/api/users'&&request.method==='GET'){
-    const auth=await authorize(request,env,'read'); if(auth.error) return auth.error;
+    const auth=await authorize(request,env,'directory'); if(auth.error) return auth.error;
     const r=await env.DB.prepare(`SELECT u.id,u.email,u.display_name,m.role,m.status FROM atlas_memberships m JOIN atlas_users u ON u.id=m.user_id
       WHERE m.organization_id=? AND m.dba_id=? ORDER BY u.email`).bind(auth.org,auth.dba).all();
     return json({users:r.results||[]});
@@ -234,7 +235,7 @@ export async function handleCommercialCore(request,env){
     return updateScopedUser(request,env,targetUserId);
   }
   if(url.pathname==='/api/audit'&&request.method==='GET'){
-    const auth=await authorize(request,env,'read'); if(auth.error) return auth.error;
+    const auth=await authorize(request,env,'audit'); if(auth.error) return auth.error;
     const r=await env.DB.prepare('SELECT * FROM atlas_audit_events WHERE organization_id=? AND dba_id=? ORDER BY created_at DESC LIMIT 200').bind(auth.org,auth.dba).all();
     return json({events:r.results||[]});
   }
