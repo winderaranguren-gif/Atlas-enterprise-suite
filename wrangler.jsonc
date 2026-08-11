@@ -8,6 +8,18 @@
     "binding": "ASSETS",
     "run_worker_first": ["/api/*"]
   },
+  "d1_databases": [
+    {
+      "binding": "ATLAS_DB",
+      "database_name": "REPLACE_WITH_ATLAS_D1_DATABASE_NAME",
+      "database_id": "REPLACE_WITH_ATLAS_D1_DATABASE_ID",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "vars": {
+    "ATLAS_DEFAULT_LANGUAGE": "en",
+    "ATLAS_SUPPORTED_LANGUAGES": "en,es"
+  },
   "observability": {
     "enabled": true
   }
