@@ -11,6 +11,7 @@
     "test:update-flow": "node scripts/validate-update-flow.mjs",
     "test:e2e:commercial-pilot": "node scripts/e2e-commercial-pilot.mjs",
     "validate": "node scripts/validate.mjs && npm run test:core && npm run test:accounting && npm run test:backups && npm run test:update-flow",
+    "prepare:cloudflare:prod": "node scripts/prepare-cloudflare-production.mjs",
     "build": "node scripts/build.mjs",
     "build:cloudflare": "node scripts/build.mjs",
     "build:dev": "npm run validate && npm run build",
