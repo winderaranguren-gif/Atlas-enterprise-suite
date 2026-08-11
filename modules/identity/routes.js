@@ -1,5 +1,5 @@
 import { json } from '../../platform/runtime/health.js';
-import { requireSession, requireScope } from '../../platform/security/auth.js';
+import { requireSession, requireScope, hashToken } from '../../platform/security/auth.js';
 import { audit } from '../../platform/security/audit.js';
 
 async function scopeFrom(request){
@@ -22,7 +22,41 @@ async function authorize(env,request,roles,action){
   return {auth:auth.session,membership:scoped.membership,organizationId,dbaId};
 }
 
+async function bootstrap(request,env){
+  if(!env.ATLAS_BOOTSTRAP_TOKEN) return json({ok:false,error:'bootstrap_not_configured'},503);
+  if(request.headers.get('x-atlas-bootstrap-token')!==env.ATLAS_BOOTSTRAP_TOKEN) return json({ok:false,error:'invalid_bootstrap_token'},401);
+  const existing=await env.DB.prepare("SELECT id FROM memberships WHERE role='owner' LIMIT 1").first();
+  if(existing) return json({ok:false,error:'bootstrap_already_completed'},409);
+  const body=await request.json().catch(()=>null);
+  if(!body?.organizationName||!body?.dbaName||!body?.email||!body?.displayName) return json({ok:false,error:'organizationName_dbaName_email_displayName_required'},400);
+
+  const organizationId=crypto.randomUUID();
+  const dbaId=crypto.randomUUID();
+  const userId=crypto.randomUUID();
+  const membershipId=crypto.randomUUID();
+  const sessionId=crypto.randomUUID();
+  const token=`atlas_${crypto.randomUUID()}_${crypto.randomUUID()}`;
+  const tokenHash=await hashToken(token);
+
+  try{
+    await env.DB.batch([
+      env.DB.prepare('INSERT INTO organizations(id,name) VALUES(?,?)').bind(organizationId,body.organizationName),
+      env.DB.prepare('INSERT INTO dbas(id,organization_id,name) VALUES(?,?,?)').bind(dbaId,organizationId,body.dbaName),
+      env.DB.prepare("INSERT INTO users(id,email,display_name,status) VALUES(?,?,?,'active')").bind(userId,String(body.email).trim().toLowerCase(),body.displayName),
+      env.DB.prepare("INSERT INTO memberships(id,user_id,organization_id,dba_id,role,status) VALUES(?,?,?,?, 'owner','active')").bind(membershipId,userId,organizationId,dbaId),
+      env.DB.prepare("INSERT INTO sessions(id,token_hash,user_id,expires_at) VALUES(?,?,?,datetime('now','+12 hours'))").bind(sessionId,tokenHash,userId)
+    ]);
+  }catch(error){
+    return json({ok:false,error:'bootstrap_failed',detail:String(error?.message||error)},409);
+  }
+
+  await audit(env,{actorUserId:userId,organizationId,dbaId,action:'identity.bootstrap',resourceType:'identity',resourceId:userId,decision:'allow'});
+  return json({ok:true,organizationId,dbaId,userId,session:{token,expiresInHours:12}},201);
+}
+
 export async function identityRoutes(request,env,url){
+  if(url.pathname==='/api/identity/bootstrap' && request.method==='POST') return bootstrap(request,env);
+
   if(url.pathname==='/api/auth/me' && request.method==='GET'){
     const auth=await requireSession(env,request);
     if(!auth.ok) return json({ok:false,error:auth.error},auth.status);
