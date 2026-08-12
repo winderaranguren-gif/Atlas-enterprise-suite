@@ -7,6 +7,7 @@ import { backupRoutes } from '../modules/backups/routes.js';
 import { connectivityRoutes } from '../modules/connectivity/routes.js';
 import { intelligenceRoutes } from '../modules/intelligence/routes.js';
 import { analyticsRoutes } from '../modules/analytics/routes.js';
+import { creativeRoutes } from '../modules/creative/routes.js';
 
 export default {
   async fetch(request,env){
@@ -18,6 +19,8 @@ export default {
     if(identityResponse) return identityResponse;
     const intelligenceResponse=await intelligenceRoutes(request,env,url);
     if(intelligenceResponse) return intelligenceResponse;
+    const creativeResponse=await creativeRoutes(request,env,url);
+    if(creativeResponse) return creativeResponse;
     const crmResponse=await crmRoutes(request,env,url);
     if(crmResponse) return crmResponse;
     const documentResponse=await documentRoutes(request,env,url);
