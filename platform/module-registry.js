@@ -27,6 +27,16 @@ export const ATLAS_MODULE_REGISTRY = [
     serves: ['all']
   },
   {
+    id: 'security-emergency',
+    name: 'Security & Emergency',
+    layer: 'platform',
+    domain: 'security',
+    order: 35,
+    modulePath: 'modules/security-emergency',
+    dependsOn: ['identity','connectivity','backups'],
+    serves: ['all']
+  },
+  {
     id: 'documents',
     name: 'Documents',
     layer: 'shared-services',
