@@ -11,6 +11,9 @@ for(const required of [
   'scopeSelector',
   'Commercial pilot workspace',
   'Nothing on this screen is marked operational unless the backend reports it.',
+  'crmWorkspace',
+  'crmForm',
+  'crmRows',
   '/app.js'
 ]){
   if(!html.includes(required)) throw new Error(`UI missing production requirement: ${required}`);
@@ -31,7 +34,13 @@ for(const required of [
   "'/api/audit-events'",
   "sessionStorage.getItem('atlas.session')",
   "'x-atlas-organization'",
-  "'x-atlas-dba'"
+  "'x-atlas-dba'",
+  "method:id?'PATCH':'POST'",
+  "method:'DELETE'",
+  'canWriteCrm()',
+  'owner','admin','member',
+  'archiveContact',
+  'editContact'
 ]){
   if(!app.includes(required)) throw new Error(`UI runtime wiring missing: ${required}`);
 }
