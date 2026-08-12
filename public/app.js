@@ -1,103 +1,42 @@
 const copy={
-  en:{language:'Language',eyebrow:'Enterprise operating system',title:'Production Control Center',subtitle:'Live runtime information from the deployed ATLAS Worker. Nothing on this screen is marked operational unless the backend reports it.',checking:'Checking runtime…',reachable:'Worker reachable',unreachable:'Runtime unavailable',deployment:'Deployment',modules:'ATLAS modules',bound:'Bound',missing:'Missing',reachableDb:'Reachable',unreachableDb:'Unreachable',signIn:'Sign in',email:'Email',password:'Password',submit:'Sign in',signedIn:'Signed in',scope:'Organization / DBA',logout:'Log out',workspace:'Commercial pilot workspace',refresh:'Refresh live data',users:'Users & permissions',crm:'CRM contacts',documents:'Documents',accounts:'Accounts',journals:'Journal entries',backups:'Backups',audit:'Audit events',restricted:'Restricted',loading:'Loading…',noSession:'Sign in to load scoped production data.',loginFailed:'Sign-in failed'},
-  es:{language:'Idioma',eyebrow:'Sistema operativo empresarial',title:'Centro de Control de Producción',subtitle:'Información en vivo del Worker ATLAS desplegado. Nada en esta pantalla se marca operativo salvo que el backend lo reporte.',checking:'Comprobando runtime…',reachable:'Worker disponible',unreachable:'Runtime no disponible',deployment:'Despliegue',modules:'Módulos ATLAS',bound:'Conectado',missing:'No conectado',reachableDb:'Disponible',unreachableDb:'No disponible',signIn:'Iniciar sesión',email:'Correo',password:'Contraseña',submit:'Entrar',signedIn:'Sesión iniciada',scope:'Organización / DBA',logout:'Cerrar sesión',workspace:'Espacio del piloto comercial',refresh:'Actualizar datos reales',users:'Usuarios y permisos',crm:'Contactos CRM',documents:'Documentos',accounts:'Cuentas',journals:'Asientos contables',backups:'Respaldos',audit:'Eventos de auditoría',restricted:'Restringido',loading:'Cargando…',noSession:'Inicia sesión para cargar datos de producción por alcance.',loginFailed:'Error de inicio de sesión'}
+  en:{language:'Language',eyebrow:'Enterprise operating system',title:'Production Control Center',subtitle:'Live runtime information from the deployed ATLAS Worker. Nothing on this screen is marked operational unless the backend reports it.',checking:'Checking runtime…',reachable:'Worker reachable',unreachable:'Runtime unavailable',deployment:'Deployment',modules:'ATLAS modules',bound:'Bound',missing:'Missing',reachableDb:'Reachable',unreachableDb:'Unreachable',signIn:'Sign in',email:'Email',password:'Password',submit:'Sign in',signedIn:'Signed in',scope:'Organization / DBA',logout:'Log out',workspace:'Commercial pilot workspace',refresh:'Refresh live data',users:'Users & permissions',crm:'CRM contacts',documents:'Documents',accounts:'Accounts',journals:'Journal entries',backups:'Backups',audit:'Audit events',restricted:'Restricted',loading:'Loading…',noSession:'Sign in to load scoped production data.',loginFailed:'Sign-in failed',crmOperations:'CRM operations',crmOperationsHint:'Create, edit and archive contacts inside the selected Organization / DBA.',reload:'Reload',contactName:'Name',contactType:'Type',company:'Company',contactEmail:'Email',phone:'Phone',notes:'Notes',saveContact:'Save contact',cancelEdit:'Cancel edit',actions:'Actions',edit:'Edit',archive:'Archive',saved:'Contact saved.',archived:'Contact archived.',noContacts:'No contacts in this scope.',crmRestricted:'Your role cannot modify CRM contacts.'},
+  es:{language:'Idioma',eyebrow:'Sistema operativo empresarial',title:'Centro de Control de Producción',subtitle:'Información en vivo del Worker ATLAS desplegado. Nada en esta pantalla se marca operativo salvo que el backend lo reporte.',checking:'Comprobando runtime…',reachable:'Worker disponible',unreachable:'Runtime no disponible',deployment:'Despliegue',modules:'Módulos ATLAS',bound:'Conectado',missing:'No conectado',reachableDb:'Disponible',unreachableDb:'No disponible',signIn:'Iniciar sesión',email:'Correo',password:'Contraseña',submit:'Entrar',signedIn:'Sesión iniciada',scope:'Organización / DBA',logout:'Cerrar sesión',workspace:'Espacio del piloto comercial',refresh:'Actualizar datos reales',users:'Usuarios y permisos',crm:'Contactos CRM',documents:'Documentos',accounts:'Cuentas',journals:'Asientos contables',backups:'Respaldos',audit:'Eventos de auditoría',restricted:'Restringido',loading:'Cargando…',noSession:'Inicia sesión para cargar datos de producción por alcance.',loginFailed:'Error de inicio de sesión',crmOperations:'Operaciones CRM',crmOperationsHint:'Crea, edita y archiva contactos dentro de la Organización / DBA seleccionada.',reload:'Recargar',contactName:'Nombre',contactType:'Tipo',company:'Empresa',contactEmail:'Correo',phone:'Teléfono',notes:'Notas',saveContact:'Guardar contacto',cancelEdit:'Cancelar edición',actions:'Acciones',edit:'Editar',archive:'Archivar',saved:'Contacto guardado.',archived:'Contacto archivado.',noContacts:'No hay contactos en este alcance.',crmRestricted:'Tu rol no puede modificar contactos CRM.'}
 };
 
-const state={token:sessionStorage.getItem('atlas.session')||'',session:null,scope:null,health:null};
+const state={token:sessionStorage.getItem('atlas.session')||'',session:null,scope:null,health:null,crm:[]};
 const languageKey='atlas.language';
 let lang=localStorage.getItem(languageKey)==='es'?'es':'en';
 const $=id=>document.getElementById(id);
 
 function t(key){return copy[lang][key]||key;}
-function translate(){
-  document.documentElement.lang=lang;
-  document.querySelectorAll('[data-i18n]').forEach(el=>{el.textContent=t(el.dataset.i18n);});
-}
-function scopedHeaders(extra={}){
-  const headers={...extra};
-  if(state.token) headers.authorization=`Bearer ${state.token}`;
-  if(state.scope){headers['x-atlas-organization']=state.scope.organization_id;headers['x-atlas-dba']=state.scope.dba_id;}
-  return headers;
-}
-async function api(path,options={}){
-  const response=await fetch(path,{cache:'no-store',...options,headers:scopedHeaders(options.headers||{})});
-  const text=await response.text();
-  let body={};
-  try{body=text?JSON.parse(text):{};}catch{throw new Error(`HTTP ${response.status}: invalid JSON`);}
-  if(!response.ok||body.ok===false){const error=new Error(body.error||`HTTP ${response.status}`);error.status=response.status;throw error;}
-  return body;
-}
-function renderHealth(h){
-  if(!h)return; state.health=h;
-  $('d1').textContent=h.bindings?.d1?(h.d1Reachable?t('reachableDb'):t('unreachableDb')):t('missing');
-  $('r2').textContent=h.bindings?.r2?t('bound'):t('missing');
-  $('assets').textContent=h.bindings?.assets?t('bound'):t('missing');
-  $('sha').textContent=h.deployedSha||'unknown';
-  const el=$('runtimeStatus');el.className='status '+(h.d1Reachable?'ok':'bad');el.lastElementChild.textContent=t(h.d1Reachable?'reachable':'unreachable');
-}
-function setAuthView(){
-  const signed=Boolean(state.session&&state.token);
-  $('loginCard').classList.toggle('hidden',signed);
-  $('sessionCard').classList.toggle('hidden',!signed);
-  $('workspace').classList.toggle('hidden',!signed);
-  if(!signed){$('workspaceMessage').textContent=t('noSession');return;}
-  $('userIdentity').textContent=state.session.user.displayName?`${state.session.user.displayName} · ${state.session.user.email}`:state.session.user.email;
-  const selector=$('scopeSelector'); selector.replaceChildren(...state.session.scopes.map((s,i)=>{
-    const option=document.createElement('option');option.value=String(i);option.textContent=`${s.organization_name} · ${s.dba_name} · ${s.role}`;return option;
-  }));
-  const currentIndex=Math.max(0,state.session.scopes.findIndex(s=>state.scope&&s.organization_id===state.scope.organization_id&&s.dba_id===state.scope.dba_id));
-  selector.value=String(currentIndex);state.scope=state.session.scopes[currentIndex];
-}
+function translate(){document.documentElement.lang=lang;document.querySelectorAll('[data-i18n]').forEach(el=>{el.textContent=t(el.dataset.i18n);});}
+function scopedHeaders(extra={}){const headers={...extra};if(state.token)headers.authorization=`Bearer ${state.token}`;if(state.scope){headers['x-atlas-organization']=state.scope.organization_id;headers['x-atlas-dba']=state.scope.dba_id;}return headers;}
+async function api(path,options={}){const response=await fetch(path,{cache:'no-store',...options,headers:scopedHeaders(options.headers||{})});const text=await response.text();let body={};try{body=text?JSON.parse(text):{};}catch{throw new Error(`HTTP ${response.status}: invalid JSON`);}if(!response.ok||body.ok===false){const error=new Error(body.error||`HTTP ${response.status}`);error.status=response.status;throw error;}return body;}
+function renderHealth(h){if(!h)return;state.health=h;$('d1').textContent=h.bindings?.d1?(h.d1Reachable?t('reachableDb'):t('unreachableDb')):t('missing');$('r2').textContent=h.bindings?.r2?t('bound'):t('missing');$('assets').textContent=h.bindings?.assets?t('bound'):t('missing');$('sha').textContent=h.deployedSha||'unknown';const el=$('runtimeStatus');el.className='status '+(h.d1Reachable?'ok':'bad');el.lastElementChild.textContent=t(h.d1Reachable?'reachable':'unreachable');}
+function canWriteCrm(){return ['owner','admin','member'].includes(state.scope?.role);}
+function setCrmFormEnabled(){const enabled=canWriteCrm();for(const id of ['crmName','crmType','crmCompany','crmEmail','crmPhone','crmNotes','crmSave'])$(id).disabled=!enabled;$('crmMessage').textContent=enabled?'':t('crmRestricted');}
+function setAuthView(){const signed=Boolean(state.session&&state.token);$('loginCard').classList.toggle('hidden',signed);$('sessionCard').classList.toggle('hidden',!signed);$('workspace').classList.toggle('hidden',!signed);if(!signed){$('workspaceMessage').textContent=t('noSession');return;}$('userIdentity').textContent=state.session.user.displayName?`${state.session.user.displayName} · ${state.session.user.email}`:state.session.user.email;const selector=$('scopeSelector');selector.replaceChildren(...state.session.scopes.map((s,i)=>{const option=document.createElement('option');option.value=String(i);option.textContent=`${s.organization_name} · ${s.dba_name} · ${s.role}`;return option;}));const currentIndex=Math.max(0,state.session.scopes.findIndex(s=>state.scope&&s.organization_id===state.scope.organization_id&&s.dba_id===state.scope.dba_id));selector.value=String(currentIndex);state.scope=state.session.scopes[currentIndex];setCrmFormEnabled();}
 function metric(id,value,detail=''){$(id).querySelector('strong').textContent=value;$(id).querySelector('.detail').textContent=detail;}
-async function loadMetric(id,path,key){
-  metric(id,t('loading'));
-  try{const body=await api(path);const rows=body[key]||[];metric(id,String(rows.length),'live');}
-  catch(error){metric(id,error.status===403?t('restricted'):'Error',error.message);}
-}
-async function refreshWorkspace(){
-  if(!state.scope)return;
-  $('workspaceMessage').textContent=`${state.scope.organization_name} / ${state.scope.dba_name} · ${state.scope.role}`;
-  await Promise.all([
-    loadMetric('metricUsers','/api/identity/memberships','memberships'),
-    loadMetric('metricCrm','/api/crm/contacts','contacts'),
-    loadMetric('metricDocuments','/api/documents','documents'),
-    loadMetric('metricAccounts','/api/accounting/accounts','accounts'),
-    loadMetric('metricJournals','/api/accounting/journals','journals'),
-    loadMetric('metricBackups','/api/backups','backups'),
-    loadMetric('metricAudit','/api/audit-events','events')
-  ]);
-}
-async function hydrateSession(){
-  if(!state.token){state.session=null;setAuthView();return;}
-  try{state.session=await api('/api/auth/session');state.scope=state.session.scopes[0];setAuthView();await refreshWorkspace();}
-  catch{sessionStorage.removeItem('atlas.session');state.token='';state.session=null;state.scope=null;setAuthView();}
-}
-async function login(event){
-  event.preventDefault();$('loginError').textContent='';
-  try{
-    const body=await api('/api/auth/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:$('email').value,password:$('password').value})});
-    state.token=body.session.token;sessionStorage.setItem('atlas.session',state.token);state.session=body;state.scope=body.scopes[0];$('password').value='';setAuthView();await refreshWorkspace();
-  }catch(error){$('loginError').textContent=`${t('loginFailed')}: ${error.message}`;}
-}
-async function logout(){
-  try{if(state.token)await api('/api/auth/logout',{method:'POST'});}catch{}
-  sessionStorage.removeItem('atlas.session');state.token='';state.session=null;state.scope=null;setAuthView();
-}
-async function boot(){
-  translate();
-  try{
-    const [healthRes,metaRes]=await Promise.all([fetch('/api/health',{cache:'no-store'}),fetch('/api/meta',{cache:'no-store'})]);
-    if(!healthRes.ok||!metaRes.ok)throw new Error(`HTTP ${healthRes.status}/${metaRes.status}`);
-    const health=await healthRes.json();const meta=await metaRes.json();renderHealth(health);
-    $('modules').replaceChildren(...meta.modules.map(m=>{const el=document.createElement('div');el.className='module';el.innerHTML=`<strong>${m.name}</strong><span class="muted">${m.layer}${m.domain?' · '+m.domain:''}</span>`;return el;}));
-  }catch(error){const status=$('runtimeStatus');status.className='status bad';status.lastElementChild.textContent=t('unreachable');$('runtimeError').textContent=String(error.message||error);$('runtimeError').classList.remove('hidden');}
-  await hydrateSession();
-}
+async function loadMetric(id,path,key){metric(id,t('loading'));try{const body=await api(path);const rows=body[key]||[];metric(id,String(rows.length),'live');}catch(error){metric(id,error.status===403?t('restricted'):'Error',error.message);}}
+function resetCrmForm(){for(const id of ['crmId','crmName','crmCompany','crmEmail','crmPhone','crmNotes'])$(id).value='';$('crmType').value='customer';$('crmCancel').classList.add('hidden');}
+function editContact(contact){$('crmId').value=contact.id;$('crmName').value=contact.name||'';$('crmType').value=contact.contact_type||'customer';$('crmCompany').value=contact.company||'';$('crmEmail').value=contact.email||'';$('crmPhone').value=contact.phone||'';$('crmNotes').value=contact.notes||'';$('crmCancel').classList.remove('hidden');$('crmName').focus();}
+function renderCrm(){const tbody=$('crmRows');tbody.replaceChildren();if(!state.crm.length){const tr=document.createElement('tr');const td=document.createElement('td');td.colSpan=6;td.className='muted';td.textContent=t('noContacts');tr.append(td);tbody.append(tr);return;}for(const contact of state.crm){const tr=document.createElement('tr');for(const value of [contact.name,contact.contact_type,contact.company||'—',contact.email||'—',contact.phone||'—']){const td=document.createElement('td');td.textContent=value||'—';tr.append(td);}const actions=document.createElement('td');actions.className='actions';const edit=document.createElement('button');edit.type='button';edit.className='secondary';edit.textContent=t('edit');edit.disabled=!canWriteCrm();edit.addEventListener('click',()=>editContact(contact));const archive=document.createElement('button');archive.type='button';archive.className='danger';archive.style.marginLeft='8px';archive.textContent=t('archive');archive.disabled=!canWriteCrm();archive.addEventListener('click',()=>archiveContact(contact.id));actions.append(edit,archive);tr.append(actions);tbody.append(tr);}}
+async function loadCrm(){if(!state.scope)return;$('crmMessage').textContent=t('loading');try{const body=await api('/api/crm/contacts');state.crm=body.contacts||[];renderCrm();$('crmMessage').textContent='';metric('metricCrm',String(state.crm.length),'live');}catch(error){state.crm=[];renderCrm();$('crmMessage').textContent=error.message;metric('metricCrm',error.status===403?t('restricted'):'Error',error.message);}}
+async function saveCrm(event){event.preventDefault();if(!canWriteCrm())return;const id=$('crmId').value;const payload={name:$('crmName').value,contactType:$('crmType').value,company:$('crmCompany').value,email:$('crmEmail').value,phone:$('crmPhone').value,notes:$('crmNotes').value};$('crmMessage').textContent=t('loading');try{await api(id?`/api/crm/contacts/${encodeURIComponent(id)}`:'/api/crm/contacts',{method:id?'PATCH':'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)});resetCrmForm();$('crmMessage').textContent=t('saved');$('crmMessage').className='success';await loadCrm();}catch(error){$('crmMessage').textContent=error.message;$('crmMessage').className='error';}}
+async function archiveContact(id){if(!canWriteCrm())return;$('crmMessage').textContent=t('loading');try{await api(`/api/crm/contacts/${encodeURIComponent(id)}`,{method:'DELETE'});resetCrmForm();$('crmMessage').textContent=t('archived');$('crmMessage').className='success';await loadCrm();}catch(error){$('crmMessage').textContent=error.message;$('crmMessage').className='error';}}
+async function refreshWorkspace(){if(!state.scope)return;$('workspaceMessage').textContent=`${state.scope.organization_name} / ${state.scope.dba_name} · ${state.scope.role}`;setCrmFormEnabled();resetCrmForm();await Promise.all([loadMetric('metricUsers','/api/identity/memberships','memberships'),loadCrm(),loadMetric('metricDocuments','/api/documents','documents'),loadMetric('metricAccounts','/api/accounting/accounts','accounts'),loadMetric('metricJournals','/api/accounting/journals','journals'),loadMetric('metricBackups','/api/backups','backups'),loadMetric('metricAudit','/api/audit-events','events')]);}
+async function hydrateSession(){if(!state.token){state.session=null;setAuthView();return;}try{state.session=await api('/api/auth/session');state.scope=state.session.scopes[0];setAuthView();await refreshWorkspace();}catch{sessionStorage.removeItem('atlas.session');state.token='';state.session=null;state.scope=null;setAuthView();}}
+async function login(event){event.preventDefault();$('loginError').textContent='';try{const body=await api('/api/auth/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:$('email').value,password:$('password').value})});state.token=body.session.token;sessionStorage.setItem('atlas.session',state.token);state.session=body;state.scope=body.scopes[0];$('password').value='';setAuthView();await refreshWorkspace();}catch(error){$('loginError').textContent=`${t('loginFailed')}: ${error.message}`;}}
+async function logout(){try{if(state.token)await api('/api/auth/logout',{method:'POST'});}catch{}sessionStorage.removeItem('atlas.session');state.token='';state.session=null;state.scope=null;state.crm=[];setAuthView();}
+async function boot(){translate();try{const [healthRes,metaRes]=await Promise.all([fetch('/api/health',{cache:'no-store'}),fetch('/api/meta',{cache:'no-store'})]);if(!healthRes.ok||!metaRes.ok)throw new Error(`HTTP ${healthRes.status}/${metaRes.status}`);const health=await healthRes.json();const meta=await metaRes.json();renderHealth(health);$('modules').replaceChildren(...meta.modules.map(m=>{const el=document.createElement('div');el.className='module';el.innerHTML=`<strong>${m.name}</strong><span class="muted">${m.layer}${m.domain?' · '+m.domain:''}</span>`;return el;}));}catch(error){const status=$('runtimeStatus');status.className='status bad';status.lastElementChild.textContent=t('unreachable');$('runtimeError').textContent=String(error.message||error);$('runtimeError').classList.remove('hidden');}await hydrateSession();}
 
 $('language').value=lang;
-$('language').addEventListener('change',()=>{lang=$('language').value==='es'?'es':'en';localStorage.setItem(languageKey,lang);translate();renderHealth(state.health);setAuthView();});
+$('language').addEventListener('change',()=>{lang=$('language').value==='es'?'es':'en';localStorage.setItem(languageKey,lang);translate();renderHealth(state.health);setAuthView();renderCrm();});
 $('loginForm').addEventListener('submit',login);
 $('logout').addEventListener('click',logout);
 $('refreshWorkspace').addEventListener('click',refreshWorkspace);
 $('scopeSelector').addEventListener('change',async()=>{state.scope=state.session.scopes[Number($('scopeSelector').value)||0];await refreshWorkspace();});
+$('crmForm').addEventListener('submit',saveCrm);
+$('crmCancel').addEventListener('click',resetCrmForm);
+$('crmReload').addEventListener('click',loadCrm);
 boot();
