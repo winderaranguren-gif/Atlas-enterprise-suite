@@ -10,6 +10,7 @@ Clean modular rebuild — 2026-08-11.
 - `modules/documents/` — documents only.
 - `modules/accounting/` — accounting only.
 - `modules/backups/` — backup/restore only.
+- `modules/creative/` — ATLAS Creative Studio for generative image/video workflows, reusable characters and future media orchestration.
 - `worker/index.js` — thin router only.
 - `migrations/` — ordered D1 migrations.
 - `public/` — English-first web shell with explicit language selection.
