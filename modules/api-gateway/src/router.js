@@ -1,8 +1,7 @@
 import { json, health } from '../../../platform/runtime/health.js';
 import { publicRuntimeMeta } from '../../../platform/runtime/meta.js';
 import { connectivityRoutes } from '../../connectivity/routes.js';
-import { authRoutes } from '../../identity/auth-routes.js';
-import { sessionRoutes } from '../../identity/session-routes.js';
+import { authRoutes, sessionRoutes } from '../../auth/src/routes.js';
 import { identityRoutes } from '../../identity/routes.js';
 import { intelligenceRoutes } from '../../intelligence/routes.js';
 import { crmRoutes } from '../../crm/routes.js';
