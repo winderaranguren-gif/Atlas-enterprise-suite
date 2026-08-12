@@ -3,6 +3,7 @@ import fs from 'node:fs';
 const migration=fs.readFileSync('migrations/0007_login.sql','utf8');
 const auth=fs.readFileSync('platform/security/auth.js','utf8');
 const routes=fs.readFileSync('modules/identity/auth-routes.js','utf8');
+const sessionRoutes=fs.readFileSync('modules/identity/session-routes.js','utf8');
 const worker=fs.readFileSync('worker/index.js','utf8');
 
 for(const marker of [
@@ -40,6 +41,16 @@ for(const marker of [
   'auth.logout'
 ]) if(!routes.includes(marker)) throw new Error(`Auth route invariant missing: ${marker}`);
 
+for(const marker of [
+  '/api/auth/session',
+  'requireSession(env,request)',
+  "m.status='active'",
+  'organization_name',
+  'dba_name',
+  'auth.session.read'
+]) if(!sessionRoutes.includes(marker)) throw new Error(`Session rehydration invariant missing: ${marker}`);
+
 if(!worker.includes('authRoutes(request,env,url)')) throw new Error('Commercial auth router wiring missing');
+if(!worker.includes('sessionRoutes(request,env,url)')) throw new Error('Authenticated session router wiring missing');
 
 console.log('ATLAS commercial authentication contracts passed');
