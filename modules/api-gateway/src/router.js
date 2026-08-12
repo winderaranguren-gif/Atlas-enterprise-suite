@@ -6,6 +6,7 @@ import { identityRoutes } from '../../identity/src/routes.js';
 import { intelligenceRoutes } from '../../intelligence/routes.js';
 import { crmRoutes } from '../../crm/routes.js';
 import { documentRoutes } from '../../documents/routes.js';
+import { mediaRoutes } from '../../media/routes.js';
 import { accountingRoutes } from '../../accounting/routes.js';
 import { analyticsRoutes } from '../../analytics/routes.js';
 import { backupRecoveryRoutes } from '../../backup-recovery/src/routes.js';
@@ -18,6 +19,7 @@ export const API_ROUTE_CATALOG = Object.freeze([
   ['intelligence', intelligenceRoutes],
   ['crm', crmRoutes],
   ['documents', documentRoutes],
+  ['media', mediaRoutes],
   ['accounting', accountingRoutes],
   ['analytics', analyticsRoutes],
   ['backup-recovery', backupRecoveryRoutes]
