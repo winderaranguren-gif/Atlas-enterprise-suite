@@ -1,0 +1,6 @@
+{
+  "git.enabled": false,
+  "git.autofetch": false,
+  "git.autoRepositoryDetection": false,
+  "git.openRepositoryInParentFolders": "never"
+}
