@@ -5,6 +5,7 @@ import { documentRoutes } from '../modules/documents/routes.js';
 import { accountingRoutes } from '../modules/accounting/routes.js';
 import { backupRoutes } from '../modules/backups/routes.js';
 import { connectivityRoutes } from '../modules/connectivity/routes.js';
+import { intelligenceRoutes } from '../modules/intelligence/routes.js';
 
 export default {
   async fetch(request,env){
@@ -14,6 +15,8 @@ export default {
     if(connectivityResponse) return connectivityResponse;
     const identityResponse=await identityRoutes(request,env,url);
     if(identityResponse) return identityResponse;
+    const intelligenceResponse=await intelligenceRoutes(request,env,url);
+    if(intelligenceResponse) return intelligenceResponse;
     const crmResponse=await crmRoutes(request,env,url);
     if(crmResponse) return crmResponse;
     const documentResponse=await documentRoutes(request,env,url);
