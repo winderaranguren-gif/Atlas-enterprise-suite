@@ -54,7 +54,7 @@ export const ATLAS_MODULE_REGISTRY = [
     order: 110,
     modulePath: 'modules/analytics',
     dependsOn: ['identity','accounting'],
-    serves: ['accounting','crm','intelligence']
+    serves: ['accounting','crm','intelligence','live-commerce']
   },
   {
     id: 'crm',
@@ -64,7 +64,17 @@ export const ATLAS_MODULE_REGISTRY = [
     order: 200,
     modulePath: 'modules/crm',
     dependsOn: ['identity','documents'],
-    serves: ['analytics','intelligence']
+    serves: ['analytics','intelligence','live-commerce']
+  },
+  {
+    id: 'live-commerce',
+    name: 'ATLAS Live Commerce & Investor Studio',
+    layer: 'business',
+    domain: 'commerce',
+    order: 300,
+    modulePath: 'modules/live-commerce',
+    dependsOn: ['identity','connectivity','crm','analytics'],
+    serves: ['intelligence']
   },
   {
     id: 'intelligence',
@@ -73,7 +83,7 @@ export const ATLAS_MODULE_REGISTRY = [
     order: 900,
     modulePath: 'modules/intelligence',
     dependsOn: ['identity'],
-    consumes: ['accounting','analytics','crm','documents','connectivity'],
+    consumes: ['accounting','analytics','crm','documents','connectivity','live-commerce'],
     serves: ['all']
   }
 ];
