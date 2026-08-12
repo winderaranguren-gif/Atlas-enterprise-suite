@@ -1,5 +1,6 @@
 import { json, health } from '../platform/runtime/health.js';
 import { publicRuntimeMeta } from '../platform/runtime/meta.js';
+import { authRoutes } from '../modules/identity/auth-routes.js';
 import { identityRoutes } from '../modules/identity/routes.js';
 import { crmRoutes } from '../modules/crm/routes.js';
 import { documentRoutes } from '../modules/documents/routes.js';
@@ -16,6 +17,8 @@ export default {
     if(url.pathname==='/api/meta') return json(publicRuntimeMeta(env));
     const connectivityResponse=await connectivityRoutes(request,env,url);
     if(connectivityResponse) return connectivityResponse;
+    const authResponse=await authRoutes(request,env,url);
+    if(authResponse) return authResponse;
     const identityResponse=await identityRoutes(request,env,url);
     if(identityResponse) return identityResponse;
     const intelligenceResponse=await intelligenceRoutes(request,env,url);
