@@ -33,7 +33,16 @@ export const ATLAS_MODULE_REGISTRY = [
     order: 40,
     modulePath: 'modules/documents',
     dependsOn: ['identity'],
-    serves: ['accounting','crm','intelligence']
+    serves: ['accounting','crm','intelligence','media']
+  },
+  {
+    id: 'media',
+    name: 'ATLAS Media',
+    layer: 'shared-services',
+    order: 50,
+    modulePath: 'modules/media',
+    dependsOn: ['identity','documents'],
+    serves: ['communications','intelligence']
   },
   {
     id: 'accounting',
@@ -73,7 +82,7 @@ export const ATLAS_MODULE_REGISTRY = [
     order: 900,
     modulePath: 'modules/intelligence',
     dependsOn: ['identity'],
-    consumes: ['accounting','analytics','crm','documents','connectivity'],
+    consumes: ['accounting','analytics','crm','documents','connectivity','media'],
     serves: ['all']
   }
 ];
