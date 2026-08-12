@@ -27,12 +27,12 @@ for(const required of [
   if(!accounting.includes(required)) throw new Error(`Accounting UI runtime wiring missing: ${required}`);
 }
 for(const required of [
-  'identityWorkspace','userProvisionForm','membershipRows','dbaForm','dbaRows','activationToken',
+  'identityWorkspace','userProvisionForm','membershipRows','dbaForm','dbaRows','activationToken','identityCopy={en:','es:{title:',"document.documentElement.lang==='es'","$('language')?.addEventListener('change'",'translateIdentity()',
   "api('/api/auth/session'","api('/api/identity/memberships')","api('/api/identity/dbas')",
   "api('/api/identity/users',{method:'POST'","/api/identity/memberships/${encodeURIComponent(id)}`","method:'PATCH'","api('/api/auth/setup-token',{method:'POST'","api('/api/identity/dbas',{method:'POST'",
-  "sessionStorage.getItem('atlas.session')","'x-atlas-organization'","'x-atlas-dba'",'canAdmin()','canGrantOwner()','last_active_owner_required'
+  "sessionStorage.getItem('atlas.session')","'x-atlas-organization'","'x-atlas-dba'",'canAdmin()','canGrantOwner()'
 ]){
-  if(!users.includes(required) && required!=='last_active_owner_required') throw new Error(`Identity UI runtime wiring missing: ${required}`);
+  if(!users.includes(required)) throw new Error(`Identity UI runtime wiring missing: ${required}`);
 }
 for(const role of ['owner','admin','member']) if(!app.includes(`'${role}'`)&&!accounting.includes(`'${role}'`)&&!users.includes(`'${role}'`)) throw new Error(`UI missing write role: ${role}`);
 const identityRoutes=fs.readFileSync(new URL('../modules/identity/routes.js',import.meta.url),'utf8');
