@@ -10,6 +10,7 @@ import { accountingRoutes } from '../../accounting/routes.js';
 import { analyticsRoutes } from '../../analytics/routes.js';
 import { backupRecoveryRoutes } from '../../backup-recovery/src/routes.js';
 import { liveCommerceRoutes } from '../../live-commerce/routes.js';
+import { securityEmergencyRoutes } from '../../security-emergency/routes.js';
 
 export const API_ROUTE_CATALOG = Object.freeze([
   ['connectivity', connectivityRoutes],
@@ -22,7 +23,8 @@ export const API_ROUTE_CATALOG = Object.freeze([
   ['accounting', accountingRoutes],
   ['analytics', analyticsRoutes],
   ['backup-recovery', backupRecoveryRoutes],
-  ['live-commerce', liveCommerceRoutes]
+  ['live-commerce', liveCommerceRoutes],
+  ['security-emergency', securityEmergencyRoutes]
 ]);
 
 export async function dispatchApi(request, env, url = new URL(request.url)) {
