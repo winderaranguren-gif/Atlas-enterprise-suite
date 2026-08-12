@@ -23,8 +23,9 @@ async function authorize(env,request,url,action){
 }
 
 function period(url){
-  const days=Math.min(Math.max(Number(url.searchParams.get('days')||90),7),730);
-  return Number.isFinite(days)?Math.trunc(days):90;
+  const raw=Number(url.searchParams.get('days')||90);
+  const days=Number.isFinite(raw)?Math.trunc(raw):90;
+  return Math.min(Math.max(days,7),730);
 }
 
 async function overview(request,env,url){
@@ -37,7 +38,7 @@ async function overview(request,env,url){
     env.DB.prepare(`SELECT COUNT(*) AS active_accounts FROM accounting_accounts WHERE organization_id=? AND dba_id=? AND status='active'`).bind(ctx.organizationId,ctx.dbaId).first(),
     env.DB.prepare(`SELECT COALESCE(SUM(jl.debit_cents),0) AS debit_cents, COALESCE(SUM(jl.credit_cents),0) AS credit_cents FROM journal_lines jl JOIN journal_entries je ON je.id=jl.journal_entry_id WHERE jl.organization_id=? AND jl.dba_id=? AND je.status='posted' AND je.entry_date>=date('now',?)`).bind(ctx.organizationId,ctx.dbaId,cutoff).first()
   ]);
-  const payload={
+  const analytics={
     periodDays:days,
     totalJournals:Number(journals?.total_journals||0),
     postedJournals:Number(journals?.posted_journals||0),
@@ -48,7 +49,7 @@ async function overview(request,env,url){
     balanced:Number(activity?.debit_cents||0)===Number(activity?.credit_cents||0)
   };
   await audit(env,{actorUserId:ctx.auth.user_id,organizationId:ctx.organizationId,dbaId:ctx.dbaId,action:'analytics.overview.read',resourceType:'analytics',decision:'allow',metadata:{days}});
-  return json({ok:true,analytics:payload});
+  return json({ok:true,analytics});
 }
 
 async function monthlyTrend(request,env,url){
@@ -73,7 +74,10 @@ async function accountMix(request,env,url){
   if(ctx.response) return ctx.response;
   const days=period(url);
   const rows=await env.DB.prepare(`
-    SELECT a.account_type, COALESCE(SUM(jl.debit_cents),0) AS debit_cents, COALESCE(SUM(jl.credit_cents),0) AS credit_cents, COUNT(jl.id) AS line_count
+    SELECT a.account_type,
+      COALESCE(SUM(CASE WHEN je.id IS NOT NULL THEN jl.debit_cents ELSE 0 END),0) AS debit_cents,
+      COALESCE(SUM(CASE WHEN je.id IS NOT NULL THEN jl.credit_cents ELSE 0 END),0) AS credit_cents,
+      SUM(CASE WHEN je.id IS NOT NULL THEN 1 ELSE 0 END) AS line_count
     FROM accounting_accounts a
     LEFT JOIN journal_lines jl ON jl.account_id=a.id AND jl.organization_id=a.organization_id AND jl.dba_id=a.dba_id
     LEFT JOIN journal_entries je ON je.id=jl.journal_entry_id AND je.status='posted' AND je.entry_date>=date('now',?)
@@ -88,21 +92,18 @@ async function anomalies(request,env,url){
   if(ctx.response) return ctx.response;
   const days=period(url);
   const rows=await env.DB.prepare(`
-    WITH scoped AS (
-      SELECT je.id,je.entry_date,je.reference,je.memo,COALESCE(SUM(jl.debit_cents),0) AS amount_cents
-      FROM journal_entries je JOIN journal_lines jl ON jl.journal_entry_id=je.id
-      WHERE je.organization_id=? AND je.dba_id=? AND je.status='posted' AND je.entry_date>=date('now',?)
-      GROUP BY je.id
-    ), stats AS (
-      SELECT AVG(amount_cents) AS avg_amount, AVG(amount_cents*amount_cents) AS avg_sq FROM scoped
-    )
-    SELECT scoped.*, stats.avg_amount,
-      CASE WHEN stats.avg_sq-(stats.avg_amount*stats.avg_amount)>0 THEN sqrt(stats.avg_sq-(stats.avg_amount*stats.avg_amount)) ELSE 0 END AS stddev
-    FROM scoped,stats
-    WHERE scoped.amount_cents > stats.avg_amount + (2 * CASE WHEN stats.avg_sq-(stats.avg_amount*stats.avg_amount)>0 THEN sqrt(stats.avg_sq-(stats.avg_amount*stats.avg_amount)) ELSE 0 END)
-    ORDER BY scoped.amount_cents DESC LIMIT 50
+    SELECT je.id,je.entry_date,je.reference,je.memo,COALESCE(SUM(jl.debit_cents),0) AS amount_cents
+    FROM journal_entries je JOIN journal_lines jl ON jl.journal_entry_id=je.id
+    WHERE je.organization_id=? AND je.dba_id=? AND je.status='posted' AND je.entry_date>=date('now',?)
+    GROUP BY je.id ORDER BY amount_cents DESC LIMIT 500
   `).bind(ctx.organizationId,ctx.dbaId,`-${days} days`).all();
-  return json({ok:true,periodDays:days,method:'amount_gt_mean_plus_2stddev',anomalies:(rows.results||[]).map(r=>({journalId:r.id,entryDate:r.entry_date,reference:r.reference,memo:r.memo,amountCents:Number(r.amount_cents||0),averageCents:Math.round(Number(r.avg_amount||0)),stddevCents:Math.round(Number(r.stddev||0))}))});
+  const values=(rows.results||[]).map(r=>Number(r.amount_cents||0));
+  const mean=values.length?values.reduce((sum,v)=>sum+v,0)/values.length:0;
+  const variance=values.length?values.reduce((sum,v)=>sum+((v-mean)**2),0)/values.length:0;
+  const stddev=Math.sqrt(variance);
+  const threshold=mean+(2*stddev);
+  const flagged=(rows.results||[]).filter(r=>Number(r.amount_cents||0)>threshold).slice(0,50);
+  return json({ok:true,periodDays:days,method:'amount_gt_mean_plus_2stddev',sampleSize:values.length,thresholdCents:Math.round(threshold),anomalies:flagged.map(r=>({journalId:r.id,entryDate:r.entry_date,reference:r.reference,memo:r.memo,amountCents:Number(r.amount_cents||0),averageCents:Math.round(mean),stddevCents:Math.round(stddev)}))});
 }
 
 export async function analyticsRoutes(request,env,url){
