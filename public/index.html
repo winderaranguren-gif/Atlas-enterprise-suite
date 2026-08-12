@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>ATLAS Enterprise Suite</title>
   <style>
-    :root{font-family:Inter,system-ui,sans-serif;color-scheme:dark;background:#07111f;color:#edf5ff}body{margin:0;min-height:100vh;background:radial-gradient(circle at top,#173557 0,#07111f 52%)}main{max-width:1120px;margin:auto;padding:32px 20px 56px}.top{display:flex;align-items:center;justify-content:space-between;gap:20px}.brand{font-size:2rem;letter-spacing:.18em}.muted{color:#9fb2c8}.card{background:rgba(9,24,42,.82);border:1px solid rgba(180,215,255,.16);border-radius:18px;padding:20px;backdrop-filter:blur(16px)}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:18px}.status{display:inline-flex;align-items:center;gap:8px;font-weight:700}.dot{width:9px;height:9px;border-radius:50%;background:#718096}.ok .dot{background:#57d38c}.bad .dot{background:#ff7a7a}select{background:#0b1a2c;color:inherit;border:1px solid #36516e;border-radius:10px;padding:9px 12px}.module{padding:14px;border-radius:14px;background:rgba(255,255,255,.04)}.module strong{display:block;margin-bottom:4px}.hero{margin:38px 0 22px}.hero h1{font-size:clamp(2.2rem,6vw,4.8rem);margin:.2em 0}.hero p{max-width:720px;font-size:1.08rem}.error{color:#ffadad}.hidden{display:none}</style>
+    :root{font-family:Inter,system-ui,sans-serif;color-scheme:dark;background:#07111f;color:#edf5ff}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at top,#173557 0,#07111f 52%)}main{max-width:1180px;margin:auto;padding:32px 20px 56px}.top,.row{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}.brand{font-size:2rem;letter-spacing:.18em}.muted{color:#9fb2c8}.card{background:rgba(9,24,42,.82);border:1px solid rgba(180,215,255,.16);border-radius:18px;padding:20px;backdrop-filter:blur(16px);margin-top:18px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-top:18px}.status{display:inline-flex;align-items:center;gap:8px;font-weight:700}.dot{width:9px;height:9px;border-radius:50%;background:#718096}.ok .dot{background:#57d38c}.bad .dot{background:#ff7a7a}select,input,button{background:#0b1a2c;color:inherit;border:1px solid #36516e;border-radius:10px;padding:10px 12px;font:inherit}button{cursor:pointer;font-weight:700}button:hover{border-color:#77a7d7}.module,.metric{padding:14px;border-radius:14px;background:rgba(255,255,255,.04)}.module strong,.metric strong{display:block;margin-bottom:4px;font-size:1.25rem}.hero{margin:38px 0 22px}.hero h1{font-size:clamp(2.2rem,6vw,4.8rem);margin:.2em 0}.hero p{max-width:760px;font-size:1.08rem}.error{color:#ffadad}.hidden{display:none!important}.login-form{display:grid;grid-template-columns:repeat(2,minmax(180px,1fr)) auto;gap:12px;align-items:end}.field{display:grid;gap:6px}.session-meta{display:grid;gap:4px}.detail{font-size:.82rem;color:#9fb2c8;min-height:1em}@media(max-width:720px){.login-form{grid-template-columns:1fr}.hero{margin-top:28px}}
+  </style>
 </head>
 <body>
   <main>
@@ -13,11 +14,13 @@
       <div class="brand">ATLAS</div>
       <label><span data-i18n="language">Language</span> <select id="language"><option value="en">English</option><option value="es">Español</option></select></label>
     </div>
+
     <section class="hero">
       <div class="muted" data-i18n="eyebrow">Enterprise operating system</div>
       <h1 data-i18n="title">Production Control Center</h1>
       <p class="muted" data-i18n="subtitle">Live runtime information from the deployed ATLAS Worker. Nothing on this screen is marked operational unless the backend reports it.</p>
     </section>
+
     <section class="card">
       <div id="runtimeStatus" class="status"><span class="dot"></span><span data-i18n="checking">Checking runtime…</span></div>
       <div class="grid">
@@ -28,23 +31,41 @@
       </div>
       <p id="runtimeError" class="error hidden"></p>
     </section>
+
+    <section id="loginCard" class="card">
+      <h2 data-i18n="signIn">Sign in</h2>
+      <form id="loginForm" class="login-form">
+        <label class="field"><span data-i18n="email">Email</span><input id="email" name="email" type="email" autocomplete="username" required></label>
+        <label class="field"><span data-i18n="password">Password</span><input id="password" name="password" type="password" autocomplete="current-password" minlength="12" required></label>
+        <button type="submit" data-i18n="submit">Sign in</button>
+      </form>
+      <p id="loginError" class="error"></p>
+    </section>
+
+    <section id="sessionCard" class="card hidden">
+      <div class="row">
+        <div class="session-meta"><strong data-i18n="signedIn">Signed in</strong><span id="userIdentity" class="muted"></span></div>
+        <button id="logout" type="button" data-i18n="logout">Log out</button>
+      </div>
+      <label class="field" style="margin-top:14px"><span data-i18n="scope">Organization / DBA</span><select id="scopeSelector"></select></label>
+    </section>
+
+    <section id="workspace" class="hidden">
+      <div class="row" style="margin-top:26px"><div><h2 data-i18n="workspace">Commercial pilot workspace</h2><p id="workspaceMessage" class="muted"></p></div><button id="refreshWorkspace" type="button" data-i18n="refresh">Refresh live data</button></div>
+      <div class="grid">
+        <div id="metricUsers" class="metric"><span data-i18n="users">Users & permissions</span><strong>—</strong><div class="detail"></div></div>
+        <div id="metricCrm" class="metric"><span data-i18n="crm">CRM contacts</span><strong>—</strong><div class="detail"></div></div>
+        <div id="metricDocuments" class="metric"><span data-i18n="documents">Documents</span><strong>—</strong><div class="detail"></div></div>
+        <div id="metricAccounts" class="metric"><span data-i18n="accounts">Accounts</span><strong>—</strong><div class="detail"></div></div>
+        <div id="metricJournals" class="metric"><span data-i18n="journals">Journal entries</span><strong>—</strong><div class="detail"></div></div>
+        <div id="metricBackups" class="metric"><span data-i18n="backups">Backups</span><strong>—</strong><div class="detail"></div></div>
+        <div id="metricAudit" class="metric"><span data-i18n="audit">Audit events</span><strong>—</strong><div class="detail"></div></div>
+      </div>
+    </section>
+
     <h2 data-i18n="modules">ATLAS modules</h2>
     <div id="modules" class="grid"></div>
   </main>
-  <script>
-    const copy={
-      en:{language:'Language',eyebrow:'Enterprise operating system',title:'Production Control Center',subtitle:'Live runtime information from the deployed ATLAS Worker. Nothing on this screen is marked operational unless the backend reports it.',checking:'Checking runtime…',reachable:'Worker reachable',unreachable:'Runtime unavailable',deployment:'Deployment',modules:'ATLAS modules',bound:'Bound',missing:'Missing',reachableDb:'Reachable',unreachableDb:'Unreachable'},
-      es:{language:'Idioma',eyebrow:'Sistema operativo empresarial',title:'Centro de Control de Producción',subtitle:'Información en vivo del Worker ATLAS desplegado. Nada en esta pantalla se marca operativo salvo que el backend lo reporte.',checking:'Comprobando runtime…',reachable:'Worker disponible',unreachable:'Runtime no disponible',deployment:'Despliegue',modules:'Módulos ATLAS',bound:'Conectado',missing:'No conectado',reachableDb:'Disponible',unreachableDb:'No disponible'}
-    };
-    const key='atlas.language';
-    const select=document.getElementById('language');
-    let lang=localStorage.getItem(key)==='es'?'es':'en';
-    select.value=lang;
-    function translate(){document.documentElement.lang=lang;document.querySelectorAll('[data-i18n]').forEach(el=>{el.textContent=copy[lang][el.dataset.i18n]||el.textContent;});}
-    select.addEventListener('change',()=>{lang=select.value==='es'?'es':'en';localStorage.setItem(key,lang);translate();renderHealth(window.__health);});
-    function renderHealth(h){if(!h)return;window.__health=h;const t=copy[lang];document.getElementById('d1').textContent=h.bindings?.d1?(h.d1Reachable?t.reachableDb:t.unreachableDb):t.missing;document.getElementById('r2').textContent=h.bindings?.r2?t.bound:t.missing;document.getElementById('assets').textContent=h.bindings?.assets?t.bound:t.missing;document.getElementById('sha').textContent=h.deployedSha||'unknown';const el=document.getElementById('runtimeStatus');el.className='status '+(h.d1Reachable?'ok':'bad');el.lastElementChild.textContent=t.reachable;}
-    async function boot(){translate();try{const [healthRes,metaRes]=await Promise.all([fetch('/api/health',{cache:'no-store'}),fetch('/api/meta',{cache:'no-store'})]);if(!healthRes.ok||!metaRes.ok)throw new Error(`HTTP ${healthRes.status}/${metaRes.status}`);const health=await healthRes.json();const meta=await metaRes.json();renderHealth(health);document.getElementById('modules').replaceChildren(...meta.modules.map(m=>{const el=document.createElement('div');el.className='module';el.innerHTML=`<strong>${m.name}</strong><span class="muted">${m.layer}${m.domain?' · '+m.domain:''}</span>`;return el;}));}catch(error){const t=copy[lang];const status=document.getElementById('runtimeStatus');status.className='status bad';status.lastElementChild.textContent=t.unreachable;const msg=document.getElementById('runtimeError');msg.textContent=String(error.message||error);msg.classList.remove('hidden');}}
-    boot();
-  </script>
+  <script type="module" src="/app.js"></script>
 </body>
 </html>
