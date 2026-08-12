@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "validate": "node tests/validate-structure.mjs && node tests/validate-module-registry.mjs && node tests/validate-identity.mjs && node tests/validate-crm.mjs && node tests/validate-documents.mjs && node tests/validate-accounting.mjs && node tests/validate-analytics.mjs && node tests/validate-backups.mjs && node tests/validate-connectivity.mjs && node tests/validate-intelligence.mjs && node tests/validate-ui.mjs && node tests/validate-deploy.mjs",
+    "validate": "node tests/validate-structure.mjs && node tests/validate-module-registry.mjs && node tests/validate-identity.mjs && node tests/validate-crm.mjs && node tests/validate-documents.mjs && node tests/validate-accounting.mjs && node tests/validate-analytics.mjs && node tests/validate-backups.mjs && node tests/validate-connectivity.mjs && node tests/validate-intelligence.mjs && node tests/validate-ui.mjs && node tests/validate-deploy.mjs && node tests/validate-genesis-usb.mjs",
+    "validate:genesis-usb": "node tests/validate-genesis-usb.mjs",
     "build": "node tests/build-check.mjs",
     "build:prod": "npm run validate && npm run build"
   },
