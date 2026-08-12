@@ -1,3 +1,4 @@
+import './users.js';
 const $=id=>document.getElementById(id);
 const accountingState={session:null,scope:null,accounts:[],journals:[]};
 const token=()=>sessionStorage.getItem('atlas.session')||'';
