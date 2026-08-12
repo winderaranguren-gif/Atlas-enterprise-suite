@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ATLAS Security & Emergency</title>
+  <style>
+    :root{font-family:Inter,system-ui,sans-serif;color-scheme:dark;background:#07111f;color:#edf5ff}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 20% 0,#16395f 0,#07111f 48%)}main{max-width:1220px;margin:auto;padding:28px 18px 60px}.top,.row{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}.brand{letter-spacing:.16em;font-weight:800}.eyebrow,.muted{color:#9fb2c8}.hero{padding:30px 0 12px}.hero h1{font-size:clamp(2rem,5vw,4.2rem);margin:.15em 0}.hero p{max-width:790px}.card{background:rgba(9,24,42,.84);border:1px solid rgba(180,215,255,.15);border-radius:18px;padding:18px;backdrop-filter:blur(16px);margin-top:16px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:12px}.metric{padding:15px;border-radius:14px;background:rgba(255,255,255,.045)}.metric strong{display:block;font-size:1.6rem;margin-top:7px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:12px}.field{display:grid;gap:6px}.wide{grid-column:1/-1}select,input,textarea,button,a.button{background:#0b1a2c;color:inherit;border:1px solid #36516e;border-radius:10px;padding:10px 12px;font:inherit}textarea{min-height:100px;resize:vertical}button,a.button{cursor:pointer;font-weight:700;text-decoration:none}button:hover,a.button:hover{border-color:#77a7d7}.secondary{font-weight:600}.danger{border-color:#7b3c46}.success{color:#8ee7b3}.error{color:#ffadad}.hidden{display:none!important}.status-pill{display:inline-flex;gap:7px;align-items:center;padding:7px 10px;border:1px solid rgba(180,215,255,.14);border-radius:999px;background:rgba(255,255,255,.035);font-size:.85rem}.dot{width:8px;height:8px;border-radius:50%;background:#718096}.dot.normal{background:#57d38c}.dot.guarded{background:#d8bd63}.dot.elevated{background:#e79259}.dot.critical{background:#ff7a7a}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:900px}th,td{text-align:left;padding:10px;border-bottom:1px solid rgba(180,215,255,.12);vertical-align:top}th{font-size:.82rem;color:#9fb2c8}td.actions{white-space:nowrap}.tag{display:inline-block;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,.055);font-size:.8rem}.history{max-height:280px;overflow:auto}.history-item{padding:11px 0;border-bottom:1px solid rgba(180,215,255,.12)}.history-item:last-child{border-bottom:0}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.8rem}@media(max-width:720px){.form-grid{grid-template-columns:1fr}.wide{grid-column:auto}.hero{padding-top:24px}}
+  </style>
+</head>
+<body>
+<main>
+  <div class="top"><div class="brand">ATLAS</div><a class="button secondary" href="/">Enterprise Suite</a></div>
+  <section class="hero">
+    <div class="eyebrow">Security & Emergency Operations</div>
+    <h1>Operational Security Center</h1>
+    <p class="muted">ATLAS-native incident operations for the selected Organization / DBA. The posture indicator is an internal operational signal, not a compliance certification.</p>
+  </section>
+
+  <section class="card">
+    <div class="row"><div><strong id="identity">Checking session…</strong><div id="sessionMessage" class="muted"></div></div><label class="field"><span class="muted">Organization / DBA</span><select id="scope"></select></label></div>
+  </section>
+
+  <section id="app" class="hidden">
+    <section class="card">
+      <div class="row"><div><h2 style="margin:.1em 0">Security posture</h2><span id="posturePill" class="status-pill"><span id="postureDot" class="dot"></span><span id="postureLevel">—</span></span></div><button id="reload" type="button" class="secondary">Refresh</button></div>
+      <div class="grid" style="margin-top:16px">
+        <div class="metric"><span class="muted">Operational score</span><strong id="score">—</strong></div>
+        <div class="metric"><span class="muted">Active incidents</span><strong id="active">—</strong></div>
+        <div class="metric"><span class="muted">Critical active</span><strong id="critical">—</strong></div>
+        <div class="metric"><span class="muted">Total recorded</span><strong id="total">—</strong></div>
+      </div>
+      <p id="methodology" class="muted"></p>
+    </section>
+
+    <section class="card">
+      <h2>Report an incident</h2>
+      <form id="incidentForm" class="form-grid">
+        <label class="field wide"><span>Title</span><input id="title" maxlength="160" required></label>
+        <label class="field"><span>Category</span><select id="category"><option value="cyber">Cyber</option><option value="physical">Physical</option><option value="safety">Safety</option><option value="access">Access</option><option value="fraud">Fraud</option><option value="privacy">Privacy</option><option value="availability">Availability</option><option value="other">Other</option></select></label>
+        <label class="field"><span>Severity</span><select id="severity"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option><option value="critical">Critical</option></select></label>
+        <label class="field"><span>Source</span><input id="source" maxlength="120" placeholder="Camera, user report, system monitor…"></label>
+        <label class="field"><span>Location / system</span><input id="location" maxlength="180"></label>
+        <label class="field wide"><span>Description</span><textarea id="description" maxlength="4000"></textarea></label>
+        <div class="wide"><button id="createIncident" type="submit">Create incident</button></div>
+      </form>
+      <p id="formMessage" class="muted"></p>
+    </section>
+
+    <section class="card">
+      <div class="row"><div><h2 style="margin:.1em 0">Incident queue</h2><p class="muted">Critical and high-severity unresolved incidents are prioritized automatically.</p></div><div class="row"><select id="statusFilter"><option value="">All statuses</option><option value="open">Open</option><option value="acknowledged">Acknowledged</option><option value="contained">Contained</option><option value="resolved">Resolved</option></select><select id="severityFilter"><option value="">All severities</option><option value="critical">Critical</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></div></div>
+      <p id="queueMessage" class="muted"></p>
+      <div class="table-wrap"><table><thead><tr><th>Severity</th><th>Incident</th><th>Category</th><th>Status</th><th>Source / location</th><th>Created</th><th>Actions</th></tr></thead><tbody id="incidentRows"></tbody></table></div>
+    </section>
+
+    <section id="historyCard" class="card hidden">
+      <div class="row"><div><h2 style="margin:.1em 0">Incident history</h2><div id="historyIncident" class="muted"></div></div><button id="closeHistory" type="button" class="secondary">Close</button></div>
+      <div id="history" class="history"></div>
+    </section>
+  </section>
+</main>
+<script type="module" src="/security.js"></script>
+</body>
+</html>
