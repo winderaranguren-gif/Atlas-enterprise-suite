@@ -3,6 +3,7 @@ import { identityRoutes } from '../modules/identity/routes.js';
 import { crmRoutes } from '../modules/crm/routes.js';
 import { documentRoutes } from '../modules/documents/routes.js';
 import { accountingRoutes } from '../modules/accounting/routes.js';
+import { backupRoutes } from '../modules/backups/routes.js';
 import { connectivityRoutes } from '../modules/connectivity/routes.js';
 
 export default {
@@ -19,6 +20,8 @@ export default {
     if(documentResponse) return documentResponse;
     const accountingResponse=await accountingRoutes(request,env,url);
     if(accountingResponse) return accountingResponse;
+    const backupResponse=await backupRoutes(request,env,url);
+    if(backupResponse) return backupResponse;
     if(url.pathname.startsWith('/api/')) return json({ok:false,error:'not_implemented'},501);
     return env.ASSETS?env.ASSETS.fetch(request):new Response('ATLAS',{status:200});
   }
