@@ -1,8 +1,37 @@
 const encoder = new TextEncoder();
+const PASSWORD_ITERATIONS=210000;
+
+function bytesToHex(bytes){ return [...bytes].map(b=>b.toString(16).padStart(2,'0')).join(''); }
+function hexToBytes(hex){
+  if(!hex || hex.length%2) throw new Error('invalid_hex');
+  return new Uint8Array(hex.match(/.{2}/g).map(byte=>parseInt(byte,16)));
+}
 
 async function sha256Hex(value){
   const digest = await crypto.subtle.digest('SHA-256', encoder.encode(value));
-  return [...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('');
+  return bytesToHex(new Uint8Array(digest));
+}
+
+async function derivePassword(password,saltHex,iterations=PASSWORD_ITERATIONS){
+  const key=await crypto.subtle.importKey('raw',encoder.encode(password),'PBKDF2',false,['deriveBits']);
+  const bits=await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt:hexToBytes(saltHex),iterations},key,256);
+  return bytesToHex(new Uint8Array(bits));
+}
+
+export async function createPasswordCredential(password){
+  if(typeof password!=='string'||password.length<12||password.length>200) return {ok:false,error:'password_length_12_to_200_required'};
+  const salt=crypto.getRandomValues(new Uint8Array(16));
+  const saltHex=bytesToHex(salt);
+  return {ok:true,saltHex,passwordHashHex:await derivePassword(password,saltHex,PASSWORD_ITERATIONS),iterations:PASSWORD_ITERATIONS};
+}
+
+export async function verifyPassword(password,credential){
+  if(typeof password!=='string'||!credential?.salt_hex||!credential?.password_hash_hex) return false;
+  const calculated=await derivePassword(password,credential.salt_hex,Number(credential.iterations));
+  if(calculated.length!==credential.password_hash_hex.length) return false;
+  let diff=0;
+  for(let i=0;i<calculated.length;i++) diff|=calculated.charCodeAt(i)^credential.password_hash_hex.charCodeAt(i);
+  return diff===0;
 }
 
 export function bearerToken(request){
