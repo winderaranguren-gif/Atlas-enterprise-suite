@@ -5,6 +5,7 @@ const html=fs.readFileSync(new URL('../public/index.html',import.meta.url),'utf8
 const app=fs.readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
 const accounting=fs.readFileSync(new URL('../public/accounting.js',import.meta.url),'utf8');
 const users=fs.readFileSync(new URL('../public/users.js',import.meta.url),'utf8');
+const backups=fs.readFileSync(new URL('../public/backups.js',import.meta.url),'utf8');
 for(const required of [
   '<html lang="en">','English','Español','loginForm','scopeSelector','Commercial pilot workspace',
   'Nothing on this screen is marked operational unless the backend reports it.','crmWorkspace','crmForm','crmRows',
@@ -21,7 +22,7 @@ for(const required of [
   if(!app.includes(required)) throw new Error(`UI runtime wiring missing: ${required}`);
 }
 for(const required of [
-  "import './users.js'","sessionStorage.getItem('atlas.session')","'x-atlas-organization'","'x-atlas-dba'","api('/api/auth/session'","api('/api/accounting/accounts')","api('/api/accounting/journals')",
+  "import './users.js'","import './backups.js'","sessionStorage.getItem('atlas.session')","'x-atlas-organization'","'x-atlas-dba'","api('/api/auth/session'","api('/api/accounting/accounts')","api('/api/accounting/journals')",
   "api('/api/accounting/accounts',{method:'POST'","api('/api/accounting/journals',{method:'POST'",'/post`','canAccountWrite()','canJournalWrite()','canPost()','debit!==credit','Math.round(n*100)','Balanced','Not balanced'
 ]){
   if(!accounting.includes(required)) throw new Error(`Accounting UI runtime wiring missing: ${required}`);
@@ -34,7 +35,15 @@ for(const required of [
 ]){
   if(!users.includes(required)) throw new Error(`Identity UI runtime wiring missing: ${required}`);
 }
-for(const role of ['owner','admin','member']) if(!app.includes(`'${role}'`)&&!accounting.includes(`'${role}'`)&&!users.includes(`'${role}'`)) throw new Error(`UI missing write role: ${role}`);
+for(const required of [
+  'backupWorkspace','Backup & restore operations','Operaciones de respaldo y restauración',"sessionStorage.getItem('atlas.session')","'x-atlas-organization'","'x-atlas-dba'",
+  "api('/api/auth/session'","api('/api/backups')","api('/api/backups',{method:'POST'",'/verify`','/restore`',"JSON.stringify({mode:'empty_only'})",'canCreateRestore()','canVerify()',"['owner','admin']","['owner','admin','auditor']",'window.prompt','restore_target_not_empty'
+]){
+  if(!backups.includes(required) && required!=='restore_target_not_empty') throw new Error(`Backups UI runtime wiring missing: ${required}`);
+}
+const backupRoutes=fs.readFileSync(new URL('../modules/backups/routes.js',import.meta.url),'utf8');
+for(const required of ['restore_target_not_empty',"mode!=='empty_only'",'backup.restore','loadVerifiedManifest','restore_target_object_conflict']) if(!backupRoutes.includes(required)) throw new Error(`Backups backend restore safety missing: ${required}`);
+for(const role of ['owner','admin','member']) if(!app.includes(`'${role}'`)&&!accounting.includes(`'${role}'`)&&!users.includes(`'${role}'`)&&!backups.includes(`'${role}'`)) throw new Error(`UI missing write role: ${role}`);
 const identityRoutes=fs.readFileSync(new URL('../modules/identity/routes.js',import.meta.url),'utf8');
 if(!identityRoutes.includes('last_active_owner_required')) throw new Error('Identity backend must protect the last active owner');
 const meta=publicRuntimeMeta({ATLAS_DEFAULT_LANGUAGE:'en',ATLAS_SUPPORTED_LANGUAGES:'en,es',ATLAS_DEPLOYED_SHA:'test-sha'});
