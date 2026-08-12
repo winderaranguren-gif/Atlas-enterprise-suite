@@ -1,3 +1,5 @@
+import { CONNECTIVITY_CATALOG, CONNECTIVITY_CATALOG_VERSION, flattenConnectivityCapabilities, findConnectivityCapability } from './service-catalog.js';
+
 const SENSITIVE_QUERY_KEYS = new Set([
   'mauth',
   'client_ip',
@@ -47,6 +49,38 @@ export function sanitizePortalUrl(rawUrl){
   };
 }
 
+function catalogSummary(){
+  const capabilities=flattenConnectivityCapabilities();
+  return {
+    module:CONNECTIVITY_CATALOG.module,
+    version:CONNECTIVITY_CATALOG_VERSION,
+    strategy:CONNECTIVITY_CATALOG.strategy,
+    capabilityCount:capabilities.length,
+    segments:['personal','business'],
+    exclusions:CONNECTIVITY_CATALOG.exclusions,
+    nativeRuntime:['connectivity_probe','captive_portal_detection','portal_url_redaction'],
+    serviceLayer:['catalog','capability_discovery','operation_contracts'],
+    carrierProvisioningRequiresBackendIntegration:true
+  };
+}
+
+function filteredCapabilities(url){
+  const segment=url.searchParams.get('segment');
+  const category=url.searchParams.get('category');
+  const operation=url.searchParams.get('operation');
+  const query=(url.searchParams.get('q')||'').trim().toLowerCase();
+  return flattenConnectivityCapabilities().filter(item=>{
+    if(segment && item.segment!==segment) return false;
+    if(category && item.category!==category) return false;
+    if(operation && !item.operations.includes(operation)) return false;
+    if(query){
+      const haystack=[item.id,item.name,item.segment,item.category,...item.operations].join(' ').toLowerCase();
+      if(!haystack.includes(query)) return false;
+    }
+    return true;
+  });
+}
+
 export async function connectivityRoutes(request,env,url){
   if(url.pathname==='/api/connectivity/ping' && request.method==='GET'){
     return new Response(null,{
@@ -63,7 +97,8 @@ export async function connectivityRoutes(request,env,url){
     return json({
       ok:true,
       module:'ATLAS Connectivity',
-      mode:'captive-portal-assist',
+      mode:'communications-connectivity',
+      catalog:catalogSummary(),
       flow:[
         'probe_network',
         'detect_captive_portal',
@@ -80,6 +115,32 @@ export async function connectivityRoutes(request,env,url){
       },
       verificationEndpoint:'/api/connectivity/ping'
     });
+  }
+
+  if(url.pathname==='/api/connectivity/catalog' && request.method==='GET'){
+    return json({ok:true,summary:catalogSummary(),catalog:CONNECTIVITY_CATALOG});
+  }
+
+  if(url.pathname==='/api/connectivity/capabilities' && request.method==='GET'){
+    const capabilities=filteredCapabilities(url);
+    return json({ok:true,count:capabilities.length,capabilities});
+  }
+
+  if(url.pathname.startsWith('/api/connectivity/capabilities/') && request.method==='GET'){
+    const id=decodeURIComponent(url.pathname.slice('/api/connectivity/capabilities/'.length));
+    if(!id) return json({ok:false,error:'capability_id_required'},400);
+    const capability=findConnectivityCapability(id);
+    if(!capability) return json({ok:false,error:'capability_not_found'},404);
+    return json({ok:true,capability});
+  }
+
+  if(url.pathname==='/api/connectivity/account/actions' && request.method==='GET'){
+    const actions=(CONNECTIVITY_CATALOG.personal.account||[]).flatMap(item=>item.operations.map(operation=>({capabilityId:item.id,operation})));
+    return json({ok:true,count:actions.length,actions});
+  }
+
+  if(url.pathname==='/api/connectivity/support/actions' && request.method==='GET'){
+    return json({ok:true,support:CONNECTIVITY_CATALOG.support});
   }
 
   if(url.pathname==='/api/connectivity/portal/analyze' && request.method==='POST'){
