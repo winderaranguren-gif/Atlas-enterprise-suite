@@ -6,6 +6,7 @@ import { accountingRoutes } from '../modules/accounting/routes.js';
 import { backupRoutes } from '../modules/backups/routes.js';
 import { connectivityRoutes } from '../modules/connectivity/routes.js';
 import { intelligenceRoutes } from '../modules/intelligence/routes.js';
+import { analyticsRoutes } from '../modules/analytics/routes.js';
 
 export default {
   async fetch(request,env){
@@ -23,6 +24,8 @@ export default {
     if(documentResponse) return documentResponse;
     const accountingResponse=await accountingRoutes(request,env,url);
     if(accountingResponse) return accountingResponse;
+    const analyticsResponse=await analyticsRoutes(request,env,url);
+    if(analyticsResponse) return analyticsResponse;
     const backupResponse=await backupRoutes(request,env,url);
     if(backupResponse) return backupResponse;
     if(url.pathname.startsWith('/api/')) return json({ok:false,error:'not_implemented'},501);
