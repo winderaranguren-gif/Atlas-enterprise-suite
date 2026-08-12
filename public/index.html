@@ -5,82 +5,23 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>ATLAS Enterprise Suite</title>
   <style>
-    :root{font-family:Inter,system-ui,sans-serif;color-scheme:dark;background:#07111f;color:#edf5ff}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at top,#173557 0,#07111f 52%)}main{max-width:1180px;margin:auto;padding:32px 20px 56px}.top,.row{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}.brand{font-size:2rem;letter-spacing:.18em}.muted{color:#9fb2c8}.card{background:rgba(9,24,42,.82);border:1px solid rgba(180,215,255,.16);border-radius:18px;padding:20px;backdrop-filter:blur(16px);margin-top:18px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-top:18px}.status{display:inline-flex;align-items:center;gap:8px;font-weight:700}.dot{width:9px;height:9px;border-radius:50%;background:#718096}.ok .dot{background:#57d38c}.bad .dot{background:#ff7a7a}select,input,textarea,button{background:#0b1a2c;color:inherit;border:1px solid #36516e;border-radius:10px;padding:10px 12px;font:inherit}textarea{min-height:96px;resize:vertical}button{cursor:pointer;font-weight:700}button:hover{border-color:#77a7d7}.module,.metric{padding:14px;border-radius:14px;background:rgba(255,255,255,.04)}.module strong,.metric strong{display:block;margin-bottom:4px;font-size:1.25rem}.hero{margin:38px 0 22px}.hero h1{font-size:clamp(2.2rem,6vw,4.8rem);margin:.2em 0}.hero p{max-width:760px;font-size:1.08rem}.error{color:#ffadad}.success{color:#8ee7b3}.hidden{display:none!important}.login-form,.form-grid{display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:12px;align-items:end}.field{display:grid;gap:6px}.field.wide{grid-column:1/-1}.session-meta{display:grid;gap:4px}.detail{font-size:.82rem;color:#9fb2c8;min-height:1em}.table-wrap{overflow:auto;margin-top:16px}table{width:100%;border-collapse:collapse;min-width:760px}th,td{text-align:left;padding:11px 10px;border-bottom:1px solid rgba(180,215,255,.12);vertical-align:top}th{color:#9fb2c8;font-size:.86rem}td.actions{white-space:nowrap}.secondary{font-weight:600}.danger{border-color:#6d3943;color:#ffc1c8}@media(max-width:720px){.login-form,.form-grid{grid-template-columns:1fr}.field.wide{grid-column:auto}.hero{margin-top:28px}}
+    :root{font-family:Inter,system-ui,sans-serif;color-scheme:dark;background:#07111f;color:#edf5ff}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at top,#173557 0,#07111f 52%)}main{max-width:1180px;margin:auto;padding:32px 20px 56px}.top,.row{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}.brand{font-size:2rem;letter-spacing:.18em}.muted{color:#9fb2c8}.card{background:rgba(9,24,42,.82);border:1px solid rgba(180,215,255,.16);border-radius:18px;padding:20px;backdrop-filter:blur(16px);margin-top:18px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-top:18px}.status{display:inline-flex;align-items:center;gap:8px;font-weight:700}.dot{width:9px;height:9px;border-radius:50%;background:#718096}.ok .dot{background:#57d38c}.bad .dot{background:#ff7a7a}select,input,textarea,button{background:#0b1a2c;color:inherit;border:1px solid #36516e;border-radius:10px;padding:10px 12px;font:inherit}input[type=file]{max-width:100%}textarea{min-height:96px;resize:vertical}button{cursor:pointer;font-weight:700}button:hover{border-color:#77a7d7}.module,.metric{padding:14px;border-radius:14px;background:rgba(255,255,255,.04)}.module strong,.metric strong{display:block;margin-bottom:4px;font-size:1.25rem}.hero{margin:38px 0 22px}.hero h1{font-size:clamp(2.2rem,6vw,4.8rem);margin:.2em 0}.hero p{max-width:760px;font-size:1.08rem}.error{color:#ffadad}.success{color:#8ee7b3}.hidden{display:none!important}.login-form,.form-grid{display:grid;grid-template-columns:repeat(2,minmax(180px,1fr));gap:12px;align-items:end}.field{display:grid;gap:6px}.field.wide{grid-column:1/-1}.session-meta{display:grid;gap:4px}.detail{font-size:.82rem;color:#9fb2c8;min-height:1em}.table-wrap{overflow:auto;margin-top:16px}table{width:100%;border-collapse:collapse;min-width:760px}th,td{text-align:left;padding:11px 10px;border-bottom:1px solid rgba(180,215,255,.12);vertical-align:top}th{color:#9fb2c8;font-size:.86rem}td.actions{white-space:nowrap}.secondary{font-weight:600}.danger{border-color:#6d3943;color:#ffc1c8}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.8rem}@media(max-width:720px){.login-form,.form-grid{grid-template-columns:1fr}.field.wide{grid-column:auto}.hero{margin-top:28px}}
   </style>
 </head>
 <body>
   <main>
-    <div class="top">
-      <div class="brand">ATLAS</div>
-      <label><span data-i18n="language">Language</span> <select id="language"><option value="en">English</option><option value="es">Español</option></select></label>
-    </div>
-
-    <section class="hero">
-      <div class="muted" data-i18n="eyebrow">Enterprise operating system</div>
-      <h1 data-i18n="title">Production Control Center</h1>
-      <p class="muted" data-i18n="subtitle">Live runtime information from the deployed ATLAS Worker. Nothing on this screen is marked operational unless the backend reports it.</p>
-    </section>
-
-    <section class="card">
-      <div id="runtimeStatus" class="status"><span class="dot"></span><span data-i18n="checking">Checking runtime…</span></div>
-      <div class="grid">
-        <div><div class="muted">D1</div><strong id="d1">—</strong></div>
-        <div><div class="muted">R2</div><strong id="r2">—</strong></div>
-        <div><div class="muted">Assets</div><strong id="assets">—</strong></div>
-        <div><div class="muted" data-i18n="deployment">Deployment</div><strong id="sha">—</strong></div>
-      </div>
-      <p id="runtimeError" class="error hidden"></p>
-    </section>
-
-    <section id="loginCard" class="card">
-      <h2 data-i18n="signIn">Sign in</h2>
-      <form id="loginForm" class="login-form">
-        <label class="field"><span data-i18n="email">Email</span><input id="email" name="email" type="email" autocomplete="username" required></label>
-        <label class="field"><span data-i18n="password">Password</span><input id="password" name="password" type="password" autocomplete="current-password" minlength="12" required></label>
-        <button type="submit" data-i18n="submit">Sign in</button>
-      </form>
-      <p id="loginError" class="error"></p>
-    </section>
-
-    <section id="sessionCard" class="card hidden">
-      <div class="row">
-        <div class="session-meta"><strong data-i18n="signedIn">Signed in</strong><span id="userIdentity" class="muted"></span></div>
-        <button id="logout" type="button" data-i18n="logout">Log out</button>
-      </div>
-      <label class="field" style="margin-top:14px"><span data-i18n="scope">Organization / DBA</span><select id="scopeSelector"></select></label>
-    </section>
-
+    <div class="top"><div class="brand">ATLAS</div><label><span data-i18n="language">Language</span> <select id="language"><option value="en">English</option><option value="es">Español</option></select></label></div>
+    <section class="hero"><div class="muted" data-i18n="eyebrow">Enterprise operating system</div><h1 data-i18n="title">Production Control Center</h1><p class="muted" data-i18n="subtitle">Live runtime information from the deployed ATLAS Worker. Nothing on this screen is marked operational unless the backend reports it.</p></section>
+    <section class="card"><div id="runtimeStatus" class="status"><span class="dot"></span><span data-i18n="checking">Checking runtime…</span></div><div class="grid"><div><div class="muted">D1</div><strong id="d1">—</strong></div><div><div class="muted">R2</div><strong id="r2">—</strong></div><div><div class="muted">Assets</div><strong id="assets">—</strong></div><div><div class="muted" data-i18n="deployment">Deployment</div><strong id="sha">—</strong></div></div><p id="runtimeError" class="error hidden"></p></section>
+    <section id="loginCard" class="card"><h2 data-i18n="signIn">Sign in</h2><form id="loginForm" class="login-form"><label class="field"><span data-i18n="email">Email</span><input id="email" name="email" type="email" autocomplete="username" required></label><label class="field"><span data-i18n="password">Password</span><input id="password" name="password" type="password" autocomplete="current-password" minlength="12" required></label><button type="submit" data-i18n="submit">Sign in</button></form><p id="loginError" class="error"></p></section>
+    <section id="sessionCard" class="card hidden"><div class="row"><div class="session-meta"><strong data-i18n="signedIn">Signed in</strong><span id="userIdentity" class="muted"></span></div><button id="logout" type="button" data-i18n="logout">Log out</button></div><label class="field" style="margin-top:14px"><span data-i18n="scope">Organization / DBA</span><select id="scopeSelector"></select></label></section>
     <section id="workspace" class="hidden">
       <div class="row" style="margin-top:26px"><div><h2 data-i18n="workspace">Commercial pilot workspace</h2><p id="workspaceMessage" class="muted"></p></div><button id="refreshWorkspace" type="button" data-i18n="refresh">Refresh live data</button></div>
-      <div class="grid">
-        <div id="metricUsers" class="metric"><span data-i18n="users">Users & permissions</span><strong>—</strong><div class="detail"></div></div>
-        <div id="metricCrm" class="metric"><span data-i18n="crm">CRM contacts</span><strong>—</strong><div class="detail"></div></div>
-        <div id="metricDocuments" class="metric"><span data-i18n="documents">Documents</span><strong>—</strong><div class="detail"></div></div>
-        <div id="metricAccounts" class="metric"><span data-i18n="accounts">Accounts</span><strong>—</strong><div class="detail"></div></div>
-        <div id="metricJournals" class="metric"><span data-i18n="journals">Journal entries</span><strong>—</strong><div class="detail"></div></div>
-        <div id="metricBackups" class="metric"><span data-i18n="backups">Backups</span><strong>—</strong><div class="detail"></div></div>
-        <div id="metricAudit" class="metric"><span data-i18n="audit">Audit events</span><strong>—</strong><div class="detail"></div></div>
-      </div>
-
-      <section id="crmWorkspace" class="card">
-        <div class="row"><div><h2 data-i18n="crmOperations">CRM operations</h2><p class="muted" data-i18n="crmOperationsHint">Create, edit and archive contacts inside the selected Organization / DBA.</p></div><button id="crmReload" type="button" class="secondary" data-i18n="reload">Reload</button></div>
-        <form id="crmForm" class="form-grid" style="margin-top:18px">
-          <input id="crmId" type="hidden">
-          <label class="field"><span data-i18n="contactName">Name</span><input id="crmName" maxlength="200" required></label>
-          <label class="field"><span data-i18n="contactType">Type</span><select id="crmType"><option value="lead">Lead</option><option value="prospect">Prospect</option><option value="customer">Customer</option><option value="vendor">Vendor</option><option value="partner">Partner</option><option value="other">Other</option></select></label>
-          <label class="field"><span data-i18n="company">Company</span><input id="crmCompany" maxlength="200"></label>
-          <label class="field"><span data-i18n="contactEmail">Email</span><input id="crmEmail" type="email" maxlength="320"></label>
-          <label class="field"><span data-i18n="phone">Phone</span><input id="crmPhone" maxlength="80"></label>
-          <label class="field wide"><span data-i18n="notes">Notes</span><textarea id="crmNotes" maxlength="4000"></textarea></label>
-          <div class="row field wide" style="justify-content:flex-start"><button id="crmSave" type="submit" data-i18n="saveContact">Save contact</button><button id="crmCancel" type="button" class="secondary hidden" data-i18n="cancelEdit">Cancel edit</button></div>
-        </form>
-        <p id="crmMessage" class="muted"></p>
-        <div class="table-wrap"><table><thead><tr><th data-i18n="contactName">Name</th><th data-i18n="contactType">Type</th><th data-i18n="company">Company</th><th data-i18n="contactEmail">Email</th><th data-i18n="phone">Phone</th><th data-i18n="actions">Actions</th></tr></thead><tbody id="crmRows"></tbody></table></div>
-      </section>
+      <div class="grid"><div id="metricUsers" class="metric"><span data-i18n="users">Users & permissions</span><strong>—</strong><div class="detail"></div></div><div id="metricCrm" class="metric"><span data-i18n="crm">CRM contacts</span><strong>—</strong><div class="detail"></div></div><div id="metricDocuments" class="metric"><span data-i18n="documents">Documents</span><strong>—</strong><div class="detail"></div></div><div id="metricAccounts" class="metric"><span data-i18n="accounts">Accounts</span><strong>—</strong><div class="detail"></div></div><div id="metricJournals" class="metric"><span data-i18n="journals">Journal entries</span><strong>—</strong><div class="detail"></div></div><div id="metricBackups" class="metric"><span data-i18n="backups">Backups</span><strong>—</strong><div class="detail"></div></div><div id="metricAudit" class="metric"><span data-i18n="audit">Audit events</span><strong>—</strong><div class="detail"></div></div></div>
+      <section id="crmWorkspace" class="card"><div class="row"><div><h2 data-i18n="crmOperations">CRM operations</h2><p class="muted" data-i18n="crmOperationsHint">Create, edit and archive contacts inside the selected Organization / DBA.</p></div><button id="crmReload" type="button" class="secondary" data-i18n="reload">Reload</button></div><form id="crmForm" class="form-grid" style="margin-top:18px"><input id="crmId" type="hidden"><label class="field"><span data-i18n="contactName">Name</span><input id="crmName" maxlength="200" required></label><label class="field"><span data-i18n="contactType">Type</span><select id="crmType"><option value="lead">Lead</option><option value="prospect">Prospect</option><option value="customer">Customer</option><option value="vendor">Vendor</option><option value="partner">Partner</option><option value="other">Other</option></select></label><label class="field"><span data-i18n="company">Company</span><input id="crmCompany" maxlength="200"></label><label class="field"><span data-i18n="contactEmail">Email</span><input id="crmEmail" type="email" maxlength="320"></label><label class="field"><span data-i18n="phone">Phone</span><input id="crmPhone" maxlength="80"></label><label class="field wide"><span data-i18n="notes">Notes</span><textarea id="crmNotes" maxlength="4000"></textarea></label><div class="row field wide" style="justify-content:flex-start"><button id="crmSave" type="submit" data-i18n="saveContact">Save contact</button><button id="crmCancel" type="button" class="secondary hidden" data-i18n="cancelEdit">Cancel edit</button></div></form><p id="crmMessage" class="muted"></p><div class="table-wrap"><table><thead><tr><th data-i18n="contactName">Name</th><th data-i18n="contactType">Type</th><th data-i18n="company">Company</th><th data-i18n="contactEmail">Email</th><th data-i18n="phone">Phone</th><th data-i18n="actions">Actions</th></tr></thead><tbody id="crmRows"></tbody></table></div></section>
+      <section id="documentsWorkspace" class="card"><div class="row"><div><h2 data-i18n="documentOperations">Document operations</h2><p class="muted" data-i18n="documentOperationsHint">Upload, version, download and archive files stored through the scoped ATLAS R2 document service.</p></div><button id="documentsReload" type="button" class="secondary" data-i18n="reload">Reload</button></div><form id="documentUploadForm" class="form-grid" style="margin-top:18px"><label class="field wide"><span data-i18n="selectFile">Select file</span><input id="documentFile" type="file" required></label><div class="row field wide" style="justify-content:flex-start"><button id="documentUpload" type="submit" data-i18n="uploadDocument">Upload document</button></div></form><p id="documentsMessage" class="muted"></p><div class="table-wrap"><table><thead><tr><th data-i18n="filename">Filename</th><th data-i18n="type">Type</th><th data-i18n="version">Version</th><th data-i18n="size">Size</th><th>SHA-256</th><th data-i18n="actions">Actions</th></tr></thead><tbody id="documentRows"></tbody></table></div></section>
     </section>
-
-    <h2 data-i18n="modules">ATLAS modules</h2>
-    <div id="modules" class="grid"></div>
+    <h2 data-i18n="modules">ATLAS modules</h2><div id="modules" class="grid"></div>
   </main>
   <script type="module" src="/app.js"></script>
 </body>
