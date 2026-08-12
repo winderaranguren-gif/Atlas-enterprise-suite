@@ -3,6 +3,7 @@ import { requireSession, requireScope } from '../../platform/security/auth.js';
 import { audit } from '../../platform/security/audit.js';
 
 const MAX_DOCUMENT_VERSIONS=500;
+const RESTORE_TABLES=['crm_contacts','documents','document_versions','accounting_accounts','journal_entries','journal_lines'];
 
 function scopeFrom(request,url){
   return {
@@ -99,31 +100,122 @@ async function listBackups(request,env,url){
   return json({ok:true,backups:result.results||[]});
 }
 
+async function loadVerifiedManifest(env,ctx,id){
+  const backup=await env.DB.prepare(`SELECT * FROM backup_snapshots WHERE id=? AND organization_id=? AND dba_id=?`).bind(id,ctx.organizationId,ctx.dbaId).first();
+  if(!backup) return {error:'backup_not_found',status:404};
+  const manifestObject=await env.BACKUPS.get(backup.manifest_key);
+  if(!manifestObject) return {error:'backup_manifest_missing',status:503};
+  const manifestBytes=await manifestObject.arrayBuffer();
+  const actualManifestSha=await sha256Hex(manifestBytes);
+  if(actualManifestSha!==backup.manifest_sha256) return {error:'backup_manifest_hash_mismatch',status:409,detail:{expected:backup.manifest_sha256,actual:actualManifestSha}};
+  let manifest;
+  try{ manifest=JSON.parse(new TextDecoder().decode(manifestBytes)); }
+  catch{ return {error:'backup_manifest_invalid_json',status:409}; }
+  if(manifest.schemaVersion!==1||manifest.backupId!==id||manifest.scope?.organization?.id!==ctx.organizationId||manifest.scope?.dba?.id!==ctx.dbaId){
+    return {error:'backup_manifest_scope_mismatch',status:409};
+  }
+  for(const table of RESTORE_TABLES){
+    if(!Array.isArray(manifest.tables?.[table])) return {error:'backup_manifest_table_missing',status:409,detail:{table}};
+    for(const row of manifest.tables[table]){
+      if(row.organization_id!==ctx.organizationId||row.dba_id!==ctx.dbaId) return {error:'backup_manifest_row_scope_mismatch',status:409,detail:{table,id:row.id||null}};
+    }
+  }
+  for(const copy of manifest.documentCopies||[]){
+    const object=await env.BACKUPS.get(copy.backupKey);
+    if(!object) return {error:'backup_document_missing',status:409,detail:{backupKey:copy.backupKey}};
+    const bytes=await object.arrayBuffer();
+    const actualSha=await sha256Hex(bytes);
+    if(actualSha!==copy.sha256) return {error:'backup_document_hash_mismatch',status:409,detail:{backupKey:copy.backupKey,expected:copy.sha256,actual:actualSha}};
+  }
+  return {backup,manifest,manifestSha256:actualManifestSha};
+}
+
 async function verifyBackup(request,env,url,id){
   const ctx=await authorize(env,request,url,['owner','admin','auditor'],'backup.verify');
   if(ctx.response) return ctx.response;
   if(!env.BACKUPS) return json({ok:false,error:'r2_binding_unavailable'},503);
-  const backup=await env.DB.prepare(`SELECT * FROM backup_snapshots WHERE id=? AND organization_id=? AND dba_id=?`).bind(id,ctx.organizationId,ctx.dbaId).first();
-  if(!backup) return json({ok:false,error:'backup_not_found'},404);
-  const manifestObject=await env.BACKUPS.get(backup.manifest_key);
-  if(!manifestObject) return json({ok:false,error:'backup_manifest_missing'},503);
-  const manifestBytes=await manifestObject.arrayBuffer();
-  const actualManifestSha=await sha256Hex(manifestBytes);
-  if(actualManifestSha!==backup.manifest_sha256) return json({ok:false,error:'backup_manifest_hash_mismatch',expected:backup.manifest_sha256,actual:actualManifestSha},409);
-  let manifest;
-  try{ manifest=JSON.parse(new TextDecoder().decode(manifestBytes)); }
-  catch{ return json({ok:false,error:'backup_manifest_invalid_json'},409); }
-  if(manifest.backupId!==id||manifest.scope?.organization?.id!==ctx.organizationId||manifest.scope?.dba?.id!==ctx.dbaId) return json({ok:false,error:'backup_manifest_scope_mismatch'},409);
-  for(const copy of manifest.documentCopies||[]){
-    const object=await env.BACKUPS.get(copy.backupKey);
-    if(!object) return json({ok:false,error:'backup_document_missing',backupKey:copy.backupKey},409);
-    const bytes=await object.arrayBuffer();
-    const actualSha=await sha256Hex(bytes);
-    if(actualSha!==copy.sha256) return json({ok:false,error:'backup_document_hash_mismatch',backupKey:copy.backupKey,expected:copy.sha256,actual:actualSha},409);
-  }
+  const loaded=await loadVerifiedManifest(env,ctx,id);
+  if(loaded.error) return json({ok:false,error:loaded.error,...(loaded.detail||{})},loaded.status);
   await env.DB.prepare(`UPDATE backup_snapshots SET status='verified',verified_at=CURRENT_TIMESTAMP WHERE id=? AND organization_id=? AND dba_id=?`).bind(id,ctx.organizationId,ctx.dbaId).run();
-  await audit(env,{actorUserId:ctx.auth.user_id,organizationId:ctx.organizationId,dbaId:ctx.dbaId,action:'backup.verify',resourceType:'backup_snapshot',resourceId:id,decision:'allow',metadata:{manifestSha256:actualManifestSha,documentObjectCount:(manifest.documentCopies||[]).length}});
-  return json({ok:true,id,status:'verified',manifestSha256:actualManifestSha,documentObjectCount:(manifest.documentCopies||[]).length});
+  await audit(env,{actorUserId:ctx.auth.user_id,organizationId:ctx.organizationId,dbaId:ctx.dbaId,action:'backup.verify',resourceType:'backup_snapshot',resourceId:id,decision:'allow',metadata:{manifestSha256:loaded.manifestSha256,documentObjectCount:(loaded.manifest.documentCopies||[]).length}});
+  return json({ok:true,id,status:'verified',manifestSha256:loaded.manifestSha256,documentObjectCount:(loaded.manifest.documentCopies||[]).length});
+}
+
+async function scopedCounts(env,organizationId,dbaId){
+  const result={};
+  for(const table of RESTORE_TABLES){
+    const row=await env.DB.prepare(`SELECT COUNT(*) AS count FROM ${table} WHERE organization_id=? AND dba_id=?`).bind(organizationId,dbaId).first();
+    result[table]=Number(row?.count||0);
+  }
+  return result;
+}
+
+function insertStatements(env,manifest){
+  const statements=[];
+  for(const r of manifest.tables.crm_contacts) statements.push(env.DB.prepare(`INSERT INTO crm_contacts(id,organization_id,dba_id,contact_type,name,company,email,phone,status,notes,created_by_user_id,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(r.id,r.organization_id,r.dba_id,r.contact_type,r.name,r.company,r.email,r.phone,r.status,r.notes,r.created_by_user_id,r.created_at,r.updated_at));
+  for(const r of manifest.tables.documents) statements.push(env.DB.prepare(`INSERT INTO documents(id,organization_id,dba_id,filename,content_type,status,current_version,created_by_user_id,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?)`).bind(r.id,r.organization_id,r.dba_id,r.filename,r.content_type,r.status,r.current_version,r.created_by_user_id,r.created_at,r.updated_at));
+  for(const r of manifest.tables.document_versions) statements.push(env.DB.prepare(`INSERT INTO document_versions(id,document_id,organization_id,dba_id,version,object_key,sha256,size_bytes,content_type,created_by_user_id,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)`).bind(r.id,r.document_id,r.organization_id,r.dba_id,r.version,r.object_key,r.sha256,r.size_bytes,r.content_type,r.created_by_user_id,r.created_at));
+  for(const r of manifest.tables.accounting_accounts) statements.push(env.DB.prepare(`INSERT INTO accounting_accounts(id,organization_id,dba_id,code,name,account_type,normal_balance,status,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?)`).bind(r.id,r.organization_id,r.dba_id,r.code,r.name,r.account_type,r.normal_balance,r.status,r.created_at,r.updated_at));
+  for(const r of manifest.tables.journal_entries) statements.push(env.DB.prepare(`INSERT INTO journal_entries(id,organization_id,dba_id,entry_date,memo,reference,currency,status,created_by_user_id,posted_by_user_id,posted_at,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(r.id,r.organization_id,r.dba_id,r.entry_date,r.memo,r.reference,r.currency,r.status,r.created_by_user_id,r.posted_by_user_id,r.posted_at,r.created_at,r.updated_at));
+  for(const r of manifest.tables.journal_lines) statements.push(env.DB.prepare(`INSERT INTO journal_lines(id,journal_entry_id,organization_id,dba_id,account_id,description,debit_cents,credit_cents,line_no,created_at) VALUES(?,?,?,?,?,?,?,?,?,?)`).bind(r.id,r.journal_entry_id,r.organization_id,r.dba_id,r.account_id,r.description,r.debit_cents,r.credit_cents,r.line_no,r.created_at));
+  return statements;
+}
+
+async function restoreBackup(request,env,url,id){
+  const ctx=await authorize(env,request,url,['owner','admin'],'backup.restore');
+  if(ctx.response) return ctx.response;
+  if(!env.BACKUPS) return json({ok:false,error:'r2_binding_unavailable'},503);
+  const body=await request.json().catch(()=>({}));
+  const mode=body?.mode||'empty_only';
+  if(mode!=='empty_only') return json({ok:false,error:'unsupported_restore_mode',supported:['empty_only']},400);
+
+  const loaded=await loadVerifiedManifest(env,ctx,id);
+  if(loaded.error){
+    await audit(env,{actorUserId:ctx.auth.user_id,organizationId:ctx.organizationId,dbaId:ctx.dbaId,action:'backup.restore',resourceType:'backup_snapshot',resourceId:id,decision:'deny',metadata:{error:loaded.error}});
+    return json({ok:false,error:loaded.error,...(loaded.detail||{})},loaded.status);
+  }
+
+  const counts=await scopedCounts(env,ctx.organizationId,ctx.dbaId);
+  if(Object.values(counts).some(count=>count!==0)){
+    await audit(env,{actorUserId:ctx.auth.user_id,organizationId:ctx.organizationId,dbaId:ctx.dbaId,action:'backup.restore',resourceType:'backup_snapshot',resourceId:id,decision:'deny',metadata:{error:'restore_target_not_empty',counts}});
+    return json({ok:false,error:'restore_target_not_empty',mode,counts},409);
+  }
+
+  const versionsByKey=new Map(loaded.manifest.tables.document_versions.map(v=>[`${v.document_id}:${v.version}`,v]));
+  const createdObjectKeys=[];
+  try{
+    for(const copy of loaded.manifest.documentCopies||[]){
+      const version=versionsByKey.get(`${copy.documentId}:${copy.version}`);
+      if(!version) throw new Error(`restore_document_version_missing:${copy.documentId}:${copy.version}`);
+      const source=await env.BACKUPS.get(copy.backupKey);
+      if(!source) throw new Error(`backup_document_missing:${copy.backupKey}`);
+      const bytes=await source.arrayBuffer();
+      const targetExisting=await env.BACKUPS.get(version.object_key);
+      if(targetExisting){
+        const existingBytes=await targetExisting.arrayBuffer();
+        const existingSha=await sha256Hex(existingBytes);
+        if(existingSha!==copy.sha256) throw new Error(`restore_target_object_conflict:${version.object_key}`);
+        continue;
+      }
+      await env.BACKUPS.put(version.object_key,bytes,{httpMetadata:{contentType:version.content_type},customMetadata:{sha256:copy.sha256,restoredFromBackup:id}});
+      createdObjectKeys.push(version.object_key);
+    }
+
+    const statements=insertStatements(env,loaded.manifest);
+    if(statements.length) await env.DB.batch(statements);
+    const restoredRows=statements.length;
+    const postCounts=await scopedCounts(env,ctx.organizationId,ctx.dbaId);
+    const expectedCounts=Object.fromEntries(RESTORE_TABLES.map(table=>[table,loaded.manifest.tables[table].length]));
+    for(const table of RESTORE_TABLES){
+      if(postCounts[table]!==expectedCounts[table]) throw new Error(`restore_postcheck_failed:${table}:${postCounts[table]}:${expectedCounts[table]}`);
+    }
+    await audit(env,{actorUserId:ctx.auth.user_id,organizationId:ctx.organizationId,dbaId:ctx.dbaId,action:'backup.restore',resourceType:'backup_snapshot',resourceId:id,decision:'allow',metadata:{mode,manifestSha256:loaded.manifestSha256,restoredRows,restoredDocumentObjects:createdObjectKeys.length,counts:postCounts}});
+    return json({ok:true,id,status:'restored',mode,manifestSha256:loaded.manifestSha256,restoredRows,restoredDocumentObjects:createdObjectKeys.length,counts:postCounts});
+  }catch(error){
+    await Promise.allSettled(createdObjectKeys.map(key=>env.BACKUPS.delete(key)));
+    await audit(env,{actorUserId:ctx.auth.user_id,organizationId:ctx.organizationId,dbaId:ctx.dbaId,action:'backup.restore',resourceType:'backup_snapshot',resourceId:id,decision:'deny',metadata:{error:String(error?.message||error),mode}});
+    return json({ok:false,error:'backup_restore_failed',detail:String(error?.message||error)},500);
+  }
 }
 
 export async function backupRoutes(request,env,url){
@@ -131,5 +223,7 @@ export async function backupRoutes(request,env,url){
   if(url.pathname==='/api/backups' && request.method==='GET') return listBackups(request,env,url);
   const verify=url.pathname.match(/^\/api\/backups\/([^/]+)\/verify$/);
   if(verify && request.method==='POST') return verifyBackup(request,env,url,decodeURIComponent(verify[1]));
+  const restore=url.pathname.match(/^\/api\/backups\/([^/]+)\/restore$/);
+  if(restore && request.method==='POST') return restoreBackup(request,env,url,decodeURIComponent(restore[1]));
   return null;
 }
