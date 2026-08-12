@@ -1,0 +1,41 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "atlas",
+      "intents": [
+        {"name": "AMAZON.CancelIntent", "samples": []},
+        {"name": "AMAZON.HelpIntent", "samples": []},
+        {"name": "AMAZON.StopIntent", "samples": []},
+        {"name": "AMAZON.FallbackIntent", "samples": []},
+        {
+          "name": "ModuleIntent",
+          "slots": [
+            {
+              "name": "module",
+              "type": "ATLAS_MODULE"
+            }
+          ],
+          "samples": [
+            "open {module}",
+            "show {module}",
+            "go to {module}",
+            "I want {module}",
+            "launch {module}",
+            "module {module}"
+          ]
+        }
+      ],
+      "types": [
+        {
+          "name": "ATLAS_MODULE",
+          "values": [
+            {"name": {"value": "dashboard", "synonyms": ["home", "main panel"]}},
+            {"name": {"value": "health", "synonyms": ["medical"]}},
+            {"name": {"value": "accounting", "synonyms": ["finance", "books"]}},
+            {"name": {"value": "ride", "synonyms": ["driving", "trips"]}}
+          ]
+        }
+      ]
+    }
+  }
+}

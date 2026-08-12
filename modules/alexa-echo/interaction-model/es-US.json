@@ -1,0 +1,41 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "atlas",
+      "intents": [
+        {"name": "AMAZON.CancelIntent", "samples": []},
+        {"name": "AMAZON.HelpIntent", "samples": []},
+        {"name": "AMAZON.StopIntent", "samples": []},
+        {"name": "AMAZON.FallbackIntent", "samples": []},
+        {
+          "name": "ModuleIntent",
+          "slots": [
+            {
+              "name": "module",
+              "type": "ATLAS_MODULE"
+            }
+          ],
+          "samples": [
+            "abre {module}",
+            "abrir {module}",
+            "muéstrame {module}",
+            "quiero {module}",
+            "ve a {module}",
+            "módulo {module}"
+          ]
+        }
+      ],
+      "types": [
+        {
+          "name": "ATLAS_MODULE",
+          "values": [
+            {"name": {"value": "dashboard", "synonyms": ["panel", "inicio"]}},
+            {"name": {"value": "health", "synonyms": ["salud"]}},
+            {"name": {"value": "accounting", "synonyms": ["contabilidad"]}},
+            {"name": {"value": "ride", "synonyms": ["viajes", "conducción"]}}
+          ]
+        }
+      ]
+    }
+  }
+}
