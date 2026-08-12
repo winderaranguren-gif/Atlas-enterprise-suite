@@ -8,7 +8,7 @@ import { crmRoutes } from '../../crm/routes.js';
 import { documentRoutes } from '../../documents/routes.js';
 import { accountingRoutes } from '../../accounting/routes.js';
 import { analyticsRoutes } from '../../analytics/routes.js';
-import { backupRoutes } from '../../backups/routes.js';
+import { backupRecoveryRoutes } from '../../backup-recovery/src/routes.js';
 
 export const API_ROUTE_CATALOG = Object.freeze([
   ['connectivity', connectivityRoutes],
@@ -20,7 +20,7 @@ export const API_ROUTE_CATALOG = Object.freeze([
   ['documents', documentRoutes],
   ['accounting', accountingRoutes],
   ['analytics', analyticsRoutes],
-  ['backup-recovery', backupRoutes]
+  ['backup-recovery', backupRecoveryRoutes]
 ]);
 
 export async function dispatchApi(request, env, url = new URL(request.url)) {
