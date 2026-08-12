@@ -1,0 +1,156 @@
+{
+  "type": "APL",
+  "version": "1.8",
+  "theme": "dark",
+  "resources": [
+    {
+      "colors": {
+        "atlasBg": "#071018",
+        "atlasPanel": "#10202A",
+        "atlasAccent": "#27D3C2",
+        "atlasText": "#F4F8FA",
+        "atlasMuted": "#9CB0BA"
+      }
+    }
+  ],
+  "styles": {
+    "moduleLabel": {
+      "values": [
+        {
+          "fontSize": "18dp",
+          "fontWeight": "600",
+          "color": "@atlasText",
+          "textAlign": "center"
+        }
+      ]
+    }
+  },
+  "mainTemplate": {
+    "parameters": ["payload"],
+    "items": [
+      {
+        "type": "Container",
+        "width": "100vw",
+        "height": "100vh",
+        "backgroundColor": "@atlasBg",
+        "paddingLeft": "18dp",
+        "paddingRight": "18dp",
+        "paddingTop": "14dp",
+        "paddingBottom": "14dp",
+        "items": [
+          {
+            "type": "Text",
+            "text": "ATLAS",
+            "fontSize": "30dp",
+            "fontWeight": "700",
+            "color": "@atlasAccent",
+            "textAlign": "center"
+          },
+          {
+            "type": "Text",
+            "text": "${payload.statusText}",
+            "fontSize": "13dp",
+            "color": "@atlasMuted",
+            "textAlign": "center",
+            "paddingBottom": "12dp"
+          },
+          {
+            "type": "Container",
+            "direction": "row",
+            "grow": 1,
+            "items": [
+              {
+                "type": "TouchWrapper",
+                "width": "50%",
+                "paddingRight": "5dp",
+                "onPress": [{"type": "SendEvent", "arguments": ["dashboard"]}],
+                "item": {
+                  "type": "Frame",
+                  "backgroundColor": "@atlasPanel",
+                  "borderRadius": "14dp",
+                  "height": "100%",
+                  "item": {
+                    "type": "Text",
+                    "text": "Dashboard",
+                    "style": "moduleLabel",
+                    "width": "100%",
+                    "height": "100%",
+                    "textAlignVertical": "center"
+                  }
+                }
+              },
+              {
+                "type": "TouchWrapper",
+                "width": "50%",
+                "paddingLeft": "5dp",
+                "onPress": [{"type": "SendEvent", "arguments": ["health"]}],
+                "item": {
+                  "type": "Frame",
+                  "backgroundColor": "@atlasPanel",
+                  "borderRadius": "14dp",
+                  "height": "100%",
+                  "item": {
+                    "type": "Text",
+                    "text": "Health",
+                    "style": "moduleLabel",
+                    "width": "100%",
+                    "height": "100%",
+                    "textAlignVertical": "center"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "type": "Container",
+            "direction": "row",
+            "grow": 1,
+            "paddingTop": "10dp",
+            "items": [
+              {
+                "type": "TouchWrapper",
+                "width": "50%",
+                "paddingRight": "5dp",
+                "onPress": [{"type": "SendEvent", "arguments": ["accounting"]}],
+                "item": {
+                  "type": "Frame",
+                  "backgroundColor": "@atlasPanel",
+                  "borderRadius": "14dp",
+                  "height": "100%",
+                  "item": {
+                    "type": "Text",
+                    "text": "Accounting",
+                    "style": "moduleLabel",
+                    "width": "100%",
+                    "height": "100%",
+                    "textAlignVertical": "center"
+                  }
+                }
+              },
+              {
+                "type": "TouchWrapper",
+                "width": "50%",
+                "paddingLeft": "5dp",
+                "onPress": [{"type": "SendEvent", "arguments": ["ride"]}],
+                "item": {
+                  "type": "Frame",
+                  "backgroundColor": "@atlasPanel",
+                  "borderRadius": "14dp",
+                  "height": "100%",
+                  "item": {
+                    "type": "Text",
+                    "text": "Ride",
+                    "style": "moduleLabel",
+                    "width": "100%",
+                    "height": "100%",
+                    "textAlignVertical": "center"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
