@@ -1,8 +1,9 @@
 name: Deploy ATLAS
 
 on:
-  push:
-    branches: [main]
+  workflow_run:
+    workflows: ["ATLAS CI"]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
@@ -14,6 +15,7 @@ concurrency:
 
 jobs:
   deploy-verify:
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main') }}
     runs-on: ubuntu-latest
     environment: production
     env:
@@ -27,10 +29,11 @@ jobs:
       ATLAS_E2E_BEARER_TOKEN: ${{ secrets.ATLAS_E2E_BEARER_TOKEN }}
       ATLAS_E2E_ORGANIZATION_ID: ${{ secrets.ATLAS_E2E_ORGANIZATION_ID }}
       ATLAS_E2E_DBA_ID: ${{ secrets.ATLAS_E2E_DBA_ID }}
-      ATLAS_RELEASE_SHA: ${{ github.sha }}
+      ATLAS_RELEASE_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ env.ATLAS_RELEASE_SHA }}
           fetch-depth: 1
       - uses: actions/setup-node@v4
         with:
