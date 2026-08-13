@@ -22,11 +22,22 @@ const html = `<!doctype html>
     p{color:var(--muted);line-height:1.7;margin:0}
     .badge{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;margin-bottom:18px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.035);backdrop-filter:blur(18px);font-size:.82rem;color:#cce3ff}
     .dot{width:7px;height:7px;border-radius:50%;background:#75e39d;box-shadow:0 0 14px rgba(117,227,157,.75)}
-    .final-cta-wrap{width:100%;padding:0 24px 26px}
+    .section-wrap{width:100%;padding:26px 24px}
+    .section-shell{max-width:1180px;margin:0 auto}
+    .section-head{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(260px,.85fr);gap:34px;align-items:end;margin-bottom:26px}
+    .eyebrow{font-size:.76rem;letter-spacing:.16em;text-transform:uppercase;color:#a9d3ff;font-weight:700;margin-bottom:12px}
+    .section-head h2,.final-cta h2{font-size:clamp(2rem,4vw,3.35rem);line-height:1.03;letter-spacing:-.045em;margin:0 0 14px}
+    .trust-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+    .trust-card{min-height:190px;padding:22px;border:1px solid var(--line);border-radius:22px;background:linear-gradient(180deg,rgba(16,35,58,.64),rgba(8,19,33,.64));backdrop-filter:blur(22px);position:relative;overflow:hidden}
+    .trust-card:after{content:"";position:absolute;inset:auto -50px -70px auto;width:145px;height:145px;border-radius:50%;background:radial-gradient(circle,rgba(99,173,255,.14),transparent 70%)}
+    .trust-icon{width:38px;height:38px;border-radius:12px;border:1px solid rgba(151,200,255,.22);display:grid;place-items:center;margin-bottom:20px;background:rgba(255,255,255,.035);font-weight:800;color:#b9dcff}
+    .trust-card h3{font-size:1rem;margin:0 0 8px}
+    .trust-card p{font-size:.85rem;line-height:1.55}
+    .trust-status{display:inline-flex;align-items:center;gap:7px;margin-top:16px;font-size:.72rem;color:#9ccbb0}
+    .trust-status .dot{width:6px;height:6px}
+    .final-cta-wrap{width:100%;padding:26px 24px}
     .final-cta{position:relative;overflow:hidden;max-width:1180px;margin:0 auto;padding:46px;border:1px solid var(--line);border-radius:30px;background:linear-gradient(135deg,rgba(18,40,67,.82),rgba(8,18,31,.72));backdrop-filter:blur(28px);box-shadow:0 24px 80px rgba(0,0,0,.22);display:grid;grid-template-columns:minmax(0,1.5fr) minmax(250px,.75fr);gap:34px;align-items:center}
     .final-cta:before{content:"";position:absolute;width:320px;height:320px;border-radius:50%;right:-110px;top:-150px;background:radial-gradient(circle,rgba(77,162,255,.24),transparent 68%);pointer-events:none}
-    .eyebrow{font-size:.76rem;letter-spacing:.16em;text-transform:uppercase;color:#a9d3ff;font-weight:700;margin-bottom:12px}
-    .final-cta h2{font-size:clamp(2rem,4vw,3.35rem);line-height:1.03;letter-spacing:-.045em;margin:0 0 14px;max-width:720px}
     .final-cta p{max-width:690px}
     .cta-actions{display:grid;gap:12px;position:relative;z-index:1}
     .cta-button{display:flex;justify-content:center;align-items:center;min-height:52px;padding:13px 18px;border-radius:16px;border:1px solid rgba(151,200,255,.28);font-weight:750;letter-spacing:.01em;background:linear-gradient(180deg,#dceeff,#9bcaff);color:#07111f;box-shadow:0 12px 34px rgba(91,164,246,.18)}
@@ -42,7 +53,8 @@ const html = `<!doctype html>
     .footer-links span:hover{color:var(--text)}
     .footer-bottom{max-width:1180px;margin:0 auto;padding:18px 24px 26px;border-top:1px solid rgba(154,193,255,.1);display:flex;gap:18px;justify-content:space-between;align-items:center;color:#7f96ae;font-size:.78rem}
     .system-state{display:flex;align-items:center;gap:8px}
-    @media(max-width:760px){main{padding:56px 20px}.final-cta-wrap{padding:0 20px 20px}.final-cta{padding:30px 24px;grid-template-columns:1fr;border-radius:24px}.footer-grid{grid-template-columns:1fr 1fr;padding:34px 20px 24px}.footer-grid .brand{grid-column:1/-1}.footer-bottom{padding:18px 20px 24px;align-items:flex-start;flex-direction:column}}
+    @media(max-width:900px){.trust-grid{grid-template-columns:1fr 1fr}.section-head{grid-template-columns:1fr}}
+    @media(max-width:760px){main{padding:56px 20px}.section-wrap,.final-cta-wrap{padding:20px}.trust-grid{grid-template-columns:1fr}.trust-card{min-height:auto}.final-cta{padding:30px 24px;grid-template-columns:1fr;border-radius:24px}.footer-grid{grid-template-columns:1fr 1fr;padding:34px 20px 24px}.footer-grid .brand{grid-column:1/-1}.footer-bottom{padding:18px 20px 24px;align-items:flex-start;flex-direction:column}}
   </style>
 </head>
 <body>
@@ -54,6 +66,44 @@ const html = `<!doctype html>
         <p>Clean rebuild foundation with Identity, Authentication, Organizations, DBA scopes, RBAC, immutable audit evidence and tenant-safe API guards.</p>
       </section>
     </main>
+
+    <section class="section-wrap" aria-labelledby="atlas-trust-title">
+      <div class="section-shell">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Security & Trust</div>
+            <h2 id="atlas-trust-title">Built so access is explicit, evidence is durable, and organizations stay isolated.</h2>
+          </div>
+          <p>ATLAS applies identity-aware controls across its core foundation, with tenant boundaries, role-based authorization and audit evidence designed into the platform rather than added later.</p>
+        </div>
+        <div class="trust-grid">
+          <article class="trust-card">
+            <div class="trust-icon">ID</div>
+            <h3>Identity & Authentication</h3>
+            <p>Centralized identity and authenticated access establish who is acting before protected operations are evaluated.</p>
+            <div class="trust-status"><span class="dot"></span>Core implemented</div>
+          </article>
+          <article class="trust-card">
+            <div class="trust-icon">RB</div>
+            <h3>Role-Based Access</h3>
+            <p>RBAC limits actions by assigned scope so users receive only the capabilities intended for their responsibilities.</p>
+            <div class="trust-status"><span class="dot"></span>Core implemented</div>
+          </article>
+          <article class="trust-card">
+            <div class="trust-icon">TN</div>
+            <h3>Tenant Isolation</h3>
+            <p>Organization and DBA boundaries reduce accidental cross-tenant access across protected application routes.</p>
+            <div class="trust-status"><span class="dot"></span>Core implemented</div>
+          </article>
+          <article class="trust-card">
+            <div class="trust-icon">AU</div>
+            <h3>Audit Evidence</h3>
+            <p>Security-sensitive activity can produce durable evidence for operational review, accountability and future compliance workflows.</p>
+            <div class="trust-status"><span class="dot"></span>Core implemented</div>
+          </article>
+        </div>
+      </div>
+    </section>
 
     <section class="final-cta-wrap" aria-labelledby="atlas-contact-title">
       <div class="final-cta">
