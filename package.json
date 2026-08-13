@@ -1,0 +1,10 @@
+{
+  "name": "atlas-enterprise-suite",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "validate": "node scripts/validate.mjs",
+    "build:prod": "npm run validate"
+  }
+}
