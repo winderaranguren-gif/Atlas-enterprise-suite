@@ -1,0 +1,2 @@
+import { authorize, json } from './crm-shared.js';
+export async function dashboard(request,env){const gate=await authorize(request,env,'crm.read','crm.dashboard.read');if(gate.response)return gate.response;const {authz}=gate;const rows=await env.DB.prepare("SELECT COUNT(*) AS total FROM crm_opportunities WHERE organization_id=? AND dba_id=? AND status='open'").bind(authz.organizationId,authz.dbaId).first();return json({ok:true,dashboard:{openOpportunities:Number(rows?.total||0)}})}
