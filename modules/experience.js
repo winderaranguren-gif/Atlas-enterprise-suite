@@ -1,2 +1,2 @@
-// ATLAS visual experience layer generated from the approved concept boards.
-export function publicExperienceRoutes(){ return null; }
+import{homeExperience}from'./experience/home.js';
+export function visualHome(theme='cyan'){return homeExperience(theme)}
