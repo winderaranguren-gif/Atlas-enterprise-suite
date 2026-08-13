@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS dbas (
   FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE RESTRICT,
   FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE RESTRICT,
   UNIQUE (organization_id, slug),
+  UNIQUE (id, organization_id),
   CHECK (status IN ('active','suspended','archived'))
 );
 
@@ -39,7 +40,7 @@ CREATE TABLE IF NOT EXISTS memberships (
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE RESTRICT,
-  FOREIGN KEY (dba_id) REFERENCES dbas(id) ON DELETE RESTRICT,
+  FOREIGN KEY (dba_id, organization_id) REFERENCES dbas(id, organization_id) ON DELETE RESTRICT,
   FOREIGN KEY (created_by_user_id) REFERENCES users(id) ON DELETE RESTRICT,
   UNIQUE (user_id, organization_id, dba_id),
   CHECK (role IN ('owner','admin','manager','member','auditor','viewer')),
@@ -89,8 +90,6 @@ CREATE TABLE IF NOT EXISTS authorization_audit_events (
   metadata_json TEXT,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
-  FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE SET NULL,
-  FOREIGN KEY (dba_id) REFERENCES dbas(id) ON DELETE SET NULL,
   CHECK (decision IN ('allow','deny'))
 );
 
