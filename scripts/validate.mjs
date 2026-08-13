@@ -68,6 +68,9 @@ for (const role of ['owner','admin','manager','member','auditor','viewer']) {
 for (const permission of ['organization.manage','dba.manage','membership.manage','audit.read','module.read','module.write']) {
   if (!rbacMigration.includes(`'${permission}'`)) throw new Error(`missing_permission:${permission}`);
 }
+if (!rbacMigration.includes('UNIQUE (id, organization_id)')) {
+  throw new Error('dba_composite_parent_key_missing');
+}
 if (!rbacMigration.includes('FOREIGN KEY (dba_id, organization_id) REFERENCES dbas(id, organization_id)')) {
   throw new Error('cross_organization_dba_integrity_missing');
 }
