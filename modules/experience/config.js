@@ -1,0 +1,1 @@
+export const THEMES=[['neon','Neon Future'],['glass','Glassmorph'],['light','Light Mode'],['space','Space Explorer'],['corporate','Corporate Blue'],['green','Green Energy'],['cyan','Cyber Grid'],['honey','Honeycomb'],['holo','Holographic'],['minimal','Minimal Dark'],['violet','Violet Dream'],['mobile','Mobile Focus']];
