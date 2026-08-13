@@ -3,7 +3,7 @@ import { API_ROUTE_CATALOG, dispatchApi } from '../modules/api-gateway/src/route
 
 const ids=API_ROUTE_CATALOG.map(([id])=>id);
 assert.equal(new Set(ids).size,ids.length,'gateway route ids must be unique');
-for(const required of ['auth','identity','crm','documents','accounting','backup-recovery']){
+for(const required of ['auth','identity','crm','documents','accounting','backups']){
   assert.ok(ids.includes(required),`missing commercial pilot route: ${required}`);
 }
 
