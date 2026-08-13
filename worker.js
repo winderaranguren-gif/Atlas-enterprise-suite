@@ -22,6 +22,16 @@ const html = `<!doctype html>
     p{color:var(--muted);line-height:1.7;margin:0}
     .badge{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;margin-bottom:18px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.035);backdrop-filter:blur(18px);font-size:.82rem;color:#cce3ff}
     .dot{width:7px;height:7px;border-radius:50%;background:#75e39d;box-shadow:0 0 14px rgba(117,227,157,.75)}
+    .final-cta-wrap{width:100%;padding:0 24px 26px}
+    .final-cta{position:relative;overflow:hidden;max-width:1180px;margin:0 auto;padding:46px;border:1px solid var(--line);border-radius:30px;background:linear-gradient(135deg,rgba(18,40,67,.82),rgba(8,18,31,.72));backdrop-filter:blur(28px);box-shadow:0 24px 80px rgba(0,0,0,.22);display:grid;grid-template-columns:minmax(0,1.5fr) minmax(250px,.75fr);gap:34px;align-items:center}
+    .final-cta:before{content:"";position:absolute;width:320px;height:320px;border-radius:50%;right:-110px;top:-150px;background:radial-gradient(circle,rgba(77,162,255,.24),transparent 68%);pointer-events:none}
+    .eyebrow{font-size:.76rem;letter-spacing:.16em;text-transform:uppercase;color:#a9d3ff;font-weight:700;margin-bottom:12px}
+    .final-cta h2{font-size:clamp(2rem,4vw,3.35rem);line-height:1.03;letter-spacing:-.045em;margin:0 0 14px;max-width:720px}
+    .final-cta p{max-width:690px}
+    .cta-actions{display:grid;gap:12px;position:relative;z-index:1}
+    .cta-button{display:flex;justify-content:center;align-items:center;min-height:52px;padding:13px 18px;border-radius:16px;border:1px solid rgba(151,200,255,.28);font-weight:750;letter-spacing:.01em;background:linear-gradient(180deg,#dceeff,#9bcaff);color:#07111f;box-shadow:0 12px 34px rgba(91,164,246,.18)}
+    .cta-button.secondary{background:rgba(255,255,255,.035);color:#eaf5ff;box-shadow:none}
+    .cta-note{font-size:.76rem;text-align:center;color:#7891ab}
     footer{border-top:1px solid var(--line);background:linear-gradient(180deg,rgba(8,18,30,.45),rgba(3,8,14,.9));backdrop-filter:blur(24px)}
     .footer-grid{max-width:1180px;margin:0 auto;padding:42px 24px 28px;display:grid;grid-template-columns:minmax(220px,1.6fr) repeat(3,minmax(130px,1fr));gap:30px}
     .brand-mark{font-size:1.08rem;font-weight:800;letter-spacing:.18em;margin-bottom:10px}
@@ -32,7 +42,7 @@ const html = `<!doctype html>
     .footer-links span:hover{color:var(--text)}
     .footer-bottom{max-width:1180px;margin:0 auto;padding:18px 24px 26px;border-top:1px solid rgba(154,193,255,.1);display:flex;gap:18px;justify-content:space-between;align-items:center;color:#7f96ae;font-size:.78rem}
     .system-state{display:flex;align-items:center;gap:8px}
-    @media(max-width:760px){main{padding:56px 20px}.footer-grid{grid-template-columns:1fr 1fr;padding:34px 20px 24px}.footer-grid .brand{grid-column:1/-1}.footer-bottom{padding:18px 20px 24px;align-items:flex-start;flex-direction:column}}
+    @media(max-width:760px){main{padding:56px 20px}.final-cta-wrap{padding:0 20px 20px}.final-cta{padding:30px 24px;grid-template-columns:1fr;border-radius:24px}.footer-grid{grid-template-columns:1fr 1fr;padding:34px 20px 24px}.footer-grid .brand{grid-column:1/-1}.footer-bottom{padding:18px 20px 24px;align-items:flex-start;flex-direction:column}}
   </style>
 </head>
 <body>
@@ -44,6 +54,21 @@ const html = `<!doctype html>
         <p>Clean rebuild foundation with Identity, Authentication, Organizations, DBA scopes, RBAC, immutable audit evidence and tenant-safe API guards.</p>
       </section>
     </main>
+
+    <section class="final-cta-wrap" aria-labelledby="atlas-contact-title">
+      <div class="final-cta">
+        <div>
+          <div class="eyebrow">Build with ATLAS</div>
+          <h2 id="atlas-contact-title">One platform. Your operation. A connected future.</h2>
+          <p>Explore ATLAS Enterprise Suite, evaluate the platform for your organization, or start a conversation about deployment, partnerships and integrated digital operations.</p>
+        </div>
+        <div class="cta-actions">
+          <a class="cta-button" href="mailto:awfinanceadvisory@gmail.com?subject=ATLAS%20Enterprise%20Suite%20Inquiry">Contact ATLAS</a>
+          <a class="cta-button secondary" href="/api/health">View system health</a>
+          <div class="cta-note">Secure foundation · Multi-organization architecture</div>
+        </div>
+      </div>
+    </section>
 
     <footer aria-label="ATLAS footer">
       <div class="footer-grid">
