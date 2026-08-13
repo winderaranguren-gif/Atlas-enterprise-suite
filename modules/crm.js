@@ -18,16 +18,24 @@ import { listRules,createRule } from './crm-automations.js';
 import { runRules } from './crm-rule-runner.js';
 import { dashboard } from './crm-dashboard.js';
 import { globalSearch } from './crm-search.js';
+import { counts } from './crm-counts.js';
+import { pipelineValue } from './crm-value.js';
+
+async function status(env){
+  if(!env.DB)return json({ok:true,module:'crm',version:'1.0.0',enabled:enabled(env),database:'unconfigured',schemaReady:false});
+  let schemaReady=false;
+  try{const row=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='crm_accounts'").first();schemaReady=Boolean(row?.name)}catch{}
+  return json({ok:true,module:'crm',version:'1.0.0',enabled:enabled(env),database:'configured',schemaReady});
+}
 
 export async function crmRoutes(request,env,url=new URL(request.url)){
   if(!url.pathname.startsWith('/api/crm'))return null;
-  if(url.pathname==='/api/crm/status'&&request.method==='GET')return json({ok:true,module:'crm',version:'1.0.0',enabled:enabled(env),database:env.DB?'configured':'unconfigured'});
+  if(url.pathname==='/api/crm/status'&&request.method==='GET')return status(env);
   if(!enabled(env))return json({ok:false,error:'crm_disabled'},503);
   if(!env.DB)return json({ok:false,error:'identity_database_unavailable'},503);
   const routes={
-    'GET /api/crm/dashboard':()=>dashboard(request,env),
-    'GET /api/crm/pipeline':()=>pipeline(request,env),
-    'GET /api/crm/search':()=>globalSearch(request,env,url),
+    'GET /api/crm/dashboard':()=>dashboard(request,env),'GET /api/crm/counts':()=>counts(request,env),'GET /api/crm/value':()=>pipelineValue(request,env),
+    'GET /api/crm/pipeline':()=>pipeline(request,env),'GET /api/crm/search':()=>globalSearch(request,env,url),
     'GET /api/crm/accounts':()=>listAccounts(request,env,url),'POST /api/crm/accounts':()=>createAccount(request,env),
     'GET /api/crm/contacts':()=>listContacts(request,env,url),'POST /api/crm/contacts':()=>createContact(request,env),
     'GET /api/crm/leads':()=>listLeads(request,env,url),'POST /api/crm/leads':()=>createLead(request,env),
@@ -36,8 +44,7 @@ export async function crmRoutes(request,env,url=new URL(request.url)){
     'GET /api/crm/activities':()=>listActivities(request,env,url),'POST /api/crm/activities':()=>createActivity(request,env),
     'GET /api/crm/quotes':()=>listQuotes(request,env,url),'POST /api/crm/quotes':()=>createQuote(request,env),
     'GET /api/crm/communications':()=>listCommunications(request,env,url),'POST /api/crm/communications':()=>logCommunication(request,env),
-    'GET /api/crm/automations':()=>listRules(request,env),'POST /api/crm/automations':()=>createRule(request,env),
-    'POST /api/crm/automations/run':()=>runRules(request,env)
+    'GET /api/crm/automations':()=>listRules(request,env),'POST /api/crm/automations':()=>createRule(request,env),'POST /api/crm/automations/run':()=>runRules(request,env)
   };
   const exact=routes[`${request.method} ${url.pathname}`]; if(exact)return exact();
   let match=url.pathname.match(/^\/api\/crm\/accounts\/([^/]+)$/); if(match&&request.method==='PATCH')return patchAccount(request,env,decodeURIComponent(match[1]));
