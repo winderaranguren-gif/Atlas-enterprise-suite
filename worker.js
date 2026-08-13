@@ -1,10 +1,11 @@
 import { authRoutes } from './modules/auth.js';
 import { rbacRoutes } from './modules/rbac.js';
 import { evidenceRoutes } from './modules/evidence.js';
+import { hrKnowledgeRoutes } from './modules/hr-knowledge.js';
 
 const pages = {
   '/platform/enterprise-suite': ['Enterprise Suite','The connected ATLAS workspace for finance, people, operations, intelligence and administration.'],
-  '/platform/hr-payroll': ['HR & Payroll','People operations, recruiting, assessments, payroll workflows and workforce intelligence in one ATLAS experience.'],
+  '/platform/hr-payroll': ['HR & Payroll','People operations, recruiting, assessments, payroll workflows, workforce intelligence and knowledge in one ATLAS experience.'],
   '/platform/finance': ['Finance','Accounting, AP, AR, GL, reporting, controls and financial visibility designed for multi-organization operations.'],
   '/platform/operations': ['Operations','Operational workflows, inventory, service execution, approvals and real-time business coordination.'],
   '/ecosystem/health': ['ATLAS Health','Connected health operations, smart-room experiences, virtual care and health intelligence.'],
@@ -33,10 +34,11 @@ function internalPage(path){const page=pages[path];if(!page)return null;const [t
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    if (url.pathname === '/api/health') return Response.json({ok:true,service:'atlas-enterprise-suite',version:'0.5.0',phase:'interactive-navigation',identityDatabase:env.DB?'configured':'unconfigured'},{headers:{'cache-control':'no-store'}});
+    if (url.pathname === '/api/health') return Response.json({ok:true,service:'atlas-enterprise-suite',version:'0.5.0',phase:'interactive-navigation',identityDatabase:env.DB?'configured':'unconfigured',hrKnowledge:String(env.ATLAS_ENABLE_HR_KNOWLEDGE||'').toLowerCase()==='true'?'enabled':'disabled'},{headers:{'cache-control':'no-store'}});
     const authResponse = await authRoutes(request, env, url); if (authResponse) return authResponse;
     const rbacResponse = await rbacRoutes(request, env, url); if (rbacResponse) return rbacResponse;
     const evidenceResponse = await evidenceRoutes(request, env, url); if (evidenceResponse) return evidenceResponse;
+    const hrKnowledgeResponse = await hrKnowledgeRoutes(request, env, url); if (hrKnowledgeResponse) return hrKnowledgeResponse;
     if (url.pathname === '/') return new Response(home,{headers:{'content-type':'text/html; charset=utf-8'}});
     const page = internalPage(url.pathname); if(page) return new Response(page,{headers:{'content-type':'text/html; charset=utf-8'}});
     return Response.json({ok:false,error:'not_found'},{status:404});
