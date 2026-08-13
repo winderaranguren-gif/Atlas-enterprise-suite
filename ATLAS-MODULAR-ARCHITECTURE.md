@@ -8,6 +8,7 @@ Status: replacement architecture for the previous monolithic layout.
 - Each module owns its API, tests, configuration, documentation and deployment boundary.
 - A failure in one domain must not require changes to unrelated domains.
 - Cross-module communication should use explicit contracts/events rather than direct internal coupling.
+- Duplicate domain modules are not allowed: extend or merge into the canonical module instead of creating a second implementation.
 
 ## Modules
 - core
@@ -40,7 +41,7 @@ Status: replacement architecture for the previous monolithic layout.
 - api-gateway
 - auth
 - database
-- backup-recovery
+- backups
 
 ## Standard module layout
 Each module should converge on:
