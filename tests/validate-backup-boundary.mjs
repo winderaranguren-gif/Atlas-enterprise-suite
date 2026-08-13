@@ -2,16 +2,17 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const gateway = fs.readFileSync(new URL('../modules/api-gateway/src/router.js', import.meta.url), 'utf8');
-const boundary = fs.readFileSync(new URL('../modules/backup-recovery/src/routes.js', import.meta.url), 'utf8');
+const routes = fs.readFileSync(new URL('../modules/backups/routes.js', import.meta.url), 'utf8');
+const readme = fs.readFileSync(new URL('../modules/backups/README.md', import.meta.url), 'utf8');
 
-assert.match(gateway, /from '\.\.\/\.\.\/backup-recovery\/src\/routes\.js'/, 'API Gateway must import backups only through modules/backup-recovery');
-assert.doesNotMatch(gateway, /\.\.\/\.\.\/backups\/routes\.js/, 'API Gateway must not import legacy backup routes directly');
-assert.match(boundary, /BACKUP_RECOVERY_RUNTIME_CONTRACT/);
-assert.match(boundary, /restorePolicy: 'empty_only'/);
-assert.match(boundary, /organization_id/);
-assert.match(boundary, /dba_id/);
-assert.match(boundary, /'D1'/);
-assert.match(boundary, /'R2'/);
-assert.match(boundary, /POST \/api\/backups\/:id\/restore/);
+assert.match(gateway, /from '\.\.\/\.\.\/backups\/routes\.js'/, 'API Gateway must import the canonical modules/backups runtime');
+assert.doesNotMatch(gateway, /backup-recovery/, 'duplicate backup-recovery adapter must not remain wired');
+assert.match(routes, /export async function backupRoutes/);
+assert.match(routes, /empty_only/);
+assert.match(routes, /organization_id/);
+assert.match(routes, /dba_id/);
+assert.match(routes, /POST|pathname/);
+assert.match(readme, /D1 \+ R2/);
+assert.match(readme, /POST \/api\/backups\/:id\/restore/);
 
-console.log('backup/recovery modular boundary validation passed');
+console.log('canonical backups/recovery boundary validation passed');
