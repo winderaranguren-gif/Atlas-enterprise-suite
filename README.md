@@ -3,9 +3,9 @@
 Clean rebuild baseline for ATLAS.
 
 ## Current phase
-Core v0.3 — Identity, Authentication, Organizations, DBA scopes and RBAC.
+Core v0.4 — Identity, Authentication, Organizations, DBA scopes, RBAC, immutable Audit Ledger, Security Events and tenant-safe API guards.
 
-Business modules are still disabled. The shared security boundary is being completed first.
+Business modules are still disabled. The shared security and data-isolation boundary is being completed first.
 
 ## Core principles
 - `main` stays minimal and validated.
@@ -15,6 +15,8 @@ Business modules are still disabled. The shared security boundary is being compl
 - Business data must be scoped by authenticated user + Organization + DBA.
 - No implicit `default` Organization or DBA is allowed.
 - Authorization uses explicit role permissions and is deny-by-default.
+- New modules must use the shared tenant guard rather than trusting scope headers by themselves.
+- Audit and security evidence are append-only and immutable at the database layer.
 
 ## Authentication endpoints
 - `POST /api/auth/bootstrap` — one-time initial user creation; requires `ATLAS_BOOTSTRAP_TOKEN`.
@@ -28,11 +30,24 @@ Business modules are still disabled. The shared security boundary is being compl
 - `POST /api/core/organizations/:organizationId/dbas` — creates a DBA; requires owner/admin organization authority.
 - `POST /api/core/memberships` — creates or updates a user membership in an exact Organization/DBA scope; requires `membership.manage`.
 
+## Evidence endpoints
+These routes require a valid session, exact `x-atlas-organization` and `x-atlas-dba` headers, and the `audit.read` permission.
+
+- `GET /api/core/audit` — tenant-scoped immutable audit ledger, capped at 200 results.
+- `GET /api/core/security-events` — tenant-scoped immutable security-event stream, capped at 200 results.
+
+Both support bounded filtering and correlation IDs for tracing activity across future ATLAS modules.
+
+## Shared module contract
+Future business modules should call `requireTenantPermission(request, env, permission, action)` from `modules/tenant.js`. The guard verifies session + Organization + DBA membership + explicit permission and records canonical authorization evidence in `audit_ledger`.
+
+Security-sensitive modules can emit append-only evidence through `appendSecurityEvent(...)` from `modules/audit.js`.
+
 ## Roles
 `owner`, `admin`, `manager`, `member`, `auditor`, `viewer`.
 
 ## Permission contract
-Current shared permissions are `organization.manage`, `dba.manage`, `membership.manage`, `audit.read`, `module.read`, and `module.write`. Future modules must call the shared permission guard rather than trusting client-supplied scope headers by themselves.
+Current shared permissions are `organization.manage`, `dba.manage`, `membership.manage`, `audit.read`, `module.read`, and `module.write`.
 
 ## Runtime
 - `/` — core status page.
