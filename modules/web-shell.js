@@ -25,17 +25,17 @@ function doc({title,description,body,script='',robots='index,follow'}){const t=e
 
 function atlasOS({privateView=false}={}){
  const menu=[['⌂','Dashboard','/'],['◈','Enterprise','/platform/enterprise-suite'],['＄','Finance','/platform/finance'],['♙','HR & Payroll','/platform/hr-payroll'],['◫','Sales & CRM','/platform/crm'],['▦','Inventory','/platform/operations'],['▣','POS Systems','/platform/operations'],['♡','ATLAS Health','/ecosystem/health'],['▤','Projects','/platform/enterprise-suite'],['⌘','Education','/platform/hr-payroll'],['♧','Public Safety','/ecosystem/public-safety'],['◇','ATLAS Cars','/ecosystem/ride'],['◎','ATLAS Connect','/ecosystem/connect'],['⚙','Settings','/dashboard']];
- const navItems=menu.map(([i,n,p],index)=>\`<a class="\${index===0?'active':''}" href="\${p}"><span class="ico">\${i}</span><span>\${esc(n)}</span></a>\`).join('');
+ const navItems=menu.map(([i,n,p],index)=>`<a class="${index===0?'active':''}" href="${p}"><span class="ico">${i}</span><span>${esc(n)}</span></a>`).join('');
  const visualModules=[['Enterprise','Manage your entire business.','▥','/platform/enterprise-suite'],['ATLAS Health','Smarter healthcare solutions.','♧','/ecosystem/health'],['Public Safety','Protect and serve with intelligence.','♢','/ecosystem/public-safety'],['ATLAS Cars','The future of mobility.','◇','/ecosystem/ride'],['Education','Learn, certify and grow.','⌘','/platform/hr-payroll'],['ATLAS Connect','Connect everything, anywhere.','◎','/ecosystem/connect']];
- const cards=visualModules.map(([n,c,i,p])=>\`<a class="module-card" href="\${p}"><h3>\${esc(n)}</h3><p>\${esc(c)}</p><span class="module-symbol">\${i}</span></a>\`).join('');
- const authScript=privateView?\`const t=sessionStorage.getItem('atlas.session'),w=document.getElementById('atlas-welcome');if(!t){w.textContent='Preview mode · Sign in to connect your workspace'}else fetch('/api/auth/me',{headers:{authorization:'Bearer '+t}}).then(async r=>{const d=await r.json();if(!r.ok)throw 0;w.textContent='Good morning, '+d.user.displayName+'. All connected services are ready.'}).catch(()=>{w.textContent='Session unavailable · Sign in again'})\`:'';
- return doc({title:privateView?'Dashboard':'ATLAS OS',description:'ATLAS OS unifies enterprise, finance, people, health, mobility and connected intelligence in one visual command center.',robots:privateView?'noindex,nofollow':'index,follow',body:\`<div class="os">
+ const cards=visualModules.map(([n,c,i,p])=>`<a class="module-card" href="${p}"><h3>${esc(n)}</h3><p>${esc(c)}</p><span class="module-symbol">${i}</span></a>`).join('');
+ const authScript=privateView?`const t=sessionStorage.getItem('atlas.session'),w=document.getElementById('atlas-welcome');if(!t){w.textContent='Preview mode · Sign in to connect your workspace'}else fetch('/api/auth/me',{headers:{authorization:'Bearer '+t}}).then(async r=>{const d=await r.json();if(!r.ok)throw 0;w.textContent='Good morning, '+d.user.displayName+'. All connected services are ready.'}).catch(()=>{w.textContent='Session unavailable · Sign in again'})`:'';
+ return doc({title:privateView?'Dashboard':'ATLAS OS',description:'ATLAS OS unifies enterprise, finance, people, health, mobility and connected intelligence in one visual command center.',robots:privateView?'noindex,nofollow':'index,follow',body:`<div class="os">
   <header class="topbar">
    <a class="brandlock" href="/"><span class="atlas-mark"></span><span><span class="brand-name">ATLAS</span><span class="brand-tag">ONE PLATFORM.<br>EVERY SOLUTION.</span></span></a>
    <div class="top-center"><strong>ATLAS OS</strong><span>ONE PLATFORM. EVERY SOLUTION. TOTAL CONTROL.</span></div>
    <div class="profile"><span class="avatar">W</span><span><strong>WINDER</strong><small>Administrator</small></span></div>
   </header>
-  <aside class="rail"><nav class="menu">\${navItems}</nav><div class="voice-chip"><div class="voice-orb">A</div><small>ATLAS VOICE · ONLINE</small></div></aside>
+  <aside class="rail"><nav class="menu">${navItems}</nav><div class="voice-chip"><div class="voice-orb">A</div><small>ATLAS VOICE · ONLINE</small></div></aside>
   <main class="stage" id="main">
    <div class="overview-head"><h1>GLOBAL OVERVIEW</h1><span class="realtime">Platform state</span></div>
    <section class="overview">
@@ -43,7 +43,7 @@ function atlasOS({privateView=false}={}){
      <article class="metric"><span class="label">Connected domains</span><strong>12</strong><small>ATLAS ecosystem</small></article>
      <article class="metric"><span class="label">Core modules</span><strong>6</strong><small>Available routes</small></article>
      <article class="metric"><span class="label">Visual themes</span><strong>7</strong><small>Rotating collection</small></article>
-     <article class="metric"><span class="label">Release</span><strong>v\${ATLAS_VERSION}</strong><small>Current runtime</small></article>
+     <article class="metric"><span class="label">Release</span><strong>v${ATLAS_VERSION}</strong><small>Current runtime</small></article>
     </div>
     <div class="globe" role="img" aria-label="ATLAS global connected ecosystem"><div class="globe-logo"><b>A</b><span>ALL MODULES · ONE UNIVERSE</span></div></div>
     <div class="charts">
@@ -53,11 +53,11 @@ function atlasOS({privateView=false}={}){
     </div>
    </section>
    <div class="module-title">ALL MODULES. ONE UNIVERSE.</div>
-   <section class="module-grid">\${cards}</section>
+   <section class="module-grid">${cards}</section>
   </main>
   <aside class="ai-panel"><h2>ATLAS AI</h2><small>Your intelligent assistant</small><div class="ai-face"></div><div class="ai-message" id="atlas-welcome">Good morning, Winder.<br>ATLAS is ready to connect your ecosystem.</div><div class="wave"></div></aside>
   <footer class="statusbar"><div class="sys"><span class="ico">♢</span><span><b>SYSTEM STATUS</b>OPERATIONAL</span></div><div class="sys"><span class="ico">▣</span><span><b>SECURE ENCRYPTION</b>ACTIVE</span></div><div class="sys"><span class="ico">☁</span><span><b>CLOUD SYNCHRONIZED</b>CONNECTED</span></div><div class="sys"><span class="ico">✧</span><span><b>AI PROTECTION</b>ACTIVE</span></div><div class="sys"><span class="ico">↻</span><span><b>DATA BACKUP</b>MONITORED</span></div></footer>
- </div>\`,script:authScript});
+ </div>`,script:authScript});
 }
 function home(){return atlasOS()}
 function loginPage(){return doc({title:'Sign in',robots:'noindex,nofollow',body:`<section class="page"><div class="eyebrow">ATLAS ID</div><h1>Welcome back.</h1><form id="login" class="glass form"><div class="field"><label>Email</label><input name="email" type="email" autocomplete="username" required></div><div class="field"><label>Password</label><input name="password" type="password" autocomplete="current-password" minlength="12" required></div><button class="btn primary" type="submit">Sign in</button><div id="msg" aria-live="polite"></div></form></section>`,script:`const f=document.getElementById('login'),m=document.getElementById('msg');f.onsubmit=async e=>{e.preventDefault();m.textContent='Signing in…';try{const r=await fetch('/api/auth/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:f.email.value,password:f.password.value})});const d=await r.json();if(!r.ok)throw new Error();sessionStorage.setItem('atlas.session',d.sessionToken);sessionStorage.setItem('atlas.user',JSON.stringify(d.user));location.assign('/dashboard')}catch{m.className='notice bad';m.textContent='Unable to sign in.'}};`})}
