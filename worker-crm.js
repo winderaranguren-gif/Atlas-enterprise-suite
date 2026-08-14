@@ -7,6 +7,7 @@ import { ensureWebSchema } from './modules/web-schema.js';
 export default {
   async fetch(request,env){
     const url=new URL(request.url);
+    if(url.pathname==='/assets/atlas-cloud-network-bg-v1.webp'&&env.ASSETS)return env.ASSETS.fetch(request);
     if(url.pathname==='/platform/crm')return new Response(crmPage(),{headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-store'}});
     if(url.pathname==='/assets/crm-app.js')return new Response(crmClientScript(),{headers:{'content-type':'text/javascript; charset=utf-8','cache-control':'no-store'}});
     if(url.pathname.startsWith('/api/crm')){
