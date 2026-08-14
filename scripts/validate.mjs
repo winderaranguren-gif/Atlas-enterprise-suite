@@ -21,7 +21,7 @@ for (const file of required) await access(file);
 
 const pkg = JSON.parse(await readFile('package.json', 'utf8'));
 if (pkg.name !== 'atlas-enterprise-suite') throw new Error('invalid_package_name');
-if (pkg.version !== '0.5.0') throw new Error('unexpected_core_version');
+if (pkg.version !== '0.6.0') throw new Error(`unexpected_core_version:${pkg.version}`);
 if (!pkg.scripts?.['build:prod']) throw new Error('missing_build_prod_script');
 
 const worker = await readFile('worker.js', 'utf8');
@@ -169,4 +169,4 @@ for (const compositeParent of [
   if (!hrMigration.includes(compositeParent)) throw new Error(`hr_knowledge_scope_contract_missing:${compositeParent}`);
 }
 
-console.log('ATLAS Core v0.5 + HR Knowledge foundation validation passed');
+console.log('ATLAS Core v0.6 + HR Knowledge foundation validation passed');
