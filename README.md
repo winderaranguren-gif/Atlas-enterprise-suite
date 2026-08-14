@@ -3,9 +3,11 @@
 Clean rebuild baseline for ATLAS.
 
 ## Current phase
-Core v0.4 — Identity, Authentication, Organizations, DBA scopes, RBAC, immutable Audit Ledger, Security Events and tenant-safe API guards.
+Core v0.7 — Identity, Authentication, Organizations, DBA scopes, RBAC, immutable Audit Ledger, Security Events, tenant-safe API guards, HR Knowledge foundation and CRM v1.
 
-Business modules are still disabled. The shared security and data-isolation boundary is being completed first.
+Version source: `modules/version.js`. The runtime health response and build validator must use this canonical value.
+
+The shared security and data-isolation boundary is established. HR Knowledge remains feature-gated, while CRM v1 is wired through the dedicated Cloudflare Worker entry point and validated by the production build.
 
 ## Core principles
 - `main` stays minimal and validated.
