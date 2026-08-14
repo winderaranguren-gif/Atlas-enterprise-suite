@@ -6,6 +6,7 @@ import { sensoryRoutes } from './modules/sensory.js';
 import { investRoutes } from './modules/invest.js';
 import { bridgeRoutes } from './modules/bridge.js';
 import { ATLAS_VERSION } from './modules/version.js';
+import { webHardeningRoutes } from './modules/web-hardening.js';
 import { webShellRoutes, errorPage, notFound } from './modules/web-shell.js';
 import { webRuntimeScript } from './modules/web-runtime.js';
 
@@ -29,6 +30,7 @@ export default {
       const sensoryResponse = await sensoryRoutes(request, env, url); if (sensoryResponse) return sensoryResponse;
       const investResponse = await investRoutes(request, env, url); if (investResponse) return investResponse;
       const bridgeResponse = await bridgeRoutes(request, env, url); if (bridgeResponse) return bridgeResponse;
+      const hardenedResponse = await webHardeningRoutes(request, env, url); if (hardenedResponse) return withRuntime(hardenedResponse);
       const webResponse = await webShellRoutes(request, env, url); if (webResponse) return withRuntime(webResponse);
       if (request.method === 'GET' && !url.pathname.startsWith('/api/')) return withRuntime(html(notFound(url.pathname),404));
       return Response.json({ok:false,error:'not_found'},{status:404,headers:{'cache-control':'no-store'}});
