@@ -18,12 +18,15 @@ if (!pkg.scripts?.['build:prod']) throw new Error('missing_build_prod_script');
 const syntaxTargets = [
   'worker.js',
   'worker-crm.js',
+  'modules/web-shell.js',
+  'modules/web-runtime.js',
   'modules/performance-optimizer.js',
   'scripts/validate.mjs',
   'scripts/validate-crm.mjs',
   'scripts/source-backup.mjs',
   'scripts/test-source-backup.mjs',
-  'scripts/validate-performance-optimizer.mjs'
+  'scripts/validate-performance-optimizer.mjs',
+  'scripts/validate-web-shell.mjs'
 ];
 for (const target of syntaxTargets) {
   const checked = spawnSync(process.execPath, ['--check', target], { stdio: 'inherit' });
@@ -42,6 +45,7 @@ const report = {
   version: pkg.version,
   node: process.versions.node,
   dependencyPolicy: 'native-only',
+  coverage: ['core','crm','backup-integrity','performance','web-launch','pwa-runtime'],
   command: 'npm run build:prod',
   startedAt,
   completedAt: new Date().toISOString()
