@@ -1,4 +1,5 @@
 import { access, readFile } from 'node:fs/promises';
+import { ATLAS_VERSION } from '../modules/version.js';
 
 const required = [
   'README.md',
@@ -11,6 +12,7 @@ const required = [
   'modules/tenant.js',
   'modules/evidence.js',
   'modules/hr-knowledge.js',
+  'modules/version.js',
   'migrations/0001_identity.sql',
   'migrations/0002_organizations_rbac.sql',
   'migrations/0003_audit_security.sql',
@@ -21,11 +23,13 @@ for (const file of required) await access(file);
 
 const pkg = JSON.parse(await readFile('package.json', 'utf8'));
 if (pkg.name !== 'atlas-enterprise-suite') throw new Error('invalid_package_name');
-if (pkg.version !== '0.6.0') throw new Error('unexpected_core_version');
+if (pkg.version !== ATLAS_VERSION) throw new Error('unexpected_core_version');
 if (!pkg.scripts?.['build:prod']) throw new Error('missing_build_prod_script');
 
 const worker = await readFile('worker.js', 'utf8');
 if (!worker.includes('/api/health')) throw new Error('missing_health_endpoint');
+if (!worker.includes("import { ATLAS_VERSION } from './modules/version.js'")) throw new Error('runtime_version_source_missing');
+if (!worker.includes('version:ATLAS_VERSION')) throw new Error('runtime_version_not_canonical');
 if (!worker.includes('authRoutes')) throw new Error('auth_not_wired');
 if (!worker.includes('rbacRoutes')) throw new Error('rbac_not_wired');
 if (!worker.includes('evidenceRoutes')) throw new Error('evidence_not_wired');
@@ -169,4 +173,4 @@ for (const compositeParent of [
   if (!hrMigration.includes(compositeParent)) throw new Error(`hr_knowledge_scope_contract_missing:${compositeParent}`);
 }
 
-console.log('ATLAS Core v0.6 + HR Knowledge foundation validation passed');
+console.log(`ATLAS Core v${ATLAS_VERSION} + HR Knowledge foundation validation passed`);
