@@ -3,9 +3,9 @@
 Clean rebuild baseline for ATLAS.
 
 ## Current phase
-Core v0.4 — Identity, Authentication, Organizations, DBA scopes, RBAC, immutable Audit Ledger, Security Events and tenant-safe API guards.
+Core v0.7 — Identity, Authentication, Organizations, DBA scopes, RBAC, immutable Audit Ledger, Security Events, tenant-safe API guards, Sensory foundation, Investment Lab and ATLAS Bridge foundation.
 
-Business modules are still disabled. The shared security and data-isolation boundary is being completed first.
+Business capabilities remain feature-gated. The shared security, data-isolation and consent boundaries are completed before production activation.
 
 ## Core principles
 - `main` stays minimal and validated.
