@@ -1,5 +1,10 @@
 {
   "name": "atlas-enterprise-suite",
   "main": "worker-crm.js",
-  "compatibility_date": "2026-08-12"
+  "compatibility_date": "2026-08-12",
+  "assets": {
+    "directory": "./assets",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  }
 }
