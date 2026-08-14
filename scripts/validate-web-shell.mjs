@@ -6,22 +6,26 @@ for(const file of required)await access(file);
 
 const shell=await readFile('modules/web-shell.js','utf8');
 for(const route of ['/login','/dashboard','/trust/status','/contact','/privacy','/terms','/security','/manifest.webmanifest','/sw.js','/robots.txt','/sitemap.xml','/api/web/contact','/api/web/telemetry'])assert.ok(shell.includes(route),`missing_web_route:${route}`);
-for(const marker of ['content-security-policy','permissions-policy','referrer-policy','sessionStorage','ATLAS_VERSION','notFound','errorPage'])assert.ok(shell.includes(marker),`missing_web_control:${marker}`);
+for(const marker of ['content-security-policy','permissions-policy','referrer-policy','sessionStorage','ATLAS_VERSION','notFound','errorPage','rateLimit','cf-connecting-ip','retry-after'])assert.ok(shell.includes(marker),`missing_web_control:${marker}`);
 assert.ok(shell.includes("purpose:'any maskable'"),'pwa_maskable_icon_missing');
+assert.ok(shell.includes("'contact',5,600"),'contact_rate_limit_missing');
+assert.ok(shell.includes("'telemetry',60,60"),'telemetry_rate_limit_missing');
 assert.ok(!/<script[^>]+src=/i.test(shell),'third_party_script_forbidden');
 assert.ok(!/@import\s+url/i.test(shell),'third_party_css_import_forbidden');
 
 const migration=await readFile('migrations/0006_web_launch.sql','utf8');
-for(const table of ['public_contact_requests','web_telemetry_events'])assert.ok(migration.includes(`CREATE TABLE IF NOT EXISTS ${table}`),`missing_web_table:${table}`);
+for(const table of ['public_contact_requests','web_telemetry_events','web_rate_limits'])assert.ok(migration.includes(`CREATE TABLE IF NOT EXISTS ${table}`),`missing_web_table:${table}`);
 
 const schema=await readFile('modules/web-schema.js','utf8');
-for(const table of ['public_contact_requests','web_telemetry_events'])assert.ok(schema.includes(`CREATE TABLE IF NOT EXISTS ${table}`),`missing_self_provision_table:${table}`);
+for(const table of ['public_contact_requests','web_telemetry_events','web_rate_limits'])assert.ok(schema.includes(`CREATE TABLE IF NOT EXISTS ${table}`),`missing_self_provision_table:${table}`);
 assert.ok(schema.includes('ensureWebSchema'),'web_schema_self_provisioner_missing');
 
 const worker=await readFile('worker.js','utf8');
 assert.ok(worker.includes('webShellRoutes'),'web_shell_not_wired');
 assert.ok(worker.includes("phase:'web-launch-readiness'"),'health_release_phase_missing');
 assert.ok(worker.includes("qa:'native'"),'health_qa_state_missing');
+assert.ok(worker.includes("status:databaseReady?200:503"),'health_degraded_status_missing');
+assert.ok(worker.includes("state:databaseReady?'operational':'degraded'"),'health_state_missing');
 assert.ok(worker.includes('notFound(url.pathname)'),'html_404_not_wired');
 assert.ok(worker.includes('errorPage()'),'html_500_not_wired');
 
