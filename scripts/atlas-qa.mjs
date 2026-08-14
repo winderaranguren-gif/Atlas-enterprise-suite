@@ -19,6 +19,7 @@ const syntaxTargets = [
   'worker.js',
   'worker-crm.js',
   'modules/web-shell.js',
+  'modules/web-hardening.js',
   'modules/web-runtime.js',
   'modules/web-schema.js',
   'modules/performance-optimizer.js',
@@ -29,7 +30,8 @@ const syntaxTargets = [
   'scripts/source-backup.mjs',
   'scripts/test-source-backup.mjs',
   'scripts/validate-performance-optimizer.mjs',
-  'scripts/validate-web-shell.mjs'
+  'scripts/validate-web-shell.mjs',
+  'scripts/validate-web-hardening.mjs'
 ];
 for (const target of syntaxTargets) {
   const checked = spawnSync(process.execPath, ['--check', target], { stdio: 'inherit' });
@@ -48,7 +50,7 @@ const report = {
   version: pkg.version,
   node: process.versions.node,
   dependencyPolicy: 'native-only',
-  coverage: ['core','crm','backup-integrity','performance','web-launch','pwa-runtime','cloudflare-main-guard','cloudflare-guard-tests','d1-web-self-provision','public-write-rate-limits','degraded-health'],
+  coverage: ['core','crm','backup-integrity','performance','web-launch','pwa-runtime','cloudflare-main-guard','cloudflare-guard-tests','d1-web-self-provision','public-write-rate-limits','degraded-health','scoped-rate-limit-cleanup','stream-body-limit','form-accessibility'],
   command: 'npm run build:prod',
   startedAt,
   completedAt: new Date().toISOString()
