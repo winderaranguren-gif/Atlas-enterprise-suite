@@ -1,11 +1,12 @@
 {
   "name": "atlas-enterprise-suite",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "private": true,
   "type": "module",
   "scripts": {
     "validate": "node scripts/validate.mjs",
     "validate:crm": "node scripts/validate-crm.mjs",
-    "build:prod": "npm run validate && npm run validate:crm"
+    "validate:performance": "node scripts/validate-performance-optimizer.mjs",
+    "build:prod": "npm run validate && npm run validate:crm && npm run validate:performance"
   }
 }
