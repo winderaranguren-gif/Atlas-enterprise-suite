@@ -6,7 +6,8 @@
   "scripts": {
     "validate": "node scripts/validate.mjs",
     "validate:crm": "node scripts/validate-crm.mjs",
-    "build:prod": "npm run validate && npm run validate:crm",
+    "validate:backup": "node scripts/test-source-backup.mjs",
+    "build:prod": "npm run validate && npm run validate:crm && npm run validate:backup",
     "qa:release": "node scripts/atlas-qa.mjs"
   }
 }
