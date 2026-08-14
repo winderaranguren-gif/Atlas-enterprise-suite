@@ -17,4 +17,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: npm run build:prod
+      - name: Validate ATLAS Core
+        run: node scripts/validate.mjs
+      - name: Validate ATLAS CRM
+        run: node scripts/validate-crm.mjs
+      - name: Validate Performance Optimizer
+        run: node scripts/validate-performance-optimizer.mjs
