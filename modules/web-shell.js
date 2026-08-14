@@ -56,6 +56,10 @@ async function contactApi(request,env){if(!validJsonRequest(request))return json
 async function telemetryApi(request,env){if(!validJsonRequest(request))return json({ok:false,error:'invalid_request'},415);const limited=await rateLimit(request,env,'telemetry',60,60);if(!limited.ok)return json({ok:false,error:limited.error},limited.status);const body=await request.json().catch(()=>null),type=String(body?.type||'').slice(0,40),path=String(body?.path||'').slice(0,240);if(!['client_error','route_404'].includes(type))return json({ok:false,error:'invalid_event'},400);await env.DB.prepare('INSERT INTO web_telemetry_events(id,event_type,path) VALUES(?,?,?)').bind(crypto.randomUUID(),type,path).run();return json({ok:true,stored:true})}
 
 export async function webShellRoutes(request,env,url=new URL(request.url)){
+ const pathname=url.pathname.length>1?url.pathname.replace(/\/+$/,''):url.pathname;
+ const aliases={'/home':'/','/index.html':'/','/atlas':'/','/app':'/dashboard','/signin':'/login','/status':'/trust/status','/platform':'/platform/enterprise-suite'};
+ if(request.method==='GET'&&aliases[pathname])return Response.redirect(new URL(aliases[pathname],url),308);
+ if(request.method==='GET'&&pathname!==url.pathname)return Response.redirect(new URL(pathname+url.search,url),308);
  if(url.pathname==='/api/web/contact'&&request.method==='POST')return contactApi(request,env);
  if(url.pathname==='/api/web/telemetry'&&request.method==='POST')return telemetryApi(request,env);
  if(url.pathname==='/manifest.webmanifest')return new Response(JSON.stringify({name:'ATLAS Enterprise Suite',short_name:'ATLAS',start_url:'/',display:'standalone',background_color:'#050b14',theme_color:'#07111f',icons:[{src:'/icon.svg',sizes:'any',type:'image/svg+xml',purpose:'any maskable'}]}),{headers:{'content-type':'application/manifest+json','cache-control':'public,max-age=3600'}});
