@@ -18,8 +18,12 @@ if (!pkg.scripts?.['build:prod']) throw new Error('missing_build_prod_script');
 const syntaxTargets = [
   'worker.js',
   'worker-crm.js',
+  'modules/performance-optimizer.js',
   'scripts/validate.mjs',
-  'scripts/validate-crm.mjs'
+  'scripts/validate-crm.mjs',
+  'scripts/source-backup.mjs',
+  'scripts/test-source-backup.mjs',
+  'scripts/validate-performance-optimizer.mjs'
 ];
 for (const target of syntaxTargets) {
   const checked = spawnSync(process.execPath, ['--check', target], { stdio: 'inherit' });
