@@ -2,6 +2,7 @@ import core from './worker.js';
 import { crmRoutes } from './modules/crm.js';
 import { crmPage } from './modules/crm-ui.js';
 import { crmClientScript } from './modules/crm-client.js';
+import { ensureWebSchema } from './modules/web-schema.js';
 
 export default {
   async fetch(request,env){
@@ -14,6 +15,14 @@ export default {
         if(response)return response;
       }catch{
         return Response.json({ok:false,error:'crm_runtime_unavailable'},{status:503,headers:{'cache-control':'no-store'}});
+      }
+    }
+    if(url.pathname.startsWith('/api/web/')){
+      try{
+        const ready=await ensureWebSchema(env);
+        if(!ready.ok)return Response.json({ok:false,error:ready.error},{status:503,headers:{'cache-control':'no-store'}});
+      }catch{
+        return Response.json({ok:false,error:'web_schema_unavailable'},{status:503,headers:{'cache-control':'no-store'}});
       }
     }
     return core.fetch(request,env);
