@@ -19,6 +19,7 @@ const syntaxTargets = [
   'worker.js',
   'worker-crm.js',
   'modules/web-shell.js',
+  'modules/web-runtime.js',
   'modules/performance-optimizer.js',
   'scripts/validate.mjs',
   'scripts/validate-crm.mjs',
@@ -44,7 +45,7 @@ const report = {
   version: pkg.version,
   node: process.versions.node,
   dependencyPolicy: 'native-only',
-  coverage: ['core','crm','backup-integrity','performance','web-launch'],
+  coverage: ['core','crm','backup-integrity','performance','web-launch','pwa-runtime'],
   command: 'npm run build:prod',
   startedAt,
   completedAt: new Date().toISOString()
