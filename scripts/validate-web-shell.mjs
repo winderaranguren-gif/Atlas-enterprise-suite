@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { access, readFile } from 'node:fs/promises';
 
-const required=['modules/web-shell.js','migrations/0006_web_launch.sql','worker.js','worker-crm.js'];
+const required=['modules/web-shell.js','modules/web-schema.js','migrations/0006_web_launch.sql','worker.js','worker-crm.js'];
 for(const file of required)await access(file);
 
 const shell=await readFile('modules/web-shell.js','utf8');
@@ -14,11 +14,19 @@ assert.ok(!/@import\s+url/i.test(shell),'third_party_css_import_forbidden');
 const migration=await readFile('migrations/0006_web_launch.sql','utf8');
 for(const table of ['public_contact_requests','web_telemetry_events'])assert.ok(migration.includes(`CREATE TABLE IF NOT EXISTS ${table}`),`missing_web_table:${table}`);
 
+const schema=await readFile('modules/web-schema.js','utf8');
+for(const table of ['public_contact_requests','web_telemetry_events'])assert.ok(schema.includes(`CREATE TABLE IF NOT EXISTS ${table}`),`missing_self_provision_table:${table}`);
+assert.ok(schema.includes('ensureWebSchema'),'web_schema_self_provisioner_missing');
+
 const worker=await readFile('worker.js','utf8');
 assert.ok(worker.includes('webShellRoutes'),'web_shell_not_wired');
 assert.ok(worker.includes("phase:'web-launch-readiness'"),'health_release_phase_missing');
 assert.ok(worker.includes("qa:'native'"),'health_qa_state_missing');
 assert.ok(worker.includes('notFound(url.pathname)'),'html_404_not_wired');
 assert.ok(worker.includes('errorPage()'),'html_500_not_wired');
+
+const crmWorker=await readFile('worker-crm.js','utf8');
+assert.ok(crmWorker.includes('ensureWebSchema'),'web_schema_not_wired');
+assert.ok(crmWorker.includes("url.pathname.startsWith('/api/web/')"),'web_schema_scope_missing');
 
 console.log('ATLAS Web Launch validation passed');
