@@ -23,6 +23,7 @@ const syntaxTargets = [
   'modules/web-schema.js',
   'modules/performance-optimizer.js',
   'scripts/guard-cloudflare-production.mjs',
+  'scripts/test-cloudflare-guard.mjs',
   'scripts/validate.mjs',
   'scripts/validate-crm.mjs',
   'scripts/source-backup.mjs',
@@ -47,7 +48,7 @@ const report = {
   version: pkg.version,
   node: process.versions.node,
   dependencyPolicy: 'native-only',
-  coverage: ['core','crm','backup-integrity','performance','web-launch','pwa-runtime','cloudflare-main-guard','d1-web-self-provision'],
+  coverage: ['core','crm','backup-integrity','performance','web-launch','pwa-runtime','cloudflare-main-guard','cloudflare-guard-tests','d1-web-self-provision','public-write-rate-limits','degraded-health'],
   command: 'npm run build:prod',
   startedAt,
   completedAt: new Date().toISOString()

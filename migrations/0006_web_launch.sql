@@ -23,3 +23,13 @@ CREATE TABLE IF NOT EXISTS web_telemetry_events (
   CHECK (event_type IN ('client_error','route_404'))
 );
 CREATE INDEX IF NOT EXISTS idx_web_telemetry_type_created ON web_telemetry_events(event_type,created_at DESC);
+
+CREATE TABLE IF NOT EXISTS web_rate_limits (
+  scope TEXT NOT NULL,
+  subject_hash TEXT NOT NULL,
+  bucket INTEGER NOT NULL,
+  request_count INTEGER NOT NULL DEFAULT 0,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY(scope,subject_hash,bucket)
+);
+CREATE INDEX IF NOT EXISTS idx_web_rate_limits_bucket ON web_rate_limits(bucket);
