@@ -4,12 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "guard:cloudflare": "node scripts/guard-cloudflare-production.mjs",
     "validate": "node scripts/validate.mjs",
     "validate:crm": "node scripts/validate-crm.mjs",
     "validate:backup": "node scripts/test-source-backup.mjs",
     "validate:performance": "node scripts/validate-performance-optimizer.mjs",
     "validate:web": "node scripts/validate-web-shell.mjs",
-    "build:prod": "npm run validate && npm run validate:crm && npm run validate:backup && npm run validate:performance && npm run validate:web",
+    "build:prod": "npm run guard:cloudflare && npm run validate && npm run validate:crm && npm run validate:backup && npm run validate:performance && npm run validate:web",
     "qa:release": "node scripts/atlas-qa.mjs"
   }
 }
