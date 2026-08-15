@@ -1,6 +1,6 @@
 {
   "name": "atlas-enterprise-suite",
-  "main": "worker-crm.js",
+  "main": "worker-meta.js",
   "compatibility_date": "2026-08-12",
   "keep_vars": true,
   "workers_dev": false,
