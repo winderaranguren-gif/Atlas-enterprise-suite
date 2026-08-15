@@ -12,11 +12,19 @@ import { menuExperienceRoutes } from './modules/menu-experience.js';
 import { moduleWorkspacesRoutes } from './modules/module-workspaces.js';
 import { financeRoutes } from './modules/finance.js';
 import { financeAdvancedRoutes } from './modules/finance-advanced.js';
+import { financeReportingRoutes } from './modules/finance-reporting.js';
+import { financeStatementsRoutes } from './modules/finance-statements.js';
 import { webShellRoutes, errorPage, notFound } from './modules/web-shell.js';
 import { webRuntimeScript } from './modules/web-runtime.js';
 
 const html=(body,status=200)=>new Response(body,{status,headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff','referrer-policy':'strict-origin-when-cross-origin'}});
-function normalizeHtmlShell(body){return body.replace('<main class="stage" id="main">','<section class="stage" id="atlas-workspace" role="region" aria-label="ATLAS workspace">').replace('</main>\n  <aside class="ai-panel">','</section>\n  <aside class="ai-panel">')}
+function enhanceFinanceNavigation(body){
+  if(!body.includes('ATLAS ACCOUNTING')||body.includes('href="/platform/finance/close"'))return body;
+  const link='<a class="mod atlas-control-link" href="/platform/finance/close">Close & Controls</a>';
+  if(body.includes('</nav><div class="side-note">'))return body.replace('</nav><div class="side-note">',link+'</nav><div class="side-note">');
+  return body;
+}
+function normalizeHtmlShell(body){const normalized=body.replace('<main class="stage" id="main">','<section class="stage" id="atlas-workspace" role="region" aria-label="ATLAS workspace">').replace('</main>\n  <aside class="ai-panel">','</section>\n  <aside class="ai-panel">');return enhanceFinanceNavigation(normalized)}
 async function withRuntime(response){const type=response.headers.get('content-type')||'';if(!type.includes('text/html'))return response;const source=normalizeHtmlShell(await response.text());const body=source.replace('</body>','<script src="/assets/atlas-runtime.js" defer></script></body>');const headers=new Headers(response.headers);headers.delete('content-length');return new Response(body,{status:response.status,statusText:response.statusText,headers})}
 
 function isProtectedWorkspace(pathname){
@@ -53,6 +61,8 @@ export default {
         }
       }
 
+      const financeStatementsResponse = await financeStatementsRoutes(request, env, url); if (financeStatementsResponse) return withRuntime(financeStatementsResponse);
+      const financeReportingResponse = await financeReportingRoutes(request, env, url); if (financeReportingResponse) return withRuntime(financeReportingResponse);
       const financeAdvancedResponse = await financeAdvancedRoutes(request, env, url); if (financeAdvancedResponse) return withRuntime(financeAdvancedResponse);
       const financeResponse = await financeRoutes(request, env, url); if (financeResponse) return withRuntime(financeResponse);
       const rbacResponse = await rbacRoutes(request, env, url); if (rbacResponse) return rbacResponse;
