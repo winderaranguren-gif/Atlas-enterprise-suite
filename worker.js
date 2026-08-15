@@ -1,4 +1,4 @@
-import { authRoutes } from './modules/auth.js';
+import { authRoutes, requireBrowserSession } from './modules/auth.js';
 import { rbacRoutes } from './modules/rbac.js';
 import { evidenceRoutes } from './modules/evidence.js';
 import { hrKnowledgeRoutes } from './modules/hr-knowledge.js';
@@ -17,11 +17,24 @@ const html=(body,status=200)=>new Response(body,{status,headers:{'content-type':
 function normalizeHtmlShell(body){return body.replace('<main class="stage" id="main">','<section class="stage" id="atlas-workspace" role="region" aria-label="ATLAS workspace">').replace('</main>\n  <aside class="ai-panel">','</section>\n  <aside class="ai-panel">')}
 async function withRuntime(response){const type=response.headers.get('content-type')||'';if(!type.includes('text/html'))return response;const source=normalizeHtmlShell(await response.text());const body=source.replace('</body>','<script src="/assets/atlas-runtime.js" defer></script></body>');const headers=new Headers(response.headers);headers.delete('content-length');return new Response(body,{status:response.status,statusText:response.statusText,headers})}
 
+function isProtectedWorkspace(pathname){
+  return pathname==='/dashboard' || pathname==='/menu-experience' || pathname==='/settings' || pathname.startsWith('/platform/');
+}
+
+function securityUnavailable(){
+  return html(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#020711"><title>Security verification · ATLAS</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#020711;color:#eef7ff;font-family:Inter,system-ui,sans-serif}.card{max-width:560px;margin:24px;padding:28px;border:1px solid #25527a;border-radius:18px;background:#071522;box-shadow:0 22px 70px #0008}.eyebrow{color:#59c9ff;text-transform:uppercase;letter-spacing:.16em;font-size:.72rem}.card h1{margin:12px 0;font-size:2rem}.card p{color:#9fb4c7;line-height:1.6}.card a{display:inline-block;margin-top:10px;padding:10px 14px;border:1px solid #2d76b4;border-radius:10px;color:#eef7ff;text-decoration:none}</style></head><body><main class="card"><div class="eyebrow">ATLAS SECURITY</div><h1>Security verification unavailable.</h1><p>ATLAS will not open a protected workspace without validating the active session. Please try again when identity services are available.</p><a href="/login">Return to sign in</a></main></body></html>`,503);
+}
+
+function secureServiceWorker(){
+  return `const C='atlas-${ATLAS_VERSION}-secure-1';const PUBLIC=['/','/login','/icon.svg','/manifest.webmanifest'];const protectedPath=p=>p==='/dashboard'||p==='/menu-experience'||p==='/settings'||p.startsWith('/platform/');self.addEventListener('install',e=>e.waitUntil(caches.open(C).then(c=>c.addAll(PUBLIC)).then(()=>self.skipWaiting())));self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==C&&k.startsWith('atlas-')).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;const u=new URL(e.request.url);if(u.origin!==location.origin)return;if(u.pathname.startsWith('/api/')||protectedPath(u.pathname)){e.respondWith(fetch(e.request,{cache:'no-store'}));return}e.respondWith(fetch(e.request).then(r=>{if(!r||!r.ok)return r;const x=r.clone();caches.open(C).then(c=>c.put(e.request,x));return r}).catch(()=>caches.match(e.request).then(r=>r||caches.match('/'))))});`;
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     try {
       if (url.pathname === '/assets/atlas-runtime.js') return new Response(webRuntimeScript(),{headers:{'content-type':'text/javascript; charset=utf-8','cache-control':'public,max-age=3600','x-content-type-options':'nosniff'}});
+      if (url.pathname === '/sw.js') return new Response(secureServiceWorker(),{headers:{'content-type':'text/javascript; charset=utf-8','cache-control':'no-cache','service-worker-allowed':'/','x-content-type-options':'nosniff'}});
       if (url.pathname === '/api/health') {
         const databaseReady=Boolean(env.DB);
         const body={ok:databaseReady,service:'atlas-enterprise-suite',version:ATLAS_VERSION,phase:'web-launch-readiness',state:databaseReady?'operational':'degraded',identityDatabase:databaseReady?'configured':'unconfigured',hrKnowledge:String(env.ATLAS_ENABLE_HR_KNOWLEDGE||'').toLowerCase()==='true'?'enabled':'disabled',sensory:'enabled',bridge:'foundation',globalContext:'enabled',qa:'native',backupIntegrity:'sha256',performanceOptimizer:'safe-policy'};
@@ -29,6 +42,15 @@ export default {
       }
       const globalContextResponse = await globalContextRoutes(request, env, url); if (globalContextResponse) return globalContextResponse;
       const authResponse = await authRoutes(request, env, url); if (authResponse) return authResponse;
+
+      if (request.method === 'GET' && isProtectedWorkspace(url.pathname)) {
+        const verification = await requireBrowserSession(request, env);
+        if (!verification.ok) {
+          if (verification.status === 401) return Response.redirect(new URL('/login', url), 302);
+          return securityUnavailable();
+        }
+      }
+
       const rbacResponse = await rbacRoutes(request, env, url); if (rbacResponse) return rbacResponse;
       const evidenceResponse = await evidenceRoutes(request, env, url); if (evidenceResponse) return evidenceResponse;
       const hrKnowledgeResponse = await hrKnowledgeRoutes(request, env, url); if (hrKnowledgeResponse) return hrKnowledgeResponse;

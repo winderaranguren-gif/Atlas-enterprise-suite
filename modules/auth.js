@@ -2,6 +2,7 @@ const ITERATIONS = 310000;
 const SESSION_HOURS = 12;
 const MAX_FAILED_LOGINS = 5;
 const LOCK_MINUTES = 15;
+const SESSION_COOKIE = 'atlas_session';
 
 function json(body, status = 200, extraHeaders = {}) {
   return Response.json(body, {
@@ -75,6 +76,24 @@ function bearerToken(request) {
   return auth.startsWith('Bearer ') ? auth.slice(7).trim() : null;
 }
 
+function browserSessionToken(request) {
+  const cookie = request.headers.get('cookie') || '';
+  for (const part of cookie.split(';')) {
+    const [name, ...rest] = part.trim().split('=');
+    if (name === SESSION_COOKIE) return rest.join('=').trim() || null;
+  }
+  return null;
+}
+
+function sessionCookie(token) {
+  const maxAge = SESSION_HOURS * 60 * 60;
+  return `${SESSION_COOKIE}=${token}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${maxAge}`;
+}
+
+function clearSessionCookie() {
+  return `${SESSION_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0`;
+}
+
 async function audit(env, { userId = null, action, decision, metadata = null }) {
   if (!env.DB) return;
   await env.DB.prepare(
@@ -84,6 +103,20 @@ async function audit(env, { userId = null, action, decision, metadata = null }) 
 
 function databaseRequired(env) {
   return env.DB ? null : json({ ok: false, error: 'identity_database_unavailable' }, 503);
+}
+
+async function resolveSession(token, env) {
+  if (!env.DB) return { ok: false, status: 503, error: 'identity_database_unavailable' };
+  if (!token) return { ok: false, status: 401, error: 'authentication_required' };
+  const tokenHash = await sha256Hex(token);
+  const session = await env.DB.prepare(`
+    SELECT s.id AS session_id,s.user_id,s.expires_at,u.email,u.display_name,u.status
+    FROM sessions s JOIN users u ON u.id=s.user_id
+    WHERE s.token_hash=? AND s.revoked_at IS NULL AND s.expires_at>CURRENT_TIMESTAMP
+  `).bind(tokenHash).first();
+  if (!session || session.status !== 'active') return { ok: false, status: 401, error: 'invalid_session' };
+  await env.DB.prepare('UPDATE sessions SET last_seen_at=CURRENT_TIMESTAMP WHERE id=?').bind(session.session_id).run();
+  return { ok: true, session };
 }
 
 async function bootstrap(request, env) {
@@ -173,22 +206,15 @@ async function login(request, env) {
     sessionToken,
     expiresAt,
     user: { id: user.id, email: user.email, displayName: user.display_name }
-  });
+  }, 200, { 'set-cookie': sessionCookie(sessionToken) });
 }
 
 export async function requireSession(request, env) {
-  if (!env.DB) return { ok: false, status: 503, error: 'identity_database_unavailable' };
-  const token = bearerToken(request);
-  if (!token) return { ok: false, status: 401, error: 'authentication_required' };
-  const tokenHash = await sha256Hex(token);
-  const session = await env.DB.prepare(`
-    SELECT s.id AS session_id,s.user_id,s.expires_at,u.email,u.display_name,u.status
-    FROM sessions s JOIN users u ON u.id=s.user_id
-    WHERE s.token_hash=? AND s.revoked_at IS NULL AND s.expires_at>CURRENT_TIMESTAMP
-  `).bind(tokenHash).first();
-  if (!session || session.status !== 'active') return { ok: false, status: 401, error: 'invalid_session' };
-  await env.DB.prepare('UPDATE sessions SET last_seen_at=CURRENT_TIMESTAMP WHERE id=?').bind(session.session_id).run();
-  return { ok: true, session };
+  return resolveSession(bearerToken(request), env);
+}
+
+export async function requireBrowserSession(request, env) {
+  return resolveSession(browserSessionToken(request), env);
 }
 
 async function me(request, env) {
@@ -206,11 +232,13 @@ async function me(request, env) {
 }
 
 async function logout(request, env) {
-  const auth = await requireSession(request, env);
-  if (!auth.ok) return json({ ok: false, error: auth.error }, auth.status);
+  const auth = bearerToken(request)
+    ? await requireSession(request, env)
+    : await requireBrowserSession(request, env);
+  if (!auth.ok) return json({ ok: false, error: auth.error }, auth.status, { 'set-cookie': clearSessionCookie() });
   await env.DB.prepare('UPDATE sessions SET revoked_at=CURRENT_TIMESTAMP WHERE id=?').bind(auth.session.session_id).run();
   await audit(env, { userId: auth.session.user_id, action: 'auth.logout', decision: 'allow' });
-  return json({ ok: true });
+  return json({ ok: true }, 200, { 'set-cookie': clearSessionCookie() });
 }
 
 export async function authRoutes(request, env, url = new URL(request.url)) {
