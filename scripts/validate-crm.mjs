@@ -19,6 +19,9 @@ for(const route of ['/api/crm/status','/api/crm/dashboard','/api/crm/counts','/a
 const shared=await readFile('modules/crm-shared.js','utf8');
 if(!shared.includes('requireTenantPermission'))throw new Error('crm_tenant_guard_missing');
 if(!shared.includes('appendAuditLedger'))throw new Error('crm_audit_missing');
+const client=await readFile('modules/crm-client.js','utf8');
+for(const marker of ["sessionStorage.getItem('atlas.session')","sessionStorage.setItem('atlas.session'","sessionStorage.removeItem('atlas_session')","atlas.workspace.scope","atlas.dashboard.scope","/api/settings","company.defaultCurrency","currency})","/api/auth/logout"])if(!client.includes(marker))throw new Error(`crm_client_runtime_contract_missing:${marker}`);
+if(client.includes("sessionStorage.setItem('atlas_session'"))throw new Error('crm_legacy_session_write_forbidden');
 const wrangler=await readFile('wrangler.jsonc','utf8');
 if(!wrangler.includes('worker-crm.js'))throw new Error('crm_worker_entry_missing');
 console.log('ATLAS CRM v1 validation passed');
