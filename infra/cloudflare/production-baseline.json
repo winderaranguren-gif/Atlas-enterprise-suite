@@ -1,0 +1,55 @@
+{
+  "schema": "atlas.cloudflare.production-baseline",
+  "version": 1,
+  "capturedAt": "2026-08-15",
+  "ownership": "ATLAS",
+  "accountId": "1dd6dea2bb98459c66f610464354d686",
+  "zoneId": "26a5b368f6a017801a4600b19748c3ab",
+  "zone": "atlasenterprisesuite.com",
+  "worker": "atlas-enterprise-suite",
+  "sourceRepository": "winderaranguren-gif/Atlas-enterprise-suite",
+  "sourceBranch": "main",
+  "wrangler": {
+    "name": "atlas-enterprise-suite",
+    "main": "worker-crm.js",
+    "compatibility_date": "2026-08-12",
+    "keep_vars": true,
+    "workers_dev": false,
+    "routes": [
+      {
+        "pattern": "atlasenterprisesuite.com/*",
+        "zone_id": "26a5b368f6a017801a4600b19748c3ab"
+      },
+      {
+        "pattern": "www.atlasenterprisesuite.com/*",
+        "zone_id": "26a5b368f6a017801a4600b19748c3ab"
+      }
+    ],
+    "observability": {
+      "enabled": true,
+      "head_sampling_rate": 1
+    },
+    "assets": {
+      "directory": "./assets",
+      "binding": "ASSETS",
+      "run_worker_first": true
+    }
+  },
+  "zonePolicy": {
+    "underAttackMode": "off-unless-active-attack",
+    "sslTlsMode": "full-strict",
+    "alwaysUseHttps": true,
+    "minimumTlsVersion": "1.2",
+    "hsts": "enable-only-after-all-https-hosts-verified",
+    "aiTrainingBots": "block",
+    "developmentMode": "off-in-production"
+  },
+  "recoveryPolicy": {
+    "configurationSourceOfTruth": "repository",
+    "allowProductionBranch": "main",
+    "automaticRepairScope": "wrangler-drift-only",
+    "destructiveDnsChanges": false,
+    "secretStorage": "external-secret-store-only",
+    "rollback": "restore-last-known-good-commit"
+  }
+}
