@@ -207,8 +207,20 @@ async function upsertMembership(request, env) {
   if (!targetUser || !targetDba) return json({ ok: false, error: 'membership_target_not_found' }, 404);
 
   const existing = await env.DB.prepare(
-    'SELECT id FROM memberships WHERE user_id=? AND organization_id=? AND dba_id=?'
+    'SELECT id,role,status FROM memberships WHERE user_id=? AND organization_id=? AND dba_id=?'
   ).bind(userId, organizationId, dbaId).first();
+
+  if (existing?.role === 'owner' && authz.membership.role !== 'owner') {
+    return json({ ok: false, error: 'only_owner_can_modify_owner' }, 403);
+  }
+  if (existing?.role === 'owner' && existing.status === 'active' && role !== 'owner') {
+    const otherOwners = await env.DB.prepare(
+      "SELECT COUNT(*) AS count FROM memberships WHERE organization_id=? AND dba_id=? AND role='owner' AND status='active' AND id<>?"
+    ).bind(organizationId, dbaId, existing.id).first();
+    if (Number(otherOwners?.count || 0) === 0) {
+      return json({ ok: false, error: 'at_least_one_owner_required' }, 409);
+    }
+  }
 
   if (existing) {
     await env.DB.prepare("UPDATE memberships SET role=?,status='active',updated_at=CURRENT_TIMESTAMP WHERE id=?")
