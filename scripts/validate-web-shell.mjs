@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import { access, readFile } from 'node:fs/promises';
 
-const required=['modules/web-shell.js','modules/web-schema.js','migrations/0006_web_launch.sql','worker.js','worker-crm.js'];
+const required=[
+  'modules/web-shell.js','modules/web-schema.js','migrations/0006_web_launch.sql','worker.js','worker-crm.js',
+  'assets/atlas-showcase-genesis.webp','assets/atlas-scene-crystalline-city.webp','assets/atlas-scene-glass-bridge.webp',
+  'assets/atlas-scene-indigo-orbit.webp','assets/atlas-scene-cloud-command.webp'
+];
 for(const file of required)await access(file);
 
 const shell=await readFile('modules/web-shell.js','utf8');
@@ -32,5 +36,7 @@ assert.ok(worker.includes('errorPage()'),'html_500_not_wired');
 const crmWorker=await readFile('worker-crm.js','utf8');
 assert.ok(crmWorker.includes('ensureWebSchema'),'web_schema_not_wired');
 assert.ok(crmWorker.includes("url.pathname.startsWith('/api/web/')"),'web_schema_scope_missing');
+assert.ok(crmWorker.includes('isStaticVisual'),'static_visual_router_missing');
+assert.ok(crmWorker.includes('env.ASSETS.fetch(request)'),'static_asset_binding_not_wired');
 
 console.log('ATLAS Web Launch validation passed');
