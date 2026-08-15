@@ -1,10 +1,9 @@
 name: ATLAS Release Gate
 
+# Automatic GitHub-hosted release gating is intentionally paused while the
+# account runner is blocked by GitHub billing/spending limits. Cloudflare keeps
+# handling automatic deployment checks. This gate can still be run manually.
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -26,7 +25,6 @@ jobs:
         run: npm run qa:release
 
   production-sentinel:
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     needs: qa
     runs-on: ubuntu-latest
     env:

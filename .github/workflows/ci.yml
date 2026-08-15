@@ -1,10 +1,10 @@
 name: ATLAS CI
 
+# Automatic GitHub-hosted CI is intentionally paused while the account runner
+# is blocked by GitHub billing/spending limits. Cloudflare remains the automatic
+# deployment check. Keep this workflow available for manual validation later.
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
