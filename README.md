@@ -36,6 +36,18 @@ Operational contract: `docs/ATLAS_AUTONOMY.md`.
 Security policy: `SECURITY.md`.
 Cloudflare recovery record: `infra/cloudflare/known-good.json`.
 
+## Global context
+ATLAS uses one global runtime with adaptive regional context rather than separate disconnected country applications.
+
+- `GET /api/context` and `GET /api/global/context` return language, country, locale, timezone when available, text direction, and selection source.
+- `hl` is the explicit language override and accepts BCP 47 language tags such as `es`, `es-US`, `pt-BR`, `ar`, or `zh-Hant`.
+- `gl` is the explicit two-letter country/region override such as `US`, `VE`, `BR`, `EG`, or `JP`.
+- Without overrides, ATLAS uses browser `Accept-Language` plus edge country/timezone when available.
+- Browser preferences are preserved locally and applied across the web shell; RTL languages set document direction automatically.
+- Missing geolocation does not block ATLAS and no country is fabricated when it cannot be inferred safely.
+
+Validation: `npm run validate:global`.
+
 ## Authentication endpoints
 - `POST /api/auth/bootstrap` — one-time initial user creation; requires `ATLAS_BOOTSTRAP_TOKEN`.
 - `POST /api/auth/login` — creates a hashed-token session.
