@@ -80,6 +80,7 @@ async function requireOrganizationAdmin(request, env, organizationId) {
     JOIN dbas d ON d.id=m.dba_id AND d.organization_id=m.organization_id
     WHERE m.user_id=? AND m.organization_id=? AND m.status='active' AND d.status='active'
       AND m.role IN ('owner','admin')
+    ORDER BY CASE m.role WHEN 'owner' THEN 0 ELSE 1 END
     LIMIT 1
   `).bind(auth.session.user_id, organizationId).first();
   if (!membership || membership.organization_status !== 'active') {
@@ -167,22 +168,40 @@ async function createDba(request, env, organizationId) {
   const slug = slugify(body?.slug || name);
   if (name.length < 2 || !slug) return json({ ok: false, error: 'valid_dba_required' }, 400);
 
+  const owners = await env.DB.prepare(
+    "SELECT DISTINCT user_id FROM memberships WHERE organization_id=? AND role='owner' AND status='active' ORDER BY user_id"
+  ).bind(organizationId).all();
+  const ownerIds = (owners.results || []).map(row => row.user_id).filter(Boolean);
+  if (!ownerIds.length) return json({ ok: false, error: 'organization_owner_required' }, 409);
+
   const dbaId = crypto.randomUUID();
-  try {
-    await env.DB.batch([
-      env.DB.prepare('INSERT INTO dbas(id,organization_id,name,slug,created_by_user_id) VALUES(?,?,?,?,?)')
-        .bind(dbaId, organizationId, name, slug, authz.session.user_id),
+  const statements = [
+    env.DB.prepare('INSERT INTO dbas(id,organization_id,name,slug,created_by_user_id) VALUES(?,?,?,?,?)')
+      .bind(dbaId, organizationId, name, slug, authz.session.user_id)
+  ];
+  for (const ownerUserId of ownerIds) {
+    statements.push(
+      env.DB.prepare("INSERT INTO memberships(id,user_id,organization_id,dba_id,role,created_by_user_id) VALUES(?,?,?,?, 'owner', ?)")
+        .bind(crypto.randomUUID(), ownerUserId, organizationId, dbaId, authz.session.user_id)
+    );
+  }
+  if (!ownerIds.includes(authz.session.user_id)) {
+    statements.push(
       env.DB.prepare('INSERT INTO memberships(id,user_id,organization_id,dba_id,role,created_by_user_id) VALUES(?,?,?,?,?,?)')
         .bind(crypto.randomUUID(), authz.session.user_id, organizationId, dbaId, authz.membership.role, authz.session.user_id)
-    ]);
+    );
+  }
+  try {
+    await env.DB.batch(statements);
   } catch {
     return json({ ok: false, error: 'dba_create_conflict' }, 409);
   }
 
   await authorizationAudit(env, {
-    userId: authz.session.user_id, organizationId, dbaId, action: 'dba.create', permission: 'dba.manage', decision: 'allow'
+    userId: authz.session.user_id, organizationId, dbaId, action: 'dba.create', permission: 'dba.manage', decision: 'allow',
+    metadata: { inheritedOwnerCount: ownerIds.length }
   });
-  return json({ ok: true, dba: { id: dbaId, organizationId, name, slug }, role: authz.membership.role }, 201);
+  return json({ ok: true, dba: { id: dbaId, organizationId, name, slug }, role: authz.membership.role, inheritedOwners: ownerIds.length }, 201);
 }
 
 async function upsertMembership(request, env) {
