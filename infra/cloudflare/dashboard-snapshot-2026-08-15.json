@@ -1,0 +1,36 @@
+{
+  "schema": "atlas.cloudflare.dashboard-snapshot",
+  "version": 1,
+  "capturedAt": "2026-08-15",
+  "source": "user-provided-cloudflare-dashboard",
+  "zone": "atlasenterprisesuite.com",
+  "accountId": "1dd6dea2bb98459c66f610464354d686",
+  "zoneId": "26a5b368f6a017801a4600b19748c3ab",
+  "plan": "Free",
+  "registrar": "Cloudflare",
+  "domainStatus": "active",
+  "domainExpiration": "2027-08-02",
+  "dnsConfiguration": "complete",
+  "underAttackMode": true,
+  "analyticsWindow": {
+    "from": "2026-07-16",
+    "to": "2026-08-15",
+    "uniqueVisitors": 950,
+    "totalRequests": 9540,
+    "cachePercentage": 67.64,
+    "dataDeliveredMB": 27,
+    "cachedDataMB": 18
+  },
+  "workerRouteObserved": {
+    "worker": "atlas-enterprise-suite",
+    "pattern": "www.atlasenterprisesuite.com"
+  },
+  "aiCrawlControlObserved": {
+    "trainingBots": "not-blocked"
+  },
+  "notes": [
+    "This is a point-in-time inventory, not a secret store.",
+    "Dashboard-only settings must be re-verified before destructive or irreversible changes.",
+    "The production golden baseline in production-baseline.json is the desired configuration source of truth."
+  ]
+}
