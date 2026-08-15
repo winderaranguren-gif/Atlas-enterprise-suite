@@ -5,6 +5,7 @@ import { hrKnowledgeRoutes } from './modules/hr-knowledge.js';
 import { sensoryRoutes } from './modules/sensory.js';
 import { investRoutes } from './modules/invest.js';
 import { bridgeRoutes } from './modules/bridge.js';
+import { globalContextRoutes } from './modules/global-context.js';
 import { ATLAS_VERSION } from './modules/version.js';
 import { webHardeningRoutes } from './modules/web-hardening.js';
 import { menuExperienceRoutes } from './modules/menu-experience.js';
@@ -21,9 +22,10 @@ export default {
       if (url.pathname === '/assets/atlas-runtime.js') return new Response(webRuntimeScript(),{headers:{'content-type':'text/javascript; charset=utf-8','cache-control':'public,max-age=3600','x-content-type-options':'nosniff'}});
       if (url.pathname === '/api/health') {
         const databaseReady=Boolean(env.DB);
-        const body={ok:databaseReady,service:'atlas-enterprise-suite',version:ATLAS_VERSION,phase:'web-launch-readiness',state:databaseReady?'operational':'degraded',identityDatabase:databaseReady?'configured':'unconfigured',hrKnowledge:String(env.ATLAS_ENABLE_HR_KNOWLEDGE||'').toLowerCase()==='true'?'enabled':'disabled',sensory:'enabled',bridge:'foundation',qa:'native',backupIntegrity:'sha256',performanceOptimizer:'safe-policy'};
+        const body={ok:databaseReady,service:'atlas-enterprise-suite',version:ATLAS_VERSION,phase:'web-launch-readiness',state:databaseReady?'operational':'degraded',identityDatabase:databaseReady?'configured':'unconfigured',hrKnowledge:String(env.ATLAS_ENABLE_HR_KNOWLEDGE||'').toLowerCase()==='true'?'enabled':'disabled',sensory:'enabled',bridge:'foundation',globalContext:'enabled',qa:'native',backupIntegrity:'sha256',performanceOptimizer:'safe-policy'};
         return Response.json(body,{status:databaseReady?200:503,headers:{'cache-control':'no-store'}});
       }
+      const globalContextResponse = await globalContextRoutes(request, env, url); if (globalContextResponse) return globalContextResponse;
       const authResponse = await authRoutes(request, env, url); if (authResponse) return authResponse;
       const rbacResponse = await rbacRoutes(request, env, url); if (rbacResponse) return rbacResponse;
       const evidenceResponse = await evidenceRoutes(request, env, url); if (evidenceResponse) return evidenceResponse;
