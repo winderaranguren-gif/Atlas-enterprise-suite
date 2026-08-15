@@ -18,6 +18,7 @@ if (!pkg.scripts?.['build:prod']) throw new Error('missing_build_prod_script');
 const syntaxTargets = [
   'worker.js',
   'worker-crm.js',
+  'modules/global-context.js',
   'modules/web-shell.js',
   'modules/web-hardening.js',
   'modules/web-runtime.js',
@@ -27,6 +28,7 @@ const syntaxTargets = [
   'scripts/release-sentinel.mjs',
   'scripts/test-cloudflare-guard.mjs',
   'scripts/validate.mjs',
+  'scripts/validate-global-context.mjs',
   'scripts/validate-crm.mjs',
   'scripts/source-backup.mjs',
   'scripts/test-source-backup.mjs',
@@ -51,7 +53,7 @@ const report = {
   version: pkg.version,
   node: process.versions.node,
   dependencyPolicy: 'native-only',
-  coverage: ['core','crm','backup-integrity','performance','web-launch','pwa-runtime','cloudflare-main-guard','cloudflare-guard-tests','d1-web-self-provision','public-write-rate-limits','degraded-health','scoped-rate-limit-cleanup','stream-body-limit','form-accessibility','release-sentinel','codeowners','release-workflow'],
+  coverage: ['core','global-context','locale-region-override','crm','backup-integrity','performance','web-launch','pwa-runtime','cloudflare-main-guard','cloudflare-guard-tests','d1-web-self-provision','public-write-rate-limits','degraded-health','scoped-rate-limit-cleanup','stream-body-limit','form-accessibility','release-sentinel','codeowners','release-workflow'],
   command: 'npm run build:prod',
   startedAt,
   completedAt: new Date().toISOString()
