@@ -13,7 +13,8 @@ import { webShellRoutes, errorPage, notFound } from './modules/web-shell.js';
 import { webRuntimeScript } from './modules/web-runtime.js';
 
 const html=(body,status=200)=>new Response(body,{status,headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff','referrer-policy':'strict-origin-when-cross-origin'}});
-async function withRuntime(response){const type=response.headers.get('content-type')||'';if(!type.includes('text/html'))return response;const body=(await response.text()).replace('</body>','<script src="/assets/atlas-runtime.js" defer></script></body>');const headers=new Headers(response.headers);headers.delete('content-length');return new Response(body,{status:response.status,statusText:response.statusText,headers})}
+function normalizeHtmlShell(body){return body.replace('<main class="stage" id="main">','<section class="stage" id="atlas-workspace" role="region" aria-label="ATLAS workspace">').replace('</main>\n  <aside class="ai-panel">','</section>\n  <aside class="ai-panel">')}
+async function withRuntime(response){const type=response.headers.get('content-type')||'';if(!type.includes('text/html'))return response;const source=normalizeHtmlShell(await response.text());const body=source.replace('</body>','<script src="/assets/atlas-runtime.js" defer></script></body>');const headers=new Headers(response.headers);headers.delete('content-length');return new Response(body,{status:response.status,statusText:response.statusText,headers})}
 
 export default {
   async fetch(request, env) {
