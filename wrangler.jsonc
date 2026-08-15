@@ -2,6 +2,22 @@
   "name": "atlas-enterprise-suite",
   "main": "worker-crm.js",
   "compatibility_date": "2026-08-12",
+  "keep_vars": true,
+  "workers_dev": true,
+  "routes": [
+    {
+      "pattern": "atlasenterprisesuite.com/*",
+      "zone_id": "26a5b368f6a017801a4600b19748c3ab"
+    },
+    {
+      "pattern": "www.atlasenterprisesuite.com/*",
+      "zone_id": "26a5b368f6a017801a4600b19748c3ab"
+    }
+  ],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
   "assets": {
     "directory": "./assets",
     "binding": "ASSETS",
