@@ -10,6 +10,7 @@ import { ATLAS_VERSION } from './modules/version.js';
 import { webHardeningRoutes } from './modules/web-hardening.js';
 import { menuExperienceRoutes } from './modules/menu-experience.js';
 import { moduleWorkspacesRoutes } from './modules/module-workspaces.js';
+import { financeRoutes } from './modules/finance.js';
 import { webShellRoutes, errorPage, notFound } from './modules/web-shell.js';
 import { webRuntimeScript } from './modules/web-runtime.js';
 
@@ -51,6 +52,7 @@ export default {
         }
       }
 
+      const financeResponse = await financeRoutes(request, env, url); if (financeResponse) return withRuntime(financeResponse);
       const rbacResponse = await rbacRoutes(request, env, url); if (rbacResponse) return rbacResponse;
       const evidenceResponse = await evidenceRoutes(request, env, url); if (evidenceResponse) return evidenceResponse;
       const hrKnowledgeResponse = await hrKnowledgeRoutes(request, env, url); if (hrKnowledgeResponse) return hrKnowledgeResponse;
