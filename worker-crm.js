@@ -7,6 +7,7 @@ import { ensureWebSchema } from './modules/web-schema.js';
 import { publicSiteRoutes } from './modules/public-site.js';
 import { moduleVisualRuntimeScript } from './modules/module-visual-runtime.js';
 import { menuToolPage } from './modules/menu-tools.js';
+import { metaSocialRoutes } from './modules/meta-social.js';
 
 function securityUnavailable(){
   return new Response(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Security verification · ATLAS</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#020711;color:#eef7ff;font-family:Inter,system-ui,sans-serif}.card{max-width:560px;margin:24px;padding:28px;border:1px solid #25527a;border-radius:18px;background:#071522}.card p{color:#9fb4c7;line-height:1.6}.card a{color:#59c9ff}</style></head><body><main class="card"><h1>Security verification unavailable.</h1><p>ATLAS will not open a protected workspace without validating the active session.</p><a href="/login">Return to sign in</a></main></body></html>`,{status:503,headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'}});
@@ -52,6 +53,7 @@ async function verifiedPage(request,env,url,body){
 export default {async fetch(request,env){
   const url=new URL(request.url);
   const publicResponse=await publicSiteRoutes(request,env,url);if(publicResponse)return publicResponse;
+  const metaResponse=await metaSocialRoutes(request,env,url);if(metaResponse)return metaResponse;
 
   const utility=menuToolPage(url.pathname);
   if(utility&&request.method==='GET')return verifiedPage(request,env,url,utility);
