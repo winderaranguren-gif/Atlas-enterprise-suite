@@ -13,13 +13,16 @@ const requiredRuntime=[
   "'/platform/hr-payroll#recruitment':'/platform/hr-payroll/recruiting'",
   "'/platform/operations#cycle-counts':'/platform/inventory/cycle-counts'",
   "'/platform/enterprise-suite#documents':'/platform/documents'",
+  "'/platform/enterprise-suite#users':'/platform/access-control'",
+  "'/platform/enterprise-suite#roles':'/platform/access-control'",
+  "'/platform/enterprise-suite#audit':'/platform/audit-security'",
   "'/dashboard#settings':'/platform/settings'",
   "href=\"/platform/integrations\""
 ];
 for(const marker of requiredRuntime)if(!runtime.includes(marker))throw new Error(`functional_navigation_missing:${marker}`);
 for(const marker of ['atlas.dashboard.scope','/api/core/context','/api/reports/executive','/api/settings','company.defaultCurrency','x-atlas-organization','x-atlas-dba','OPERATING SNAPSHOT','OPERATING SIGNALS'])if(!dashboard.includes(marker))throw new Error(`dashboard_scope_runtime_missing:${marker}`);
 for(const marker of ['atlas.workspace.scope','atlas.dashboard.scope','/api/core/context','scopeSelect','atlas:workspace-scope'])if(!workspaceScope.includes(marker))throw new Error(`workspace_scope_runtime_missing:${marker}`);
-for(const marker of ['sanitizeDashboardPlaceholders','inventoryCountsRoutes','enterpriseWorkspaceRoutes','dashboardRuntimeScript','workspaceScopeRuntimeScript','/assets/atlas-dashboard-runtime.js','/assets/atlas-workspace-scope.js'])if(!worker.includes(marker))throw new Error(`worker_functional_route_missing:${marker}`);
+for(const marker of ['sanitizeDashboardPlaceholders','inventoryCountsRoutes','enterpriseWorkspaceRoutes','accessControlRoutes','auditSecurityUiRoutes','dashboardRuntimeScript','workspaceScopeRuntimeScript','/assets/atlas-dashboard-runtime.js','/assets/atlas-workspace-scope.js'])if(!worker.includes(marker))throw new Error(`worker_functional_route_missing:${marker}`);
 for(const marker of [
   ".replace('<span>Total Revenue</span><strong>$2.45M</strong>",
   "<span>Receivables</span><strong>—</strong>",
@@ -28,4 +31,4 @@ for(const marker of [
   ".replace('<span>Orders</span><strong>1,783</strong>",
   "<span>Open Tasks</span><strong>—</strong>"
 ])if(!worker.includes(marker))throw new Error(`dashboard_placeholder_sanitizer_missing:${marker}`);
-console.log('ATLAS functional navigation, tenant scope persistence and dashboard currency validation passed.');
+console.log('ATLAS functional navigation, access control, audit routing, tenant persistence and dashboard currency validation passed.');
