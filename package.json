@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "guard:cloudflare": "node scripts/guard-cloudflare-production.mjs",
+    "infra:validate": "node scripts/validate-cloudflare-baseline.mjs",
+    "infra:repair": "node scripts/repair-cloudflare-baseline.mjs && npm run infra:validate",
     "validate:release": "node scripts/release-sentinel.mjs",
     "validate:guard": "node scripts/test-cloudflare-guard.mjs",
     "validate": "node scripts/validate.mjs",
@@ -13,7 +15,7 @@
     "validate:performance": "node scripts/validate-performance-optimizer.mjs",
     "validate:web": "node scripts/validate-web-shell.mjs",
     "validate:web-hardening": "node scripts/validate-web-hardening.mjs",
-    "build:prod": "npm run guard:cloudflare && npm run validate:release && npm run validate:guard && npm run validate && npm run validate:crm && npm run validate:backup && npm run validate:performance && npm run validate:web && npm run validate:web-hardening",
+    "build:prod": "npm run guard:cloudflare && npm run infra:validate && npm run validate:release && npm run validate:guard && npm run validate && npm run validate:crm && npm run validate:backup && npm run validate:performance && npm run validate:web && npm run validate:web-hardening",
     "qa:release": "node scripts/atlas-qa.mjs"
   }
 }
