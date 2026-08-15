@@ -12,48 +12,60 @@ Technical handoff for future ATLAS development sessions. This file contains proj
 - Core web runtime: `worker.js`
 - Public web shell: `modules/web-shell.js`
 - Cloudflare config: `wrangler.jsonc`
+- Cloudflare desired baseline: `infra/cloudflare/production-baseline.json`
+- Known-good recovery record: `infra/cloudflare/known-good.json`
 
 ## Deployment contract
 
 1. Treat GitHub `main` as the canonical source.
 2. Cloudflare production must deploy from `main` only.
 3. Do not replace the canonical domain with a recovery/preview URL.
-4. Verify the live domain after every production deployment.
-5. Never claim a deployment succeeded until the public domain and health endpoint respond.
+4. Verify the live domain after every production deployment when network access is available.
+5. Never claim public-domain verification from a provider check alone; distinguish build success from end-to-end domain verification.
 6. Keep credentials and user conversations out of source control.
+7. GitHub Actions are optional manual runners; ATLAS local validation is the primary fallback when hosted runners are unavailable.
+
+## Resilience commands
+
+- `npm run atlas:doctor` — repository/configuration diagnosis.
+- `npm run atlas:verify` — full local release gate.
+- `npm run atlas:self-heal` — safe Wrangler baseline repair followed by full verification.
+- `npm run infra:validate` — Cloudflare baseline comparison.
+- `npm run infra:repair` — restore deterministic repository-owned Wrangler configuration.
 
 ## Recovered history
 
 - Commit `96780c4`: activated 12 footer routes; web core advanced from v0.4 to v0.5; System Status connected to the real health endpoint.
 - Recovery deployment: `atlas-enterprise-suite-recovery-d997fcx2t.vercel.app`; it remained private behind Deployment Protection and never replaced the canonical domain.
 - Commit `e7a939932e5bbeaaec5854e21122a30d9ba21ff0`: added canonical redirects for common public aliases and trailing-slash normalization to reduce 404s.
+- Commit `9ea387d209274e2f71215980cc36c9a23e67fc52`: paused automatic GitHub-hosted Actions while runner billing/spending limits are blocking job startup.
+- Commit `c6aab74e17143e1ddaa2079b3d7760f31b5b8a89`: made the Cloudflare repository baseline part of production validation.
+- Commit `f8a9ff4dbfef031fdbcce6476efdad7907fe2162`: recorded the known-good Cloudflare recovery point.
 
-## Current known state — 2026-08-14
+## Current known state — 2026-08-15
 
-- Website code exists on `main`.
-- Public routes, login, dashboard, status, contact, legal pages, CRM, manifest, icon, service worker, robots and sitemap are implemented in the Worker source.
-- GitHub CI and Release Gate failed before executing job steps on the latest commit; this indicates an Actions/integration startup problem rather than a validated application test failure.
-- Direct Cloudflare deployment access was not exposed in the current session, so production publication and the live domain remain unverified.
-- D1 binding `DB` is required for database-backed health, authentication, CRM, contact and telemetry functions.
+- Website code and the production edge configuration baseline exist on `main`.
+- GitHub-hosted CI workflows are manual-only while hosted runners are billing/spending-limit blocked; this condition is not treated as an application-test failure.
+- Cloudflare Workers successfully completed the build for commit `f8a9ff4dbfef031fdbcce6476efdad7907fe2162` and reported version `e8df4c77-7032-43b8-97da-3c18a2ecc9b0`.
+- `wrangler.jsonc` is pinned to the repository baseline with `workers_dev: false`, explicit apex/www routes, observability enabled, and `run_worker_first: true` for assets.
+- D1 binding `DB` remains required for database-backed health, authentication, CRM, contact and telemetry functions.
+- End-to-end public-domain verification remains a separate check from provider build success.
 
 ## Resume checklist
 
-1. Read this file before making website changes.
-2. Inspect `main` HEAD and all checks.
-3. Confirm Cloudflare is connected to `winderaranguren-gif/Atlas-enterprise-suite`, branch `main`.
-4. Confirm Worker name `atlas-enterprise-suite` and entry point `worker-crm.js`.
-5. Confirm D1 binding `DB` and required secrets/feature flags exist without exposing their values.
-6. Run `npm run build:prod` and `npm run qa:release`.
-7. Deploy the exact validated commit.
-8. Verify:
-   - `https://atlasenterprisesuite.com/`
-   - `https://atlasenterprisesuite.com/api/health`
-   - `/login`, `/dashboard`, `/platform/crm`, `/trust/status`, `/contact`
-   - redirects from `/home`, `/atlas`, `/app`, `/signin`, `/status`, `/platform`, `/index.html`
-9. Record the deployed commit SHA and verification timestamp below.
+1. Read this file and `docs/ATLAS_AUTONOMY.md` before making production changes.
+2. Inspect `main` HEAD and provider checks.
+3. Run `npm run atlas:doctor`; use `npm run atlas:self-heal` if deterministic configuration drift is detected.
+4. Run `npm run atlas:verify` before intentional production promotion where a local Node 22+ execution environment is available.
+5. Confirm Worker name `atlas-enterprise-suite` and entry point `worker-crm.js`.
+6. Confirm D1 binding `DB` and required secrets/feature flags exist without exposing their values.
+7. Deploy/promote only the exact validated `main` commit.
+8. Verify the canonical domain and health endpoint separately from build status.
+9. Record any new known-good recovery point only after the build and configuration evidence agree.
 
-## Last verified deployment
+## Last provider build verified
 
-- Commit: pending
-- Cloudflare deployment: pending
-- Domain verification: pending
+- Commit: `f8a9ff4dbfef031fdbcce6476efdad7907fe2162`
+- Cloudflare Workers build: success
+- Cloudflare version: `e8df4c77-7032-43b8-97da-3c18a2ecc9b0`
+- Public-domain end-to-end verification: separate/not asserted by this record

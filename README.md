@@ -19,6 +19,22 @@ The shared security and data-isolation boundary is established. HR Knowledge rem
 - Authorization uses explicit role permissions and is deny-by-default.
 - New modules must use the shared tenant guard rather than trusting scope headers by themselves.
 - Audit and security evidence are append-only and immutable at the database layer.
+- External providers are execution layers, not ATLAS sources of truth.
+
+## Autonomous operations
+ATLAS validation and safe configuration repair do not depend on GitHub-hosted runners.
+
+- `npm run atlas:doctor` — diagnose repository, baseline, workflow, and recovery integrity.
+- `npm run atlas:verify` — run the full local production gate and ATLAS QA.
+- `npm run atlas:self-heal` — restore safe Wrangler configuration drift from the repository baseline, then run the full gate.
+- `npm run infra:validate` — compare `wrangler.jsonc` with the canonical Cloudflare baseline.
+- `npm run infra:repair` — repair repository-owned Wrangler drift only.
+
+GitHub Actions are retained as manual runners while hosted Actions are billing-blocked. Cloudflare is the current automatic edge deployment layer; `main`, the repository baseline, migrations, and recovery records remain canonical.
+
+Operational contract: `docs/ATLAS_AUTONOMY.md`.
+Security policy: `SECURITY.md`.
+Cloudflare recovery record: `infra/cloudflare/known-good.json`.
 
 ## Authentication endpoints
 - `POST /api/auth/bootstrap` — one-time initial user creation; requires `ATLAS_BOOTSTRAP_TOKEN`.
