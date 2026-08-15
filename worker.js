@@ -15,6 +15,7 @@ import { reportsRoutes } from './modules/reports.js';
 import { documentsRoutes } from './modules/documents.js';
 import { integrationsRoutes } from './modules/integrations.js';
 import { settingsRoutes } from './modules/settings.js';
+import { enterpriseWorkspaceRoutes } from './modules/enterprise-workspace.js';
 import { sensoryRoutes } from './modules/sensory.js';
 import { investRoutes } from './modules/invest.js';
 import { bridgeRoutes } from './modules/bridge.js';
@@ -48,7 +49,7 @@ function secureServiceWorker(){return `const C='atlas-${ATLAS_VERSION}-secure-1'
 export default {async fetch(request,env){const url=new URL(request.url);try{
 if(url.pathname==='/assets/atlas-runtime.js')return new Response(webRuntimeScript(),{headers:{'content-type':'text/javascript; charset=utf-8','cache-control':'public,max-age=3600','x-content-type-options':'nosniff'}});
 if(url.pathname==='/sw.js')return new Response(secureServiceWorker(),{headers:{'content-type':'text/javascript; charset=utf-8','cache-control':'no-cache','service-worker-allowed':'/','x-content-type-options':'nosniff'}});
-if(url.pathname==='/api/health'){const databaseReady=Boolean(env.DB);const body={ok:databaseReady,service:'atlas-enterprise-suite',version:ATLAS_VERSION,phase:'web-launch-readiness',state:databaseReady?'operational':'degraded',identityDatabase:databaseReady?'configured':'unconfigured',hrKnowledge:String(env.ATLAS_ENABLE_HR_KNOWLEDGE||'').toLowerCase()==='true'?'enabled':'disabled',hrPayroll:'enabled',hrTalent:'enabled',operations:'enabled',inventory:'enabled',inventoryCycleCounts:'enabled',transportation:'enabled',projects:'enabled',reports:'enabled',documents:'enabled',integrations:'enabled',settings:'enabled',sensory:'enabled',bridge:'foundation',globalContext:'enabled',qa:'native',backupIntegrity:'sha256',performanceOptimizer:'safe-policy'};return Response.json(body,{status:databaseReady?200:503,headers:{'cache-control':'no-store'}})}
+if(url.pathname==='/api/health'){const databaseReady=Boolean(env.DB);const body={ok:databaseReady,service:'atlas-enterprise-suite',version:ATLAS_VERSION,phase:'web-launch-readiness',state:databaseReady?'operational':'degraded',identityDatabase:databaseReady?'configured':'unconfigured',enterpriseControl:'enabled',hrKnowledge:String(env.ATLAS_ENABLE_HR_KNOWLEDGE||'').toLowerCase()==='true'?'enabled':'disabled',hrPayroll:'enabled',hrTalent:'enabled',operations:'enabled',inventory:'enabled',inventoryCycleCounts:'enabled',transportation:'enabled',projects:'enabled',reports:'enabled',documents:'enabled',integrations:'enabled',settings:'enabled',sensory:'enabled',bridge:'foundation',globalContext:'enabled',qa:'native',backupIntegrity:'sha256',performanceOptimizer:'safe-policy'};return Response.json(body,{status:databaseReady?200:503,headers:{'cache-control':'no-store'}})}
 const globalContextResponse=await globalContextRoutes(request,env,url);if(globalContextResponse)return globalContextResponse;
 const authResponse=await authRoutes(request,env,url);if(authResponse)return authResponse;
 if(request.method==='GET'&&isProtectedWorkspace(url.pathname)){const verification=await requireBrowserSession(request,env);if(!verification.ok){if(verification.status===401)return Response.redirect(new URL('/login',url),302);return securityUnavailable()}}
@@ -69,6 +70,7 @@ const reportsResponse=await reportsRoutes(request,env,url);if(reportsResponse)re
 const documentsResponse=await documentsRoutes(request,env,url);if(documentsResponse)return withRuntime(documentsResponse);
 const integrationsResponse=await integrationsRoutes(request,env,url);if(integrationsResponse)return withRuntime(integrationsResponse);
 const settingsResponse=await settingsRoutes(request,env,url);if(settingsResponse)return withRuntime(settingsResponse);
+const enterpriseResponse=await enterpriseWorkspaceRoutes(request,env,url);if(enterpriseResponse)return withRuntime(enterpriseResponse);
 const rbacResponse=await rbacRoutes(request,env,url);if(rbacResponse)return rbacResponse;
 const evidenceResponse=await evidenceRoutes(request,env,url);if(evidenceResponse)return evidenceResponse;
 const hrKnowledgeResponse=await hrKnowledgeRoutes(request,env,url);if(hrKnowledgeResponse)return hrKnowledgeResponse;
