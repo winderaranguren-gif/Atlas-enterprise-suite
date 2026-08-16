@@ -1,0 +1,263 @@
+{
+  "schemaVersion": 1,
+  "branchId": "03-people-hr-payroll-talent",
+  "branchNumber": 3,
+  "name": "People, HR, Payroll & Talent",
+  "parent": "atlas-os-core",
+  "dossier": "docs/branches/03_PEOPLE_HR_PAYROLL_TALENT.md",
+  "masterSection": "## 10. PEOPLE, HR, PAYROLL & TALENT",
+  "roots": [
+    "human-dignity-and-fairness",
+    "one-person-master",
+    "organization-dba-user-scope",
+    "least-privilege-sensitive-data",
+    "immutable-audit-evidence",
+    "evidence-based-talent-decisions",
+    "regulated-payroll-execution-boundary"
+  ],
+  "trunkDependencies": [
+    "identity-authentication",
+    "organizations-dbas-memberships",
+    "rbac-tenant-guard",
+    "audit-ledger",
+    "documents-governed-records",
+    "finance-authoritative-ledger",
+    "knowledge-content",
+    "global-context"
+  ],
+  "subbranches": [
+    {
+      "id": "people-registry",
+      "name": "People Registry",
+      "maturity": "working-fruit",
+      "routes": ["/platform/hr-payroll/employees", "/api/hr/people"],
+      "systemOfRecord": "hr_people",
+      "evidence": ["migrations/0004_hr_knowledge.sql", "migrations/0010_hr_payroll_core.sql", "modules/hr-knowledge.js", "modules/hr-payroll.js"],
+      "ownedObjects": ["hr_people"]
+    },
+    {
+      "id": "positions-employment",
+      "name": "Positions & Employment Profiles",
+      "maturity": "working-fruit",
+      "routes": ["/platform/hr-payroll/employment", "/platform/hr-payroll/employees"],
+      "systemOfRecord": "hr-employment",
+      "evidence": ["migrations/0010_hr_payroll_core.sql", "modules/hr-payroll.js", "modules/hr-employment-ui.js"],
+      "ownedObjects": ["hr_positions", "hr_employment_profiles"]
+    },
+    {
+      "id": "recruiting",
+      "name": "Recruiting Jobs & Applications",
+      "maturity": "working-fruit",
+      "routes": ["/platform/hr-payroll/recruiting"],
+      "systemOfRecord": "hr-recruiting",
+      "evidence": ["migrations/0010_hr_payroll_core.sql", "modules/hr-payroll.js"],
+      "ownedObjects": ["hr_jobs", "hr_applications"]
+    },
+    {
+      "id": "candidate-hub",
+      "name": "Candidate Hub",
+      "maturity": "green-fruit",
+      "routes": ["/platform/capabilities/candidate-hub"],
+      "systemOfRecord": null,
+      "evidence": ["modules/capability-fusion.js"],
+      "requiredLineage": ["people-registry", "recruiting", "assessment-templates", "documents-governed-records"]
+    },
+    {
+      "id": "onboarding",
+      "name": "Onboarding",
+      "maturity": "working-fruit",
+      "routes": ["/platform/hr-payroll/onboarding"],
+      "systemOfRecord": "hr_onboarding_tasks",
+      "evidence": ["migrations/0010_hr_payroll_core.sql", "modules/hr-payroll.js"],
+      "ownedObjects": ["hr_onboarding_tasks"]
+    },
+    {
+      "id": "time-attendance",
+      "name": "Time & Attendance",
+      "maturity": "working-fruit",
+      "routes": ["/platform/hr-payroll/time"],
+      "systemOfRecord": "hr_time_entries",
+      "evidence": ["migrations/0010_hr_payroll_core.sql", "modules/hr-payroll.js"],
+      "ownedObjects": ["hr_time_entries"]
+    },
+    {
+      "id": "payroll-ledger",
+      "name": "Payroll Ledger & Pay Runs",
+      "maturity": "working-fruit",
+      "routes": ["/platform/hr-payroll/payroll"],
+      "systemOfRecord": "hr-payroll-ledger",
+      "evidence": ["migrations/0010_hr_payroll_core.sql", "modules/hr-payroll.js"],
+      "ownedObjects": ["hr_pay_runs", "hr_pay_run_items"],
+      "limitations": ["jurisdiction-versioned-tax-engine-pending", "direct-deposit-execution-not-implied", "payroll-tax-filing-not-implied"]
+    },
+    {
+      "id": "benefits",
+      "name": "Benefits",
+      "maturity": "working-fruit",
+      "routes": ["/platform/hr-payroll/benefits"],
+      "systemOfRecord": "hr-benefits",
+      "evidence": ["migrations/0011_hr_talent.sql", "modules/hr-talent.js"],
+      "ownedObjects": ["hr_benefit_plans", "hr_benefit_enrollments"],
+      "limitations": ["carrier-enrollment-execution-not-implied"]
+    },
+    {
+      "id": "performance",
+      "name": "Performance",
+      "maturity": "working-fruit",
+      "routes": ["/platform/hr-payroll/performance"],
+      "systemOfRecord": "hr-performance",
+      "evidence": ["migrations/0011_hr_talent.sql", "modules/hr-talent.js"],
+      "ownedObjects": ["hr_performance_cycles", "hr_performance_goals", "hr_performance_reviews"]
+    },
+    {
+      "id": "training",
+      "name": "Training",
+      "maturity": "working-fruit",
+      "routes": ["/platform/hr-payroll/training"],
+      "systemOfRecord": "hr-training",
+      "evidence": ["migrations/0011_hr_talent.sql", "modules/hr-talent.js"],
+      "ownedObjects": ["hr_training_courses", "hr_training_enrollments"]
+    },
+    {
+      "id": "hr-knowledge-assignments",
+      "name": "HR Knowledge Assignments",
+      "maturity": "working-fruit",
+      "routes": ["/api/hr/knowledge"],
+      "systemOfRecord": "hr-knowledge-assignments",
+      "evidence": ["migrations/0004_hr_knowledge.sql", "modules/hr-knowledge.js"],
+      "ownedObjects": ["hr_knowledge_items", "hr_knowledge_assignments"]
+    },
+    {
+      "id": "skills",
+      "name": "Skills & Evidence",
+      "maturity": "working-fruit",
+      "routes": ["/api/hr/skills"],
+      "systemOfRecord": "hr-skills",
+      "evidence": ["migrations/0004_hr_knowledge.sql", "modules/hr-knowledge.js"],
+      "ownedObjects": ["hr_skill_catalog", "hr_person_skills"]
+    },
+    {
+      "id": "assessment-templates",
+      "name": "Assessment Templates & Question Bank",
+      "maturity": "working-fruit",
+      "routes": ["/api/hr/knowledge/assessments"],
+      "systemOfRecord": "hr-assessment-design",
+      "evidence": ["migrations/0004_hr_knowledge.sql", "modules/hr-knowledge.js"],
+      "ownedObjects": ["hr_assessment_templates", "hr_assessment_questions"]
+    },
+    {
+      "id": "assessment-attempt-foundation",
+      "name": "Assessment Attempt Foundation",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": "hr_assessment_attempts",
+      "evidence": ["migrations/0004_hr_knowledge.sql"],
+      "requiredLineage": ["people-registry", "assessment-templates"],
+      "limitations": ["no-answer-level-persistence", "no-canonical-attempt-runtime-route-evidenced"]
+    },
+    {
+      "id": "assessment-studio",
+      "name": "Assessment Studio",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": null,
+      "evidence": ["modules/assessment-studio.js"],
+      "requiredLineage": ["people-registry", "recruiting", "assessment-templates", "assessment-attempt-foundation"],
+      "limitations": ["not-routed-by-current-worker", "attempt-schema-contract-mismatch"]
+    },
+    {
+      "id": "technical-assessment",
+      "name": "Technical Assessment Execution",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": null,
+      "requiredLineage": ["assessment-templates", "assessment-attempt-foundation", "recruiting"],
+      "limitations": ["candidate-runner-pending", "answer-evidence-pending", "rubric-provenance-pending"]
+    },
+    {
+      "id": "english-assessment",
+      "name": "English Assessment Execution",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": null,
+      "requiredLineage": ["assessment-templates", "assessment-attempt-foundation", "language-coach"],
+      "limitations": ["speaking-listening-evidence-pending", "rubric-versioning-pending", "accessible-alternative-policy-pending"]
+    },
+    {
+      "id": "certifications",
+      "name": "Certification Registry",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": null,
+      "requiredLineage": ["training", "skills", "assessment-templates"],
+      "limitations": ["dedicated-award-registry-not-evidenced"]
+    },
+    {
+      "id": "policies",
+      "name": "HR Policies",
+      "maturity": "working-fruit",
+      "routes": ["/platform/documents"],
+      "systemOfRecord": "documents",
+      "evidence": ["modules/documents.js", "modules/documents-schema.js"],
+      "limitations": ["hr-consumes-governed-document-records"]
+    },
+    {
+      "id": "leave-pto",
+      "name": "Leave / PTO",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": null,
+      "requiredLineage": ["people-registry", "positions-employment", "time-attendance", "payroll-ledger"],
+      "limitations": ["accrual-request-approval-balance-model-pending"]
+    },
+    {
+      "id": "payroll-compliance-engine",
+      "name": "Payroll Tax Compliance Engine",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": null,
+      "requiredLineage": ["positions-employment", "time-attendance", "payroll-ledger"],
+      "limitations": ["jurisdiction-year-rule-versioning-pending"]
+    },
+    {
+      "id": "payroll-direct-deposit-filing",
+      "name": "Direct Deposit & Payroll Filing",
+      "maturity": "partner-bound",
+      "routes": [],
+      "systemOfRecord": null,
+      "requiredLineage": ["payroll-ledger", "payroll-compliance-engine"],
+      "limitations": ["authorized-payment-and-filing-provider-required"]
+    },
+    {
+      "id": "person-self-service",
+      "name": "Employee / Candidate Self-Service",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": null,
+      "requiredLineage": ["people-registry", "recruiting", "positions-employment", "training", "policies"],
+      "limitations": ["person-owned-permission-model-and-portal-pending"]
+    }
+  ],
+  "invariants": [
+    "hr-people-is-canonical-human-master",
+    "person-types-do-not-create-separate-identity-databases",
+    "recruiting-applications-reference-person",
+    "payroll-does-not-create-second-general-ledger",
+    "policies-remain-documents-authoritative",
+    "learning-does-not-own-employment-state",
+    "candidate-read-paths-must-not-expose-correct-answer-keys",
+    "assessment-runtime-must-match-canonical-schema",
+    "regulated-payroll-execution-requires-authorized-provider",
+    "sensitive-hr-data-is-least-privilege-and-tenant-scoped"
+  ],
+  "nextFruitSequence": [
+    "reconcile-assessment-studio-schema",
+    "route-and-validate-assessment-studio",
+    "candidate-facing-assessment-runner",
+    "english-assessment-composition",
+    "certification-registry",
+    "pto-leave-ledger",
+    "payroll-compliance-engine-boundary",
+    "person-self-service-permissions"
+  ]
+}
