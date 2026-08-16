@@ -1,6 +1,7 @@
 import app from './worker-crm.js';
 import { metaCatalogRoutes } from './modules/meta-catalog.js';
 import { capabilityPublicRoutes } from './modules/capability-public.js';
+import { capabilitySecurityRuntime } from './modules/capability-security-runtime.js';
 import { RELEASE_SHA, RELEASE_BRANCH } from './modules/release-identity.js';
 
 const CORE_TABLES=['users','sessions','organizations','dbas','memberships','role_permissions'];
@@ -79,8 +80,14 @@ async function enhanceCapabilityBridge(response,url){
  if(!config)return response;
  const type=response.headers.get('content-type')||'';
  if(!type.includes('text/html'))return response;
- const source=await response.text(),marker=`data-atlas-live-bridge="${config.id}"`;
- if(source.includes(marker))return new Response(source,{status:response.status,statusText:response.statusText,headers:response.headers});
+ let source=await response.text();
+ const safeDom='<script src="/assets/atlas-capability-security.js"></script>';
+ if(!source.includes('/assets/atlas-capability-security.js')&&source.includes('<script>'))source=source.replace('<script>',safeDom+'<script>');
+ const marker=`data-atlas-live-bridge="${config.id}"`;
+ if(source.includes(marker)){
+  const headers=new Headers(response.headers);headers.delete('content-length');
+  return new Response(source,{status:response.status,statusText:response.statusText,headers});
+ }
  const green=config.tone==='green',border=green?'#235d46':'#28587c',background=green?'linear-gradient(145deg,#071e17,#071522)':'linear-gradient(145deg,#071a2b,#071522)',eyebrow=green?'#86f7bf':'#7ee6ff';
  const bridge=`<section ${marker} style="margin-top:22px;padding:18px;border:1px solid ${border};border-radius:18px;background:${background}"><div style="font-size:.68rem;letter-spacing:.14em;color:${eyebrow};margin-bottom:8px">${config.eyebrow}</div><h2 style="margin:0 0 8px">${config.title}</h2><p style="margin:0 0 14px;color:#91aac0;line-height:1.55">${config.copy}</p><a href="${config.href}" style="display:inline-block;padding:10px 14px;border:1px solid #2f8cff;border-radius:12px;background:linear-gradient(135deg,#7ee6ff,#2f8cff);color:#03111d;text-decoration:none;font-weight:800">${config.action}</a></section>`;
  const body=source.includes('</main>')?source.replace('</main>',bridge+'</main>'):source.replace('</body>',bridge+'</body>');
@@ -91,6 +98,7 @@ async function enhanceCapabilityBridge(response,url){
 export default {
  async fetch(request,env,ctx){
   const url=new URL(request.url);
+  if(url.pathname==='/assets/atlas-capability-security.js'&&request.method==='GET')return new Response(capabilitySecurityRuntime(),{headers:{'content-type':'text/javascript; charset=utf-8','cache-control':'public,max-age=900','x-content-type-options':'nosniff'}});
   if(url.pathname==='/api/release'&&request.method==='GET'){
    return Response.json({ok:true,service:'atlas-enterprise-suite',releaseSha:RELEASE_SHA,releaseBranch:RELEASE_BRANCH},{headers:{'cache-control':'no-store'}});
   }
