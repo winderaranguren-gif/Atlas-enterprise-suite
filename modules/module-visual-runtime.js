@@ -1,6 +1,6 @@
 const MODULE_VISUALS=[
  ['/platform/enterprise-suite','Enterprise Administration','Multi-company control, users, roles, business units and administration.','/assets/atlas-showcase-genesis.webp'],
- ['/platform/finance','Accounting & Finance','Ledger, AP, AR, banking, reconciliation, reporting, taxes and fixed assets.','/assets/atlas-bg-002.webp'],
+ ['/platform/finance','Accounting & Finance','Ledger, AP, AR, banking, reconciliation, reporting, taxes and fixed assets.','/assets/atlas-finance-command.svg'],
  ['/platform/operations','Operations','Workflows, approvals, tasks, automation and operational execution.','/assets/atlas-scene-cloud-command.webp'],
  ['/platform/hr-payroll','HR & Payroll','Employees, talent, time, payroll, benefits, performance and learning.','/assets/atlas-bg-003.webp'],
  ['/platform/transportation','Transportation','Fleet, dispatch, routes, drivers, maintenance, fuel and trip operations.','/assets/atlas-bg-004.webp'],
