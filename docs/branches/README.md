@@ -7,8 +7,8 @@ This directory expands the canonical `docs/ATLAS_MASTER_INDEX_GENEALOGY.md` one 
 | 01 | Enterprise & Operations | `01_ENTERPRISE_OPERATIONS.md` | `architecture/genealogy/01-enterprise-operations.json` | Structured |
 | 02 | Accounting, Finance & Tax | `02_ACCOUNTING_FINANCE_TAX.md` | `architecture/genealogy/02-accounting-finance-tax.json` | Structured |
 | 03 | People, HR, Payroll & Talent | `03_PEOPLE_HR_PAYROLL_TALENT.md` | `architecture/genealogy/03-people-hr-payroll-talent.json` | Structured |
-| 04 | Knowledge, Education & Learning | pending | pending | Next |
-| 05 | Capability Fusion | pending | pending | Queued |
+| 04 | Knowledge, Education & Learning | `04_KNOWLEDGE_EDUCATION_LEARNING.md` | `architecture/genealogy/04-knowledge-education-learning.json` | Structured |
+| 05 | Capability Fusion | pending | pending | Next |
 | 06 | Documents, Forms & Confidential Exchange | pending | pending | Queued |
 | 07 | Health & Care | pending | pending | Queued |
 | 08 | Mobility, Maps & Vehicles | pending | pending | Queued |

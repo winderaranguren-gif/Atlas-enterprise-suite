@@ -12,15 +12,17 @@ const seenBranchIds=new Set(),seenBranchNumbers=new Set();
 const requiredByBranch={
   '01-enterprise-operations':['enterprise-administration','crm','operations','inventory','projects','transportation','documents','reports','commercial-orders','procurement'],
   '02-accounting-finance-tax':['chart-of-accounts','general-ledger','accounts-payable','accounts-receivable','banking-ledger','reconciliations','budgets','financial-statements','accounting-periods','tax-obligations','fixed-assets','tax-compliance','tax-pro','efile-government-transmission'],
-  '03-people-hr-payroll-talent':['people-registry','positions-employment','recruiting','candidate-hub','onboarding','time-attendance','payroll-ledger','benefits','performance','training','skills','assessment-templates','assessment-studio','technical-assessment','english-assessment','certifications','payroll-direct-deposit-filing']
+  '03-people-hr-payroll-talent':['people-registry','positions-employment','recruiting','candidate-hub','onboarding','time-attendance','payroll-ledger','benefits','performance','training','skills','assessment-templates','assessment-studio','technical-assessment','english-assessment','certifications','payroll-direct-deposit-filing'],
+  '04-knowledge-education-learning':['knowledge-content-registry','knowledge-assignments','training-catalog','training-enrollment-transcript','academy','knowledge-reader','learning-paths','learning-assessment','skills-evidence','certifications','knowledge-search','lingua','language-coach','knowledge-atlas-graph','adaptive-ai-tutor']
 };
 const invariantByBranch={
   '01-enterprise-operations':['no-duplicate-core-identity','no-duplicate-financial-ledger','inventory-balance-derived-from-movements','reports-never-own-source-transactions'],
   '02-accounting-finance-tax':['posted-journal-must-balance','financial-statements-derive-from-posted-ledger','closed-period-blocks-new-journal-posting','reconciliation-requires-zero-difference','regulated-execution-requires-authorized-provider'],
-  '03-people-hr-payroll-talent':['hr-people-is-canonical-human-master','person-types-do-not-create-separate-identity-databases','payroll-does-not-create-second-general-ledger','assessment-runtime-must-match-canonical-schema','regulated-payroll-execution-requires-authorized-provider']
+  '03-people-hr-payroll-talent':['hr-people-is-canonical-human-master','person-types-do-not-create-separate-identity-databases','payroll-does-not-create-second-general-ledger','assessment-runtime-must-match-canonical-schema','regulated-payroll-execution-requires-authorized-provider'],
+  '04-knowledge-education-learning':['learning-interfaces-do-not-fork-authoritative-content','learner-identity-reuses-canonical-person-master','reader-local-state-is-not-enterprise-transcript','no-unauthorized-proprietary-course-copying','credential-claims-require-verification-provenance']
 };
 
-assert.ok(files.length>=3,'genealogy_requires_at_least_three_structured_branches');
+assert.ok(files.length>=4,'genealogy_requires_at_least_four_structured_branches');
 for(const file of files){
   const path=`${registryDir}/${file}`,registry=JSON.parse(await readFile(path,'utf8'));
   assert.equal(registry.schemaVersion,1,`genealogy_schema_version_invalid:${file}`);
