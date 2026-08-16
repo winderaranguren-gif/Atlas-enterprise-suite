@@ -1,3 +1,4 @@
+import { commercialApprovalRoutes } from './commercial-approval-gate.js';
 import { catalogCommercialPolicy, commercialCopyFor, commercialStateFor, metaAvailabilityFor } from './commercial-catalog-state.js';
 import { commercialOfferFor, commercialOffers, commercialRegistrySummary, productDefinitions } from './commercial-product-registry.js';
 import { merchantOfferRoutes } from './merchant-offer-contract.js';
@@ -28,6 +29,8 @@ export function metaCatalogCsv(){
 
 export async function metaCatalogRoutes(request,env,url){
  if(request.method!=='GET')return null;
+ const approvalResponse=await commercialApprovalRoutes(request,env,url);
+ if(approvalResponse)return approvalResponse;
  const merchantResponse=await merchantOfferRoutes(request,env,url);
  if(merchantResponse)return merchantResponse;
  if(url.pathname==='/feeds/meta/atlas-catalog.csv')return new Response(metaCatalogCsv(),{headers:{'content-type':'text/csv; charset=utf-8','cache-control':'public,max-age=900','content-disposition':'inline; filename="atlas-catalog.csv"','x-content-type-options':'nosniff','access-control-allow-origin':'*'}});
