@@ -19,7 +19,7 @@ const hasPublicCapabilitySet=data=>{
 };
 
 const checks=[
-  {path:'/',status:200,contains:['ATLAS']},
+  {path:'/',status:200,contains:['ATLAS','href="/capabilities"','>Capabilities</a>']},
   {path:'/login',status:200,contains:['Sign in']},
   {path:'/signup',status:200,contains:['Create your ATLAS account']},
   {path:'/capabilities',status:200,contains:['ATLAS CAPABILITY DIRECTORY','One ecosystem.','Implementation transparency:','Connected: ATLAS Stream Control','Connected: ATLAS Subscription Control']},
@@ -40,7 +40,7 @@ for(const check of checks){
   const url=origin+check.path;
   let thisFailed=false;
   try{
-    const response=await fetch(url,{redirect:check.redirect||'follow',headers:{'user-agent':'ATLAS-Production-Verifier/3.2'},signal:AbortSignal.timeout(15000)});
+    const response=await fetch(url,{redirect:check.redirect||'follow',headers:{'user-agent':'ATLAS-Production-Verifier/3.3'},signal:AbortSignal.timeout(15000)});
     const text=await response.text();
     if(response.status!==check.status){console.error(`FAIL ${check.path}: HTTP ${response.status}, expected ${check.status}${text?` · ${text.slice(0,300)}`:''}`);failed=thisFailed=true;continue}
     if(check.locationContains){const location=response.headers.get('location')||'';if(!location.includes(check.locationContains)){console.error(`FAIL ${check.path}: redirect location ${JSON.stringify(location)} missing ${JSON.stringify(check.locationContains)}`);failed=thisFailed=true}}
