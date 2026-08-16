@@ -1,0 +1,276 @@
+{
+  "schemaVersion": 1,
+  "branchId": "07-health-care",
+  "branchNumber": 7,
+  "name": "Health & Care",
+  "parent": "atlas-os-core",
+  "dossier": "docs/branches/07_HEALTH_CARE.md",
+  "masterSection": "## 14. HEALTH & CARE",
+  "roots": [
+    "human-dignity-privacy-consent",
+    "clinical-safety-before-novelty",
+    "minimum-necessary-health-data",
+    "evidence-level-separation",
+    "no-unsupported-diagnosis-treatment-cure-claims",
+    "explicit-human-clinical-authority",
+    "regulated-health-system-boundaries",
+    "accessible-multilingual-care-experience"
+  ],
+  "trunkDependencies": [
+    "identity-authentication",
+    "organizations-dbas-memberships",
+    "rbac-tenant-guard",
+    "audit-ledger",
+    "documents-evidence",
+    "knowledge-provenance",
+    "maps-indoor-navigation",
+    "inventory-movement-ledger",
+    "operations-workflows",
+    "provider-adapters",
+    "privacy-security-governance",
+    "release-verification"
+  ],
+  "subbranches": [
+    {
+      "id": "visitor-access-indoor-navigation",
+      "name": "Health Visitor Access & Indoor Navigation",
+      "maturity": "artifact-verified",
+      "routes": [],
+      "systemOfRecord": "artifact-local-sqlite",
+      "evidence": [
+        "library:ATLAS_Health_Visitor_Access_MVP.zip",
+        "library:README.md#ATLAS-Health-Digital-Visitor-Access-Indoor-Navigation-MVP"
+      ],
+      "requiredLineage": ["identity-authentication", "hospital-patient-consent-source", "maps-indoor-navigation", "audit-ledger"],
+      "limitations": ["not-hospital-production-deployment", "ehr-adt-integration-required", "hospital-sso-rbac-required", "hipaa-privacy-security-governance-required", "real-id-and-indoor-positioning-policy-required"]
+    },
+    {
+      "id": "holographic-health-twin",
+      "name": "Holographic Health Twin",
+      "maturity": "artifact-verified",
+      "routes": [],
+      "systemOfRecord": "artifact-specific",
+      "evidence": ["library:ATLAS-Holographic-Health-Twin-MVP.zip", "library:sha256:e0a2c5c62149e62be96d1d2cdf2d7f935c1a1da6ea93cde919b2c160579f78b6"],
+      "requiredLineage": ["health-data-provenance", "clinical-model-governance"],
+      "limitations": ["artifact-does-not-prove-clinical-accuracy", "no-diagnostic-or-medical-device-claim"]
+    },
+    {
+      "id": "health-frontiers-research",
+      "name": "Health Frontiers Research Framework",
+      "maturity": "artifact-verified",
+      "routes": [],
+      "systemOfRecord": "research-artifacts",
+      "evidence": ["library:2026-08-02_ATLAS_Health_Frontiers_English_Edition.docx", "library:ATLAS_BLC1_Cancer_de_Sangre.md"],
+      "requiredLineage": ["knowledge-provenance", "health-evidence-governance"],
+      "limitations": ["research-not-direct-clinical-use", "hypotheses-require-validation-ethics-trials-regulatory-review"]
+    },
+    {
+      "id": "medicine-disease-intelligence",
+      "name": "Medicine & Disease Intelligence",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": null,
+      "requiredLineage": ["health-frontiers-research", "knowledge-provenance", "health-evidence-governance"],
+      "limitations": ["versioned-medical-source-and-specialty-review-system-pending"]
+    },
+    {
+      "id": "health-evidence-governance",
+      "name": "Health Evidence Governance",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": null,
+      "evidence": ["library:2026-08-01_ATLAS_Master_Backup_v2.docx", "library:2026-08-02_ATLAS_Health_Frontiers_English_Edition.docx"],
+      "requiredLineage": ["knowledge-provenance", "documents-evidence"],
+      "limitations": ["canonical-evidence-object-schema-pending"]
+    },
+    {
+      "id": "smart-room",
+      "name": "Smart Room",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": null,
+      "evidence": ["library:2026-08-01_ATLAS_Master_Backup_v2.docx", "library:ATLAS_AdventHealth_Smart_Health_Ecosystem_Proposal.docx"],
+      "requiredLineage": ["operations-workflows", "people-workforce", "inventory-movement-ledger", "documents-evidence", "health-interoperability"]
+    },
+    {
+      "id": "bedside-patient-experience",
+      "name": "Bedside & Patient Experience",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": null,
+      "requiredLineage": ["smart-room", "health-interoperability", "global-context"],
+      "limitations": ["patient-view-role-and-clinician-data-boundaries-pending"]
+    },
+    {
+      "id": "clinical-operations",
+      "name": "Clinical Station & Operations",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": null,
+      "evidence": ["library:ATLAS_AdventHealth_Smart_Health_Ecosystem_Proposal.docx"],
+      "requiredLineage": ["operations-workflows", "people-workforce", "health-interoperability"],
+      "limitations": ["must-not-become-shadow-ehr"]
+    },
+    {
+      "id": "connected-care",
+      "name": "Connected Care & Longitudinal Context",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": null,
+      "requiredLineage": ["patient-visitor-identity-consent", "health-interoperability", "documents-evidence"],
+      "limitations": ["canonical-patient-identity-and-source-provenance-contract-pending"]
+    },
+    {
+      "id": "virtual-care-telemedicine",
+      "name": "Virtual Care / Telemedicine",
+      "maturity": "partner-bound",
+      "routes": [],
+      "systemOfRecord": null,
+      "requiredLineage": ["connected-care", "patient-visitor-identity-consent", "documents-evidence"],
+      "limitations": ["licensed-provider-privacy-consent-secure-communications-requirements-apply"]
+    },
+    {
+      "id": "medication-infusion",
+      "name": "Medication & Infusion Workflow",
+      "maturity": "partner-bound",
+      "routes": [],
+      "systemOfRecord": null,
+      "requiredLineage": ["health-interoperability", "clinical-operations", "health-data-provenance"],
+      "limitations": ["authorized-order-pharmacy-device-and-human-verification-required"]
+    },
+    {
+      "id": "clinical-inventory",
+      "name": "Clinical Inventory & Supply Chain",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": "inventory-movement-ledger-plus-health-constraints",
+      "evidence": ["migrations/0013_inventory_core.sql", "modules/inventory.js"],
+      "requiredLineage": ["inventory-movement-ledger", "clinical-operations"],
+      "limitations": ["lot-serial-expiry-recall-temperature-sterility-clinical-semantics-pending"]
+    },
+    {
+      "id": "patient-visitor-identity-consent",
+      "name": "Patient / Visitor Identity & Consent",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": null,
+      "evidence": ["library:ATLAS_Health_Visitor_Access_MVP.zip"],
+      "requiredLineage": ["identity-authentication", "health-interoperability"],
+      "limitations": ["hospital-identity-consent-restriction-source-adapters-pending"]
+    },
+    {
+      "id": "indoor-clinical-navigation",
+      "name": "Indoor Clinical Navigation",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": null,
+      "evidence": ["library:ATLAS_Health_Visitor_Access_MVP.zip"],
+      "requiredLineage": ["maps-indoor-navigation", "patient-visitor-identity-consent"],
+      "limitations": ["validated-hospital-map-positioning-system-required"]
+    },
+    {
+      "id": "health-interoperability",
+      "name": "Health Data Interoperability",
+      "maturity": "partner-bound",
+      "routes": [],
+      "systemOfRecord": null,
+      "requiredLineage": ["provider-adapters", "health-data-provenance"],
+      "limitations": ["authorized-ehr-adt-lab-imaging-pharmacy-payer-integrations-required"]
+    },
+    {
+      "id": "clinical-decision-support",
+      "name": "Clinical Decision Support",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": null,
+      "requiredLineage": ["health-evidence-governance", "health-interoperability", "health-analytics-risk"],
+      "limitations": ["intended-use-validation-performance-monitoring-human-override-regulatory-assessment-required"]
+    },
+    {
+      "id": "remote-monitoring-sensors",
+      "name": "Remote Monitoring & Sensors",
+      "maturity": "partner-bound",
+      "routes": [],
+      "systemOfRecord": null,
+      "requiredLineage": ["health-data-provenance", "connected-care"],
+      "limitations": ["validated-device-quality-calibration-intended-use-and-consent-required"]
+    },
+    {
+      "id": "health-analytics-risk",
+      "name": "Health Analytics & Risk Stratification",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": "derived-read-only",
+      "evidence": ["library:ATLAS_AdventHealth_Smart_Health_Ecosystem_Proposal.docx"],
+      "requiredLineage": ["health-interoperability", "health-data-provenance"],
+      "derivesFrom": ["authorized-clinical-sources", "validated-model-inputs"],
+      "limitations": ["performance-bias-drift-calibration-target-population-validation-pending"]
+    },
+    {
+      "id": "research-data-cohorts",
+      "name": "Research Data & Cohort Infrastructure",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": null,
+      "evidence": ["library:2026-08-02_ATLAS_Health_Frontiers_English_Edition.docx"],
+      "requiredLineage": ["health-frontiers-research", "health-evidence-governance", "documents-evidence"],
+      "limitations": ["human-subject-protocol-consent-governance-ethics-requirements-apply"]
+    },
+    {
+      "id": "disease-research-programs",
+      "name": "Health Frontiers Disease Programs",
+      "maturity": "seed",
+      "routes": [],
+      "systemOfRecord": null,
+      "evidence": ["library:ATLAS_BLC1_Cancer_de_Sangre.md", "library:Atlas Health Frontiers: Cancer Research Infographic.png"],
+      "requiredLineage": ["health-frontiers-research", "health-evidence-governance"],
+      "limitations": ["research-questions-not-proven-treatments"]
+    },
+    {
+      "id": "mental-neurodevelopmental-prenatal",
+      "name": "Mental, Neurodevelopmental & Prenatal/Fetal Knowledge",
+      "maturity": "seed",
+      "routes": [],
+      "systemOfRecord": null,
+      "evidence": ["library:2026-08-01_ATLAS_Master_Backup_v2.docx"],
+      "requiredLineage": ["medicine-disease-intelligence", "health-evidence-governance"],
+      "limitations": ["specialty-review-respectful-language-and-evidence-governance-required"]
+    },
+    {
+      "id": "hospital-enterprise-integration",
+      "name": "Hospital Enterprise Integration",
+      "maturity": "partner-bound",
+      "routes": [],
+      "systemOfRecord": null,
+      "evidence": ["library:ATLAS_AdventHealth_Smart_Health_Ecosystem_Proposal.docx"],
+      "requiredLineage": ["health-interoperability", "clinical-operations", "connected-care", "enterprise-operations"],
+      "limitations": ["institution-integration-security-usability-clinical-validation-kpi-gates-required"]
+    }
+  ],
+  "invariants": [
+    "no-diagnosis-or-cure-claim-without-appropriate-validation",
+    "research-hypothesis-is-not-proven-treatment",
+    "patient-facing-data-is-minimum-necessary",
+    "clinical-authority-and-human-oversight-remain-explicit",
+    "clinical-source-systems-retain-provenance-authority",
+    "unauthorized-visitors-do-not-receive-restricted-location-or-clinical-data",
+    "health-inventory-composes-canonical-inventory-ledger",
+    "ai-output-does-not-silently-become-clinical-order-diagnosis",
+    "human-subject-research-requires-appropriate-ethics-privacy-protocol-governance",
+    "artifact-mvp-is-not-hospital-production-deployment",
+    "device-data-carries-source-quality-intended-use-context",
+    "health-deployment-requires-intended-use-appropriate-security-privacy-accessibility-regulatory-review"
+  ],
+  "nextFruitSequence": [
+    "canonical-health-evidence-provenance-schema",
+    "report-visitor-access-into-current-core",
+    "patient-visitor-identity-consent-adapter-contract",
+    "smart-room-operational-composition-model",
+    "health-interoperability-provenance-contract",
+    "report-holographic-health-twin-with-provenance",
+    "health-research-registry",
+    "clinical-decision-support-governance",
+    "telemedicine-device-provider-boundaries",
+    "health-specific-production-verification"
+  ]
+}
