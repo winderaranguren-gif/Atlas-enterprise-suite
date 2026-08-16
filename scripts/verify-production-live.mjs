@@ -7,13 +7,20 @@ let expectedSha=String(process.env.ATLAS_EXPECTED_RELEASE_SHA||'').trim();
 if(!expectedSha){try{expectedSha=(await readFile(resolve(root,'.atlas-release-sha'),'utf8')).trim()}catch{}}
 if(!/^[0-9a-f]{40}$/i.test(expectedSha))throw new Error('expected_release_sha_unavailable');
 
+const expectedCapabilities=['lingua','language-coach','academy','tax-compliance','tax-pro','candidate-hub','forms','stream','subscriptions','personalization'];
+const hasCapabilitySet=data=>{
+  const slugs=Array.isArray(data?.capabilities)?data.capabilities.map(item=>item?.slug):[];
+  return data?.ok===true&&data?.count===expectedCapabilities.length&&expectedCapabilities.every(slug=>slugs.includes(slug));
+};
+
 const checks=[
   {path:'/',status:200,contains:['ATLAS']},
   {path:'/login',status:200,contains:['Sign in']},
   {path:'/signup',status:200,contains:['Create your ATLAS account']},
   {path:'/api/health',status:200,json:d=>d?.ok===true&&d?.state==='operational'},
   {path:'/api/readiness',status:200,json:d=>d?.ok===true&&d?.state==='ready'&&d?.checks?.database===true&&d?.checks?.schema===true&&d?.checks?.firstOwner===true&&d?.checks?.release===true},
-  {path:'/api/release',status:200,json:d=>d?.ok===true&&d?.releaseBranch==='main'&&String(d?.releaseSha||'').toLowerCase()===expectedSha.toLowerCase()}
+  {path:'/api/release',status:200,json:d=>d?.ok===true&&d?.releaseBranch==='main'&&String(d?.releaseSha||'').toLowerCase()===expectedSha.toLowerCase()},
+  {path:'/api/capabilities',status:200,json:hasCapabilitySet}
 ];
 
 let failed=false;
@@ -21,7 +28,7 @@ for(const check of checks){
   const url=origin+check.path;
   let thisFailed=false;
   try{
-    const response=await fetch(url,{redirect:'follow',headers:{'user-agent':'ATLAS-Production-Verifier/3.0'},signal:AbortSignal.timeout(15000)});
+    const response=await fetch(url,{redirect:'follow',headers:{'user-agent':'ATLAS-Production-Verifier/3.1'},signal:AbortSignal.timeout(15000)});
     const text=await response.text();
     if(response.status!==check.status){console.error(`FAIL ${check.path}: HTTP ${response.status}, expected ${check.status}${text?` · ${text.slice(0,300)}`:''}`);failed=thisFailed=true;continue}
     for(const needle of check.contains||[]){if(!text.includes(needle)){console.error(`FAIL ${check.path}: missing expected marker ${JSON.stringify(needle)}`);failed=thisFailed=true}}
