@@ -1,5 +1,6 @@
 import { commercialApprovalRoutes } from './commercial-approval-gate.js';
 import { cartRevalidationRoutes } from './cart-checkout-revalidation.js';
+import { commercialTransactionHandoffRoutes } from './commercial-transaction-handoff.js';
 import { catalogCommercialPolicy, commercialCopyFor, commercialStateFor, metaAvailabilityFor } from './commercial-catalog-state.js';
 import { commercialOfferFor, commercialOffers, commercialRegistrySummary, productDefinitions } from './commercial-product-registry.js';
 import { merchantOfferRoutes } from './merchant-offer-contract.js';
@@ -29,6 +30,8 @@ export function metaCatalogCsv(){
 }
 
 export async function metaCatalogRoutes(request,env,url){
+ const handoffResponse=await commercialTransactionHandoffRoutes(request,env,url);
+ if(handoffResponse)return handoffResponse;
  const cartResponse=await cartRevalidationRoutes(request,env,url);
  if(cartResponse)return cartResponse;
  if(request.method!=='GET')return null;
