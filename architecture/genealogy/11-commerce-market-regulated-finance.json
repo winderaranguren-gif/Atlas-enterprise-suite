@@ -36,7 +36,8 @@
     {"id":"commercial-catalog-truth-policy","name":"Commercial Catalog Truth Policy","maturity":"working-fruit","routes":["/feeds/meta/atlas-catalog.json","/feeds/meta/status","/feeds/commerce/status"],"systemOfRecord":"canonical-commercial-offer-registry-policy","evidence":["modules/commercial-catalog-state.js","modules/commercial-product-registry.js","modules/meta-catalog.js","scripts/validate-meta-catalog.mjs"],"limitations":["no-offer-is-active-for-sale-until-explicit-approval-evidence-exists"]},
     {"id":"commercial-offer-pricing-governance","name":"Commercial Offer & Pricing Governance","maturity":"working-fruit","routes":["/feeds/commerce/offers.json","/feeds/commerce/status"],"systemOfRecord":"repository-source-controlled-commerce-registry","evidence":["modules/commercial-product-registry.js","scripts/validate-commerce-registry.mjs"],"limitations":["current-offers-are-preview-or-community-only","dynamic-approval-workflow-pending","d1-persistence-pending-verified-d1-identity"]},
     {"id":"master-product-identity","name":"Master Product Identity / UPC-GTIN Model","maturity":"green-fruit","routes":[],"systemOfRecord":null,"requiredLineage":["product-commercial-registry","inventory","merchant-offer-directory"],"limitations":["manufacturer-gtin-upc-identity-contract-pending"]},
-    {"id":"merchant-offer-directory","name":"Merchant / Offer Directory","maturity":"partner-bound","routes":[],"systemOfRecord":null,"requiredLineage":["master-product-identity","crm","provider-adapters"],"limitations":["authorized-or-verified-merchant-price-inventory-promotion-capacity-feeds-required"]},
+    {"id":"merchant-offer-freshness-contract","name":"Merchant Offer Provenance + Price/Inventory Freshness Contract","maturity":"working-fruit","routes":["/feeds/commerce/merchant-offer-contract.json","/feeds/commerce/merchant-offers.json","/feeds/commerce/merchant-offers/status"],"systemOfRecord":"repository-owned-merchant-offer-contract","evidence":["modules/merchant-offer-contract.js","scripts/validate-merchant-offer-contract.mjs"],"limitations":["directory-currently-empty-by-design","live-merchant-data-remains-provider-or-verified-manual-source-bound"]},
+    {"id":"merchant-offer-directory","name":"Merchant / Offer Directory","maturity":"partner-bound","routes":["/feeds/commerce/merchant-offers.json","/feeds/commerce/merchant-offers/status"],"systemOfRecord":"future-provider-or-verified-manual-merchant-offer-records","evidence":["modules/merchant-offer-contract.js"],"requiredLineage":["master-product-identity","merchant-offer-freshness-contract","crm","provider-adapters"],"limitations":["authorized-or-verified-merchant-price-inventory-promotion-capacity-feeds-required","no-live-merchant-offers-currently-recorded"]},
     {"id":"market","name":"Market","maturity":"green-fruit","routes":[],"systemOfRecord":null,"requiredLineage":["master-product-identity","merchant-offer-directory","commercial-offer-pricing-governance"]},
     {"id":"local","name":"Local","maturity":"green-fruit","routes":[],"systemOfRecord":null,"requiredLineage":["business-network","crm","global-context"],"limitations":["verified-business-geographic-and-offer-data-pending"]},
     {"id":"ads-promotions","name":"Ads & Promotions","maturity":"green-fruit","routes":[],"systemOfRecord":null,"requiredLineage":["business-network","commercial-offer-pricing-governance","documents"],"limitations":["campaign-disclosure-targeting-performance-contract-pending"]},
@@ -68,6 +69,10 @@
     "product-definition-is-separate-from-commercial-offer",
     "commercial-offer-status-is-authoritative-for-sale-approval",
     "active-offer-requires-approval-effective-date-and-fulfillment-evidence",
+    "merchant-offer-requires-accepted-source-provenance",
+    "merchant-offer-requires-observation-and-expiry-times",
+    "stale-or-unknown-inventory-merchant-offers-are-not-usable",
+    "merchant-offer-price-inventory-is-separate-from-atlas-baseline-offer",
     "price-has-source-effective-date-market-and-revalidation-before-charge",
     "product-identity-is-separate-from-merchant-offer-inventory",
     "commerce-does-not-create-second-inventory-or-finance-ledger",
@@ -80,7 +85,6 @@
     "commercial-entitlement-must-be-authoritative-before-access"
   ],
   "nextFruitSequence": [
-    "merchant-offer-price-inventory-freshness-contract",
     "commercial-state-approval-workflow",
     "cart-checkout-revalidation-model",
     "enterprise-sales-order-fulfillment-integration",
