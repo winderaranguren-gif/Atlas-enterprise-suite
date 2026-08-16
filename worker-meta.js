@@ -75,6 +75,21 @@ async function readiness(env){
  }catch{return Response.json({ok:false,state:'blocked',reason:'readiness_query_failed',checks:{database:true,schema:false,firstOwner:false,release:false}},{status:503,headers:{'cache-control':'no-store'}})}
 }
 
+async function enhancePublicCapabilityDiscovery(response,url){
+ if(url.pathname!=='/'||requestMethodSafe(url)!=='GET')return response;
+ const type=response.headers.get('content-type')||'';
+ if(!type.includes('text/html'))return response;
+ let body=await response.text();
+ if(!body.includes('href="/capabilities"')){
+  const trust='<a href="/trust/status">Trust</a>';
+  const link='<a href="/capabilities">Capabilities</a>';
+  if(body.includes(trust))body=body.replace(trust,link+trust);
+ }
+ const headers=new Headers(response.headers);headers.delete('content-length');
+ return new Response(body,{status:response.status,statusText:response.statusText,headers});
+}
+function requestMethodSafe(url){return url?.__atlasMethod||'GET'}
+
 async function enhanceCapabilityBridge(response,url){
  const config=CAPABILITY_BRIDGES[url.pathname];
  if(!config)return response;
@@ -97,7 +112,7 @@ async function enhanceCapabilityBridge(response,url){
 
 export default {
  async fetch(request,env,ctx){
-  const url=new URL(request.url);
+  const url=new URL(request.url);url.__atlasMethod=request.method;
   if(url.pathname==='/assets/atlas-capability-security.js'&&request.method==='GET')return new Response(capabilitySecurityRuntime(),{headers:{'content-type':'text/javascript; charset=utf-8','cache-control':'public,max-age=900','x-content-type-options':'nosniff'}});
   if(url.pathname==='/api/release'&&request.method==='GET'){
    return Response.json({ok:true,service:'atlas-enterprise-suite',releaseSha:RELEASE_SHA,releaseBranch:RELEASE_BRANCH},{headers:{'cache-control':'no-store'}});
@@ -108,7 +123,8 @@ export default {
   if(url.pathname==='/whatsapp-catalog.csv')url.pathname='/feeds/meta/atlas-catalog.csv';
   const catalogResponse=await metaCatalogRoutes(request,env,url);
   if(catalogResponse)return catalogResponse;
-  const response=await app.fetch(request,env,ctx);
+  let response=await app.fetch(request,env,ctx);
+  response=await enhancePublicCapabilityDiscovery(response,url);
   return enhanceCapabilityBridge(response,url);
  }
 };
