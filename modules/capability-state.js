@@ -22,10 +22,10 @@ async function authorize(request,env,organizationId,dbaId,permission){
 }
 
 function subjectKey(mode,userId){return mode==='scope'?'scope':`user:${userId}`}
-function normalizeRecord(row){
-  let payload=null;
-  try{payload=JSON.parse(row.payload_json)}catch{}
-  return {key:row.record_key,payload,updatedAt:row.updated_at,createdAt:row.created_at,updatedByUserId:row.updated_by_user_id};
+function normalizeRecord(row,includePayload=false){
+  const record={key:row.record_key,updatedAt:row.updated_at,createdAt:row.created_at};
+  if(includePayload){try{record.payload=JSON.parse(row.payload_json)}catch{record.payload=null}}
+  return record;
 }
 
 async function readState(request,env,url,capability){
@@ -40,16 +40,16 @@ async function readState(request,env,url,capability){
   const subject=subjectKey(mode,authz.session.user_id);
 
   if(key!==null){
-    const row=await env.DB.prepare(`SELECT record_key,payload_json,created_at,updated_at,updated_by_user_id FROM capability_state
+    const row=await env.DB.prepare(`SELECT record_key,payload_json,created_at,updated_at FROM capability_state
       WHERE organization_id=? AND dba_id=? AND capability_slug=? AND subject_key=? AND record_key=?`)
       .bind(organizationId,dbaId,capability,subject,key).first();
-    return json({ok:true,capability,mode,key,record:row?normalizeRecord(row):null});
+    return json({ok:true,capability,mode,key,record:row?normalizeRecord(row,true):null});
   }
 
-  const rows=await env.DB.prepare(`SELECT record_key,payload_json,created_at,updated_at,updated_by_user_id FROM capability_state
+  const rows=await env.DB.prepare(`SELECT record_key,created_at,updated_at FROM capability_state
     WHERE organization_id=? AND dba_id=? AND capability_slug=? AND subject_key=? ORDER BY updated_at DESC LIMIT ?`)
     .bind(organizationId,dbaId,capability,subject,MAX_RECORDS).all();
-  return json({ok:true,capability,mode,records:(rows.results||[]).map(normalizeRecord),limit:MAX_RECORDS});
+  return json({ok:true,capability,mode,records:(rows.results||[]).map(row=>normalizeRecord(row,false)),limit:MAX_RECORDS});
 }
 
 async function writeState(request,env,capability){
@@ -98,7 +98,8 @@ async function deleteState(request,env,url,capability){
 
 export async function capabilityStateRoutes(request,env,url){
   if(!url.pathname.startsWith('/api/capability-state/'))return null;
-  const capability=decodeURIComponent(url.pathname.slice('/api/capability-state/'.length)).replace(/\/$/,'');
+  let capability='';
+  try{capability=decodeURIComponent(url.pathname.slice('/api/capability-state/'.length)).replace(/\/$/,'')}catch{return json({ok:false,error:'invalid_capability_path'},400)}
   if(!CAPABILITIES.has(capability))return json({ok:false,error:'capability_not_found'},404);
   if(request.method==='GET')return readState(request,env,url,capability);
   if(request.method==='PUT')return writeState(request,env,capability);
