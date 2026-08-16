@@ -1,0 +1,35 @@
+name: Deploy ATLAS Canonical
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: atlas-canonical-production
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_ACCOUNT_ID: 1dd6dea2bb98459c66f610464354d686
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      ATLAS_RELEASE_MODE: production
+      ATLAS_RELEASE_EXPECTED_SHA: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Validate canonical release
+        run: npm run build:prod
+      - name: Deploy canonical Worker
+        run: npx wrangler deploy
+      - name: Verify canonical production
+        run: npm run verify:production
