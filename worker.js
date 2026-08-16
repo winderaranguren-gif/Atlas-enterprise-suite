@@ -26,6 +26,7 @@ import { ATLAS_VERSION } from './modules/version.js';
 import { webHardeningRoutes } from './modules/web-hardening.js';
 import { menuExperienceRoutes } from './modules/menu-experience.js';
 import { moduleWorkspacesRoutes } from './modules/module-workspaces.js';
+import { capabilityFusionRoutes } from './modules/capability-fusion.js';
 import { financeRoutes } from './modules/finance.js';
 import { financeAdvancedRoutes } from './modules/finance-advanced.js';
 import { financeReportingRoutes } from './modules/finance-reporting.js';
@@ -57,7 +58,7 @@ if(url.pathname==='/assets/atlas-runtime.js')return new Response(webRuntimeScrip
 if(url.pathname==='/assets/atlas-dashboard-runtime.js')return new Response(dashboardRuntimeScript(),{headers:{'content-type':'text/javascript; charset=utf-8','cache-control':'public,max-age=900','x-content-type-options':'nosniff'}});
 if(url.pathname==='/assets/atlas-workspace-scope.js')return new Response(workspaceScopeRuntimeScript(),{headers:{'content-type':'text/javascript; charset=utf-8','cache-control':'public,max-age=900','x-content-type-options':'nosniff'}});
 if(url.pathname==='/sw.js')return new Response(secureServiceWorker(),{headers:{'content-type':'text/javascript; charset=utf-8','cache-control':'no-cache','service-worker-allowed':'/','x-content-type-options':'nosniff'}});
-if(url.pathname==='/api/health'){const databaseReady=Boolean(env.DB);const body={ok:databaseReady,service:'atlas-enterprise-suite',version:ATLAS_VERSION,phase:'web-launch-readiness',state:databaseReady?'operational':'degraded',identityDatabase:databaseReady?'configured':'unconfigured',enterpriseControl:'enabled',accessControl:'enabled',dashboardScopedData:'enabled',workspaceScopePersistence:'enabled',auditSecurity:'enabled',hrKnowledge:String(env.ATLAS_ENABLE_HR_KNOWLEDGE||'').toLowerCase()==='true'?'enabled':'disabled',hrPayroll:'enabled',hrTalent:'enabled',operations:'enabled',inventory:'enabled',inventoryCycleCounts:'enabled',transportation:'enabled',projects:'enabled',reports:'enabled',documents:'enabled',integrations:'enabled',settings:'enabled',sensory:'enabled',bridge:'foundation',globalContext:'enabled',qa:'native',backupIntegrity:'sha256',performanceOptimizer:'safe-policy'};return Response.json(body,{status:databaseReady?200:503,headers:{'cache-control':'no-store'}})}
+if(url.pathname==='/api/health'){const databaseReady=Boolean(env.DB);const body={ok:databaseReady,service:'atlas-enterprise-suite',version:ATLAS_VERSION,phase:'web-launch-readiness',state:databaseReady?'operational':'degraded',identityDatabase:databaseReady?'configured':'unconfigured',enterpriseControl:'enabled',accessControl:'enabled',dashboardScopedData:'enabled',workspaceScopePersistence:'enabled',auditSecurity:'enabled',hrKnowledge:String(env.ATLAS_ENABLE_HR_KNOWLEDGE||'').toLowerCase()==='true'?'enabled':'disabled',hrPayroll:'enabled',hrTalent:'enabled',operations:'enabled',inventory:'enabled',inventoryCycleCounts:'enabled',transportation:'enabled',projects:'enabled',reports:'enabled',documents:'enabled',integrations:'enabled',settings:'enabled',sensory:'enabled',bridge:'foundation',globalContext:'enabled',capabilityFusion:'enabled',qa:'native',backupIntegrity:'sha256',performanceOptimizer:'safe-policy'};return Response.json(body,{status:databaseReady?200:503,headers:{'cache-control':'no-store'}})}
 const globalContextResponse=await globalContextRoutes(request,env,url);if(globalContextResponse)return globalContextResponse;
 const authResponse=await authRoutes(request,env,url);if(authResponse)return authResponse;
 if(request.method==='GET'&&isProtectedWorkspace(url.pathname)){const verification=await requireBrowserSession(request,env);if(!verification.ok){if(verification.status===401)return Response.redirect(new URL('/login',url),302);return securityUnavailable()}}
@@ -88,6 +89,7 @@ const sensoryResponse=await sensoryRoutes(request,env,url);if(sensoryResponse)re
 const investResponse=await investRoutes(request,env,url);if(investResponse)return investResponse;
 const bridgeResponse=await bridgeRoutes(request,env,url);if(bridgeResponse)return bridgeResponse;
 const menuResponse=await menuExperienceRoutes(request,env,url);if(menuResponse)return withRuntime(menuResponse);
+const capabilityFusionResponse=await capabilityFusionRoutes(request,env,url);if(capabilityFusionResponse)return withRuntime(capabilityFusionResponse);
 const workspaceResponse=await moduleWorkspacesRoutes(request,env,url);if(workspaceResponse)return withRuntime(workspaceResponse);
 const hardenedResponse=await webHardeningRoutes(request,env,url);if(hardenedResponse)return withRuntime(hardenedResponse);
 const webResponse=await webShellRoutes(request,env,url);if(webResponse)return withRuntime(webResponse);
