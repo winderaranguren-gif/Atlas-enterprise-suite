@@ -31,8 +31,9 @@
     "release-verification"
   ],
   "subbranches": [
-    {"id":"meta-product-catalog-feed","name":"ATLAS Product / Meta Catalog Feed","maturity":"working-fruit","routes":["/feeds/meta/atlas-catalog.csv","/feeds/meta/atlas-catalog.json","/feeds/meta/status"],"systemOfRecord":"static-meta-catalog-definition","evidence":["modules/meta-catalog.js","scripts/validate-meta-catalog.mjs"],"limitations":["uniform-in-stock-value-is-feed-behavior-not-verified-commercial-availability"]},
-    {"id":"commercial-offer-pricing-governance","name":"Commercial Offer & Pricing Governance","maturity":"green-fruit","routes":[],"systemOfRecord":null,"requiredLineage":["meta-product-catalog-feed","finance","global-context"],"limitations":["approved-offer-price-market-effective-date-status-registry-pending"]},
+    {"id":"meta-product-catalog-feed","name":"ATLAS Product / Meta Catalog Feed","maturity":"working-fruit","routes":["/feeds/meta/atlas-catalog.csv","/feeds/meta/atlas-catalog.json","/feeds/meta/status"],"systemOfRecord":"static-meta-catalog-definition-plus-commercial-policy","evidence":["modules/meta-catalog.js","modules/commercial-catalog-state.js","scripts/validate-meta-catalog.mjs"],"limitations":["catalog-prices-remain-marketing-definition-until-canonical-offer-registry-records-effective-market-approval"]},
+    {"id":"commercial-catalog-truth-policy","name":"Commercial Catalog Truth Policy","maturity":"working-fruit","routes":["/feeds/meta/atlas-catalog.json","/feeds/meta/status"],"systemOfRecord":"repo-owned-commercial-catalog-policy","evidence":["modules/commercial-catalog-state.js","modules/meta-catalog.js","scripts/validate-meta-catalog.mjs"],"limitations":["active-for-sale-allowlist-is-intentionally-empty-until-explicit-commercial-approval-exists"]},
+    {"id":"commercial-offer-pricing-governance","name":"Commercial Offer & Pricing Governance","maturity":"green-fruit","routes":[],"systemOfRecord":null,"requiredLineage":["meta-product-catalog-feed","commercial-catalog-truth-policy","finance","global-context"],"limitations":["approved-offer-price-market-effective-date-status-registry-pending"]},
     {"id":"master-product-identity","name":"Master Product Identity / UPC-GTIN Model","maturity":"green-fruit","routes":[],"systemOfRecord":null,"requiredLineage":["inventory","merchant-offer-directory"],"limitations":["canonical-manufacturer-gtin-identity-contract-pending"]},
     {"id":"merchant-offer-directory","name":"Merchant / Offer Directory","maturity":"partner-bound","routes":[],"systemOfRecord":null,"requiredLineage":["master-product-identity","crm","provider-adapters"],"limitations":["authorized-or-verified-merchant-price-inventory-promotion-capacity-feeds-required"]},
     {"id":"market","name":"Market","maturity":"green-fruit","routes":[],"systemOfRecord":null,"requiredLineage":["master-product-identity","merchant-offer-directory","commercial-offer-pricing-governance"]},
@@ -62,6 +63,7 @@
   "invariants": [
     "catalog-entry-is-not-proof-of-availability",
     "in-stock-requires-commercial-inventory-or-capacity-evidence",
+    "meta-availability-derives-from-explicit-commercial-state",
     "price-has-source-effective-date-market-and-revalidation-before-charge",
     "product-identity-is-separate-from-merchant-offer-inventory",
     "commerce-does-not-create-second-inventory-or-finance-ledger",
@@ -75,7 +77,7 @@
   ],
   "nextFruitSequence": [
     "canonical-product-commercial-offer-registry",
-    "truthful-meta-feed-availability",
+    "commercial-state-approval-workflow",
     "merchant-offer-price-inventory-freshness-contract",
     "cart-checkout-revalidation-model",
     "enterprise-sales-order-fulfillment-integration",
