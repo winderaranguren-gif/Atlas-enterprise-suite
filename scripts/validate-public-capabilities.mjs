@@ -34,12 +34,17 @@ for(const item of body.items||[]){
 for(const marker of ['Connected: ATLAS Stream Control','Connected: ATLAS Subscription Control'])assert(html.includes(marker),`public page missing ${marker}`);
 
 const publicSite=await readFile(new URL('../modules/public-site.js',import.meta.url),'utf8');
+const webShell=await readFile(new URL('../modules/web-shell.js',import.meta.url),'utf8');
 const workerMeta=await readFile(new URL('../worker-meta.js',import.meta.url),'utf8');
 assert(publicSite.includes('<a href="/trust/status">Trust</a>'),'public navigation insertion anchor must remain available');
+assert(webShell.includes("url.pathname==='/sitemap.xml'"),'canonical sitemap route must remain available');
 assert(workerMeta.includes("if(url.pathname!=='/'||method!=='GET')return response"),'Capability discovery enhancement must be scoped to public GET /');
 assert(workerMeta.includes("const link='<a href=\"/capabilities\">Capabilities</a>'"),'public Worker must inject Capabilities navigation link');
 assert(workerMeta.includes('enhancePublicCapabilityDiscovery(response,url,request.method)'),'public response must pass through Capability discovery enhancement');
+assert(workerMeta.includes("if(url.pathname!=='/sitemap.xml'||method!=='GET')return response"),'Capability sitemap enhancement must be scoped to public GET sitemap');
+assert(workerMeta.includes("const location=`${url.origin}/capabilities`"),'sitemap enhancement must use the current canonical request origin');
+assert(workerMeta.includes('enhanceCapabilitySitemap(response,url,request.method)'),'sitemap response must pass through Capability discovery enhancement');
 
 const miss=await call('/not-capabilities');
 assert(miss===null,'unrelated route must fall through');
-console.log(`ATLAS public Capability directory passed: ${expected.length} connected items, honest states, home discovery, public page and JSON feed verified.`);
+console.log(`ATLAS public Capability directory passed: ${expected.length} connected items, home + sitemap discovery, public page and JSON feed verified.`);
