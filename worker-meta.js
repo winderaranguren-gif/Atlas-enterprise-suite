@@ -1,5 +1,6 @@
 import app from './worker-crm.js';
 import { metaCatalogRoutes } from './modules/meta-catalog.js';
+import { capabilityPublicRoutes } from './modules/capability-public.js';
 import { RELEASE_SHA, RELEASE_BRANCH } from './modules/release-identity.js';
 
 const CORE_TABLES=['users','sessions','organizations','dbas','memberships','role_permissions'];
@@ -84,6 +85,8 @@ export default {
    return Response.json({ok:true,service:'atlas-enterprise-suite',releaseSha:RELEASE_SHA,releaseBranch:RELEASE_BRANCH},{headers:{'cache-control':'no-store'}});
   }
   if(url.pathname==='/api/readiness'&&request.method==='GET')return readiness(env);
+  const capabilityPublicResponse=await capabilityPublicRoutes(request,env,url);
+  if(capabilityPublicResponse)return capabilityPublicResponse;
   if(url.pathname==='/whatsapp-catalog.csv')url.pathname='/feeds/meta/atlas-catalog.csv';
   const catalogResponse=await metaCatalogRoutes(request,env,url);
   if(catalogResponse)return catalogResponse;
