@@ -21,6 +21,18 @@ async function readiness(env){
  }catch{return Response.json({ok:false,state:'blocked',reason:'readiness_query_failed',checks:{database:true,schema:false,firstOwner:false,release:false}},{status:503,headers:{'cache-control':'no-store'}})}
 }
 
+async function enhanceCapabilityBridge(response,url){
+ if(url.pathname!=='/platform/capabilities/academy')return response;
+ const type=response.headers.get('content-type')||'';
+ if(!type.includes('text/html'))return response;
+ const source=await response.text();
+ if(source.includes('data-atlas-live-bridge="academy-training"'))return new Response(source,{status:response.status,statusText:response.statusText,headers:response.headers});
+ const bridge=`<section data-atlas-live-bridge="academy-training" style="margin-top:22px;padding:18px;border:1px solid #235d46;border-radius:18px;background:linear-gradient(145deg,#071e17,#071522)"><div style="font-size:.68rem;letter-spacing:.14em;color:#86f7bf;margin-bottom:8px">CONNECTED ATLAS RECORDS</div><h2 style="margin:0 0 8px">Live Training & Certification Records</h2><p style="margin:0 0 14px;color:#91aac0;line-height:1.55">Open the existing HR Training workspace for tenant-scoped course catalog, assignments, completion scores and expiration tracking. Academy remains the learner-facing experience while HR Training remains the accountable system of record.</p><a href="/platform/hr-payroll/training" style="display:inline-block;padding:10px 14px;border:1px solid #2f8cff;border-radius:12px;background:linear-gradient(135deg,#7ee6ff,#2f8cff);color:#03111d;text-decoration:none;font-weight:800">Open ATLAS Training Records →</a></section>`;
+ const body=source.includes('</main>')?source.replace('</main>',bridge+'</main>'):source.replace('</body>',bridge+'</body>');
+ const headers=new Headers(response.headers);headers.delete('content-length');
+ return new Response(body,{status:response.status,statusText:response.statusText,headers});
+}
+
 export default {
  async fetch(request,env,ctx){
   const url=new URL(request.url);
@@ -31,6 +43,7 @@ export default {
   if(url.pathname==='/whatsapp-catalog.csv')url.pathname='/feeds/meta/atlas-catalog.csv';
   const catalogResponse=await metaCatalogRoutes(request,env,url);
   if(catalogResponse)return catalogResponse;
-  return app.fetch(request,env,ctx);
+  const response=await app.fetch(request,env,ctx);
+  return enhanceCapabilityBridge(response,url);
  }
 };
