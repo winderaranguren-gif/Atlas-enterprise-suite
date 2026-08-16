@@ -11,14 +11,16 @@ const maturities=new Set(['working-fruit','ripe-fruit','green-fruit','seed','par
 const seenBranchIds=new Set(),seenBranchNumbers=new Set();
 const requiredByBranch={
   '01-enterprise-operations':['enterprise-administration','crm','operations','inventory','projects','transportation','documents','reports','commercial-orders','procurement'],
-  '02-accounting-finance-tax':['chart-of-accounts','general-ledger','accounts-payable','accounts-receivable','banking-ledger','reconciliations','budgets','financial-statements','accounting-periods','tax-obligations','fixed-assets','tax-compliance','tax-pro','efile-government-transmission']
+  '02-accounting-finance-tax':['chart-of-accounts','general-ledger','accounts-payable','accounts-receivable','banking-ledger','reconciliations','budgets','financial-statements','accounting-periods','tax-obligations','fixed-assets','tax-compliance','tax-pro','efile-government-transmission'],
+  '03-people-hr-payroll-talent':['people-registry','positions-employment','recruiting','candidate-hub','onboarding','time-attendance','payroll-ledger','benefits','performance','training','skills','assessment-templates','assessment-studio','technical-assessment','english-assessment','certifications','payroll-direct-deposit-filing']
 };
 const invariantByBranch={
   '01-enterprise-operations':['no-duplicate-core-identity','no-duplicate-financial-ledger','inventory-balance-derived-from-movements','reports-never-own-source-transactions'],
-  '02-accounting-finance-tax':['posted-journal-must-balance','financial-statements-derive-from-posted-ledger','closed-period-blocks-new-journal-posting','reconciliation-requires-zero-difference','regulated-execution-requires-authorized-provider']
+  '02-accounting-finance-tax':['posted-journal-must-balance','financial-statements-derive-from-posted-ledger','closed-period-blocks-new-journal-posting','reconciliation-requires-zero-difference','regulated-execution-requires-authorized-provider'],
+  '03-people-hr-payroll-talent':['hr-people-is-canonical-human-master','person-types-do-not-create-separate-identity-databases','payroll-does-not-create-second-general-ledger','assessment-runtime-must-match-canonical-schema','regulated-payroll-execution-requires-authorized-provider']
 };
 
-assert.ok(files.length>=2,'genealogy_requires_at_least_two_structured_branches');
+assert.ok(files.length>=3,'genealogy_requires_at_least_three_structured_branches');
 for(const file of files){
   const path=`${registryDir}/${file}`,registry=JSON.parse(await readFile(path,'utf8'));
   assert.equal(registry.schemaVersion,1,`genealogy_schema_version_invalid:${file}`);
@@ -49,7 +51,6 @@ for(const file of files){
     assert.ok(maturities.has(branch.maturity),`invalid_maturity:${registry.branchId}:${branch.id}:${branch.maturity}`);
     assert.ok(Array.isArray(branch.routes),`routes_array_required:${registry.branchId}:${branch.id}`);
     assert.ok(Array.isArray(branch.evidence)||Array.isArray(branch.requiredLineage),`evidence_or_lineage_required:${registry.branchId}:${branch.id}`);
-
     if(['working-fruit','ripe-fruit'].includes(branch.maturity)){
       assert.ok(branch.systemOfRecord,`working_fruit_system_of_record_required:${registry.branchId}:${branch.id}`);
       assert.ok(branch.evidence?.length,`working_fruit_evidence_required:${registry.branchId}:${branch.id}`);
@@ -59,7 +60,6 @@ for(const file of files){
     if(['green-fruit','seed','partner-bound','artifact-verified'].includes(branch.maturity))assert.ok(branch.requiredLineage?.length||branch.evidence?.length,`nonripe_lineage_or_evidence_required:${registry.branchId}:${branch.id}`);
     if(branch.systemOfRecord==='derived-read-only')assert.ok(branch.derivesFrom?.length>=2,`derived_report_sources_required:${registry.branchId}:${branch.id}`);
   }
-
   for(const required of requiredByBranch[registry.branchId]||[])assert.ok(ids.has(required),`required_lineage_missing:${registry.branchId}:${required}`);
   for(const invariant of invariantByBranch[registry.branchId]||[])assert.ok(registry.invariants.includes(invariant),`required_invariant_missing:${registry.branchId}:${invariant}`);
   assert.ok(dossier.includes('WORKING FRUIT')&&dossier.includes('GREEN FRUIT')&&/Definition of ripe fruit/i.test(dossier),`dossier_maturity_contract_missing:${registry.branchId}`);
