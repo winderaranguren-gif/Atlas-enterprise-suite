@@ -1,21 +1,21 @@
 const MODULE_VISUALS=[
  ['/platform/enterprise-suite','Enterprise Administration','Multi-company control, users, roles, business units and administration.','/assets/atlas-showcase-genesis.webp'],
  ['/platform/finance','Accounting & Finance','Ledger, AP, AR, banking, reconciliation, reporting, taxes and fixed assets.','/assets/atlas-finance-command.svg'],
- ['/platform/operations','Operations','Workflows, approvals, tasks, automation and operational execution.','/assets/atlas-scene-cloud-command.webp'],
+ ['/platform/operations','Operations','Workflows, approvals, tasks, automation and operational execution.','/assets/atlas-operations-command.svg'],
  ['/platform/hr-payroll','HR & Payroll','Employees, talent, time, payroll, benefits, performance and learning.','/assets/atlas-hr-command.svg'],
- ['/platform/transportation','Transportation','Fleet, dispatch, routes, drivers, maintenance, fuel and trip operations.','/assets/atlas-bg-004.webp'],
+ ['/platform/transportation','Transportation','Fleet, dispatch, routes, drivers, maintenance, fuel and trip operations.','/assets/atlas-transport-command.svg'],
  ['/platform/crm','CRM & Sales','Accounts, contacts, leads, pipeline, quotes, activities and communications.','/assets/atlas-crm-command.svg'],
  ['/platform/inventory','Inventory','Items, locations, movements, adjustments and cycle counts.','/assets/atlas-inventory-command.svg'],
- ['/platform/projects','Projects','Planning, budgets, milestones, resources, tasks and project reporting.','/assets/atlas-scene-crystalline-city.webp'],
- ['/platform/reports','Reports & Analytics','KPIs, trends, comparisons, business intelligence and executive views.','/assets/atlas-bg-006.webp'],
- ['/platform/documents','Documents','Document center, templates, approvals, versions and archive.','/assets/atlas-bg-007.webp'],
- ['/platform/integrations','Integrations','Connections, synchronization, webhooks, API access and logs.','/assets/atlas-cloud-network-bg-v1.webp'],
+ ['/platform/projects','Projects','Planning, budgets, milestones, resources, tasks and project reporting.','/assets/atlas-projects-command.svg'],
+ ['/platform/reports','Reports & Analytics','KPIs, trends, comparisons, business intelligence and executive views.','/assets/atlas-reports-command.svg'],
+ ['/platform/documents','Documents','Document center, templates, approvals, versions and archive.','/assets/atlas-documents-command.svg'],
+ ['/platform/integrations','Integrations','Connections, synchronization, webhooks, API access and logs.','/assets/atlas-integrations-command.svg'],
  ['/platform/settings','Settings','Company preferences, notifications, localization, security and system controls.','/assets/atlas-scene-indigo-orbit.webp'],
  ['/platform/access-control','Access Control','Tenant-scoped users, roles, permissions and membership administration.','/assets/atlas-showcase-genesis.webp'],
  ['/platform/audit-security','Audit & Security','Audit evidence, security events and access-control decisions.','/assets/atlas-scene-glass-bridge.webp'],
  ['/platform/voice-vision','Voice & Vision','Consent-first sensory capabilities and multilingual interaction.','/assets/atlas-scene-indigo-orbit.webp'],
  ['/platform/bridge','ATLAS Bridge','Secure continuity and handoff across devices.','/assets/atlas-cloud-network-bg-v1.webp'],
- ['/platform/invest','Portfolio Lab','Portfolio intelligence and investment exploration.','/assets/atlas-bg-006.webp']
+ ['/platform/invest','Portfolio Lab','Portfolio intelligence and investment exploration.','/assets/atlas-reports-command.svg']
 ];
 
 export function moduleVisualRuntimeScript(){return `(()=>{
