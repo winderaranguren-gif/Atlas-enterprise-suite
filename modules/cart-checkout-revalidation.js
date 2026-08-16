@@ -7,7 +7,8 @@ const MAX_LINES=100;
 
 function finitePositive(value){return Number.isFinite(value)&&value>0}
 function sameMoney(a,b){return Number(a)===Number(b)}
-function merchantOfferFor(id){return merchantOffers().find(item=>item.merchantOfferId===id)||null}
+function defaultMerchantOfferFor(id){return merchantOffers().find(item=>item.merchantOfferId===id)||null}
+function resolvers(custom={}){return {atlasOfferFor:custom.atlasOfferFor||commercialOfferFor,merchantOfferFor:custom.merchantOfferFor||defaultMerchantOfferFor,validateMerchant:custom.validateMerchant||validateMerchantOffer}}
 
 export function cartRevalidationPolicy(){
  return {
@@ -29,8 +30,8 @@ function baseLineResult(line,index){
  return {index,lineId:String(line?.lineId||`line-${index+1}`),productId:String(line?.productId||''),sourceType:String(line?.sourceType||''),sourceId:String(line?.sourceId||''),outcome:'blocked',reasons:[],current:null};
 }
 
-export function revalidateCartLine(line,index=0,now=Date.now()){
- const result=baseLineResult(line,index);
+export function revalidateCartLine(line,index=0,now=Date.now(),customResolvers={}){
+ const result=baseLineResult(line,index),source=resolvers(customResolvers);
  if(!line||typeof line!=='object'){result.reasons.push('line_required');return result}
  if(!result.productId)result.reasons.push('product_id_required');
  if(!SOURCE_TYPES.has(result.sourceType))result.reasons.push('source_type_invalid');
@@ -42,7 +43,7 @@ export function revalidateCartLine(line,index=0,now=Date.now()){
  if(result.reasons.length)return result;
 
  if(result.sourceType==='atlas-commercial-offer'){
-  const offer=commercialOfferFor(result.productId);
+  const offer=source.atlasOfferFor(result.productId);
   if(!offer||offer.offerId!==result.sourceId){result.reasons.push('offer_not_found');return result}
   result.current={offerId:offer.offerId,productId:offer.productId,status:offer.status,market:offer.market,currency:offer.currency,unitPrice:offer.candidatePrice,billingBasis:offer.billingBasis};
   if(offer.status!=='active'||offer.approvedForSale!==true){result.reasons.push('offer_not_active');return result}
@@ -52,9 +53,9 @@ export function revalidateCartLine(line,index=0,now=Date.now()){
   result.outcome='ready';return result;
  }
 
- const offer=merchantOfferFor(result.sourceId);
+ const offer=source.merchantOfferFor(result.sourceId);
  if(!offer||offer.productId!==result.productId){result.reasons.push('merchant_offer_not_found');return result}
- const validation=validateMerchantOffer(offer,now);
+ const validation=source.validateMerchant(offer,now);
  result.current={merchantOfferId:offer.merchantOfferId,merchantId:offer.merchantId,productId:offer.productId,market:offer.market,currency:offer.currency,unitPrice:offer.unitPrice,inventoryStatus:offer.inventoryStatus,observedAt:offer.observedAt,expiresAt:offer.expiresAt,fulfillmentMethods:[...(offer.fulfillment?.methods||[])]};
  if(!validation.ok){result.reasons.push('merchant_offer_invalid',...validation.errors);return result}
  if(!validation.fresh){result.reasons.push('merchant_offer_stale');return result}
@@ -68,12 +69,12 @@ export function revalidateCartLine(line,index=0,now=Date.now()){
  result.outcome='ready';return result;
 }
 
-export function revalidateCart(cart,now=Date.now()){
+export function revalidateCart(cart,now=Date.now(),customResolvers={}){
  const lines=Array.isArray(cart?.lines)?cart.lines:[];
  if(!cart||typeof cart!=='object')return {ok:false,outcome:'blocked',reasons:['cart_required'],lineCount:0,lines:[],canCreateOrder:false,canProcessPayment:false};
  if(!lines.length)return {ok:false,outcome:'blocked',reasons:['cart_empty'],lineCount:0,lines:[],canCreateOrder:false,canProcessPayment:false};
  if(lines.length>MAX_LINES)return {ok:false,outcome:'blocked',reasons:['cart_line_limit_exceeded'],lineCount:lines.length,lines:[],canCreateOrder:false,canProcessPayment:false};
- const results=lines.map((line,index)=>revalidateCartLine(line,index,now));
+ const results=lines.map((line,index)=>revalidateCartLine(line,index,now,customResolvers));
  const blocked=results.some(item=>item.outcome==='blocked');
  const changed=results.some(item=>item.outcome==='changed');
  const outcome=blocked?'blocked':changed?'changed':'ready';
