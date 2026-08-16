@@ -3,6 +3,28 @@ import { metaCatalogRoutes } from './modules/meta-catalog.js';
 import { RELEASE_SHA, RELEASE_BRANCH } from './modules/release-identity.js';
 
 const CORE_TABLES=['users','sessions','organizations','dbas','memberships','role_permissions'];
+const CAPABILITY_BRIDGES={
+ '/platform/capabilities/academy':{
+  id:'academy-training',eyebrow:'CONNECTED ATLAS RECORDS',title:'Live Training & Certification Records',
+  copy:'Open the existing HR Training workspace for tenant-scoped course catalog, assignments, completion scores and expiration tracking. Academy remains the learner-facing experience while HR Training remains the accountable system of record.',
+  href:'/platform/hr-payroll/training',action:'Open ATLAS Training Records →',tone:'green'
+ },
+ '/platform/capabilities/tax-compliance':{
+  id:'tax-compliance-finance',eyebrow:'CONNECTED ATLAS WORKSPACE',title:'Accounting Tax Workspace',
+  copy:'Continue from due-diligence and review controls into the existing ATLAS Finance tax workspace. Capability Fusion owns the compliance workflow; Finance remains the scoped accounting context.',
+  href:'/platform/finance/taxes',action:'Open ATLAS Finance Taxes →',tone:'blue'
+ },
+ '/platform/capabilities/tax-pro':{
+  id:'tax-pro-finance',eyebrow:'CONNECTED ATLAS WORKSPACE',title:'Tax Preparation + Accounting Context',
+  copy:'Move between the client tax workflow and the existing ATLAS Finance tax section without duplicating financial records or inventing a second ledger.',
+  href:'/platform/finance/taxes',action:'Open ATLAS Finance Taxes →',tone:'blue'
+ },
+ '/platform/capabilities/candidate-hub':{
+  id:'candidate-recruiting',eyebrow:'CONNECTED ATLAS WORKSPACE',title:'HR Recruiting Workspace',
+  copy:'Open the existing ATLAS HR recruiting workspace for the organization recruiting flow. Candidate Hub remains the candidate-experience and assessment layer; this bridge does not claim a separate candidate database.',
+  href:'/platform/hr-payroll/recruiting',action:'Open ATLAS Recruiting →',tone:'blue'
+ }
+};
 async function readiness(env){
  if(!env.DB)return Response.json({ok:false,state:'blocked',reason:'identity_database_binding_missing',checks:{database:false,schema:false,firstOwner:false,release:RELEASE_SHA!=='unreleased'}},{status:503,headers:{'cache-control':'no-store'}});
  try{
@@ -22,12 +44,14 @@ async function readiness(env){
 }
 
 async function enhanceCapabilityBridge(response,url){
- if(url.pathname!=='/platform/capabilities/academy')return response;
+ const config=CAPABILITY_BRIDGES[url.pathname];
+ if(!config)return response;
  const type=response.headers.get('content-type')||'';
  if(!type.includes('text/html'))return response;
- const source=await response.text();
- if(source.includes('data-atlas-live-bridge="academy-training"'))return new Response(source,{status:response.status,statusText:response.statusText,headers:response.headers});
- const bridge=`<section data-atlas-live-bridge="academy-training" style="margin-top:22px;padding:18px;border:1px solid #235d46;border-radius:18px;background:linear-gradient(145deg,#071e17,#071522)"><div style="font-size:.68rem;letter-spacing:.14em;color:#86f7bf;margin-bottom:8px">CONNECTED ATLAS RECORDS</div><h2 style="margin:0 0 8px">Live Training & Certification Records</h2><p style="margin:0 0 14px;color:#91aac0;line-height:1.55">Open the existing HR Training workspace for tenant-scoped course catalog, assignments, completion scores and expiration tracking. Academy remains the learner-facing experience while HR Training remains the accountable system of record.</p><a href="/platform/hr-payroll/training" style="display:inline-block;padding:10px 14px;border:1px solid #2f8cff;border-radius:12px;background:linear-gradient(135deg,#7ee6ff,#2f8cff);color:#03111d;text-decoration:none;font-weight:800">Open ATLAS Training Records →</a></section>`;
+ const source=await response.text(),marker=`data-atlas-live-bridge="${config.id}"`;
+ if(source.includes(marker))return new Response(source,{status:response.status,statusText:response.statusText,headers:response.headers});
+ const green=config.tone==='green',border=green?'#235d46':'#28587c',background=green?'linear-gradient(145deg,#071e17,#071522)':'linear-gradient(145deg,#071a2b,#071522)',eyebrow=green?'#86f7bf':'#7ee6ff';
+ const bridge=`<section ${marker} style="margin-top:22px;padding:18px;border:1px solid ${border};border-radius:18px;background:${background}"><div style="font-size:.68rem;letter-spacing:.14em;color:${eyebrow};margin-bottom:8px">${config.eyebrow}</div><h2 style="margin:0 0 8px">${config.title}</h2><p style="margin:0 0 14px;color:#91aac0;line-height:1.55">${config.copy}</p><a href="${config.href}" style="display:inline-block;padding:10px 14px;border:1px solid #2f8cff;border-radius:12px;background:linear-gradient(135deg,#7ee6ff,#2f8cff);color:#03111d;text-decoration:none;font-weight:800">${config.action}</a></section>`;
  const body=source.includes('</main>')?source.replace('</main>',bridge+'</main>'):source.replace('</body>',bridge+'</body>');
  const headers=new Headers(response.headers);headers.delete('content-length');
  return new Response(body,{status:response.status,statusText:response.statusText,headers});
