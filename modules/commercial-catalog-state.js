@@ -1,15 +1,8 @@
-const ACTIVE_FOR_SALE=new Set([
-  // Add a catalog ID here only after ATLAS has explicitly approved real sale/fulfillment readiness.
-]);
-
-const COMMUNITY_ONLY=new Set([
-  'united-hands-hub'
-]);
+import { commercialOfferFor, commercialOffers } from './commercial-product-registry.js';
 
 export function commercialStateFor(id){
-  if(ACTIVE_FOR_SALE.has(id))return 'active';
-  if(COMMUNITY_ONLY.has(id))return 'community';
-  return 'preview';
+  const offer=commercialOfferFor(id);
+  return offer?.status||'preview';
 }
 
 export function metaAvailabilityFor(state){
@@ -23,11 +16,15 @@ export function commercialCopyFor(item,state){
 }
 
 export function catalogCommercialPolicy(){
+  const offers=commercialOffers();
+  const activeIds=offers.filter(item=>item.status==='active'&&item.approvedForSale===true).map(item=>item.productId);
+  const communityIds=offers.filter(item=>item.status==='community').map(item=>item.productId);
   return {
     policy:'fail-closed',
-    activeIds:[...ACTIVE_FOR_SALE],
-    communityIds:[...COMMUNITY_ONLY],
+    authority:'ATLAS_COMMERCIAL_OFFER_REGISTRY',
+    activeIds,
+    communityIds,
     defaultState:'preview',
-    rule:'A catalog entry is not in stock unless its ID is explicitly approved in ACTIVE_FOR_SALE.'
+    rule:'A catalog entry is not in stock unless its canonical commercial offer is active and explicitly approved for sale.'
   };
 }
