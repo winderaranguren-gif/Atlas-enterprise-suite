@@ -17,6 +17,8 @@ const connections={
  'tax-pro':'ATLAS Finance · Taxes',
  'candidate-hub':'ATLAS HR Recruiting',
  forms:'ATLAS Documents',
+ stream:'ATLAS Stream Control',
+ subscriptions:'ATLAS Subscription Control',
  personalization:'ATLAS Settings'
 };
 

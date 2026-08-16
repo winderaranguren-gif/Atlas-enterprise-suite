@@ -1,6 +1,8 @@
 import { readFile } from 'node:fs/promises';
 
 const workerMeta=await readFile(new URL('../worker-meta.js',import.meta.url),'utf8');
+const workerCrm=await readFile(new URL('../worker-crm.js',import.meta.url),'utf8');
+const streamSubscription=await readFile(new URL('../modules/stream-subscription-control.js',import.meta.url),'utf8');
 const finance=await readFile(new URL('../modules/finance.js',import.meta.url),'utf8');
 const hrTalent=await readFile(new URL('../modules/hr-talent.js',import.meta.url),'utf8');
 const sensory=await readFile(new URL('../modules/sensory.js',import.meta.url),'utf8');
@@ -18,6 +20,8 @@ const bridges=[
   ['/platform/capabilities/tax-pro','tax-pro-finance','/platform/finance/taxes'],
   ['/platform/capabilities/candidate-hub','candidate-recruiting','/platform/hr-payroll/recruiting'],
   ['/platform/capabilities/forms','forms-documents','/platform/documents'],
+  ['/platform/capabilities/stream','stream-control','/platform/stream-control'],
+  ['/platform/capabilities/subscriptions','subscriptions-control','/platform/subscriptions'],
   ['/platform/capabilities/personalization','personalization-settings','/platform/settings']
 ];
 
@@ -39,5 +43,9 @@ assert(workspaces.includes("href:'/platform/settings'"),'Lingua/Personalization 
 assert(workspaces.includes("['Localization','localization'"),'Settings must retain Localization configuration');
 assert(sensory.includes("'/platform/voice-vision'"),'Language Coach Voice & Vision target must remain available');
 assert(sensory.includes('speechSynthesis'),'Voice & Vision must retain browser speech capability');
+for(const route of ['/platform/stream-control','/platform/subscriptions'])assert(streamSubscription.includes(`url.pathname==='${route}'`),`protected browser workspace missing ${route}`);
+assert(workerCrm.includes("import { streamSubscriptionRoutes } from './modules/stream-subscription-control.js';"),'protected runtime must import Stream/Subscription routes');
+assert(workerCrm.includes("url.pathname==='/platform/stream-control'||url.pathname==='/platform/subscriptions'"),'protected runtime must intercept Stream/Subscription workspaces');
+assert(workerCrm.includes('verifiedWorkspaceResponse(request,env,url,workspace)'),'Stream/Subscription workspaces must pass browser-session verification');
 
-console.log(`ATLAS Capability Bridge gate passed: ${bridges.length} ecosystem bridges and their authoritative targets verified.`);
+console.log(`ATLAS Capability Bridge gate passed: ${bridges.length} ecosystem bridges and their authoritative/protected targets verified.`);
