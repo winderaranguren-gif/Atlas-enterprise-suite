@@ -18,7 +18,7 @@ This directory expands the canonical `docs/ATLAS_MASTER_INDEX_GENEALOGY.md` one 
 | 12 | Creator, Media & Communications | `12_CREATOR_MEDIA_COMMUNICATIONS.md` | `architecture/genealogy/12-creator-media-communications.json` | Structured |
 | 13 | Robotics, Hardware & Spatial Systems | `13_ROBOTICS_HARDWARE_SPATIAL.md` | `architecture/genealogy/13-robotics-hardware-spatial.json` | Structured |
 | 14 | Global, Regional & Country Layers | `14_GLOBAL_REGIONAL_COUNTRY.md` | `architecture/genealogy/14-global-regional-country.json` | Structured |
-| 15 | Research, Future Observatory & Invention | pending | pending | Next |
+| 15 | Research, Future Observatory & Invention | `15_RESEARCH_FUTURE_OBSERVATORY_INVENTION.md` | `architecture/genealogy/15-research-future-observatory-invention.json` | Structured |
 
 ## Completion rule
 
