@@ -1,5 +1,6 @@
 import { catalogCommercialPolicy, commercialCopyFor, commercialStateFor, metaAvailabilityFor } from './commercial-catalog-state.js';
 import { commercialOfferFor, commercialOffers, commercialRegistrySummary, productDefinitions } from './commercial-product-registry.js';
+import { merchantOfferRoutes } from './merchant-offer-contract.js';
 
 const ORIGIN='https://atlasenterprisesuite.com';
 
@@ -27,6 +28,8 @@ export function metaCatalogCsv(){
 
 export async function metaCatalogRoutes(request,env,url){
  if(request.method!=='GET')return null;
+ const merchantResponse=await merchantOfferRoutes(request,env,url);
+ if(merchantResponse)return merchantResponse;
  if(url.pathname==='/feeds/meta/atlas-catalog.csv')return new Response(metaCatalogCsv(),{headers:{'content-type':'text/csv; charset=utf-8','cache-control':'public,max-age=900','content-disposition':'inline; filename="atlas-catalog.csv"','x-content-type-options':'nosniff','access-control-allow-origin':'*'}});
  if(url.pathname==='/feeds/meta/atlas-catalog.json')return Response.json({ok:true,source:'ATLAS Enterprise Suite',generatedFrom:'ATLAS_PRODUCT_AND_COMMERCIAL_OFFER_REGISTRIES',currency:'USD',countryOfOrigin:'US',count:CATALOG.length,commercialPolicy:catalogCommercialPolicy(),items:atlasMetaCatalog()},{headers:{'cache-control':'public,max-age=900','access-control-allow-origin':'*'}});
  if(url.pathname==='/feeds/meta/status'){
