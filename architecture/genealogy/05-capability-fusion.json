@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "branchId": "05-capability-fusion",
+  "branchNumber": 5,
+  "name": "Capability Fusion",
+  "parent": "atlas-os-core",
+  "dossier": "docs/branches/05_CAPABILITY_FUSION.md",
+  "masterSection": "## 12. CAPABILITY FUSION",
+  "roots": [
+    "one-ecosystem-no-capability-silos",
+    "truthful-implementation-state",
+    "browser-support-is-conditional",
+    "workflow-is-not-durable-record",
+    "protected-workspaces-remain-protected",
+    "public-discovery-without-private-data",
+    "bridges-do-not-imply-third-party-connection"
+  ],
+  "trunkDependencies": [
+    "identity-authentication",
+    "protected-workspace-routing",
+    "global-context",
+    "safe-dom",
+    "public-web-shell",
+    "release-identity",
+    "build-and-production-verification"
+  ],
+  "subbranches": [
+    {"id":"capability-registry","name":"Capability Registry","maturity":"working-fruit","routes":["/api/capabilities","/platform/capabilities"],"systemOfRecord":"ATLAS_CAPABILITY_REGISTRY","evidence":["modules/capability-fusion.js","scripts/validate-capability-fusion.mjs"]},
+    {"id":"lingua","name":"Lingua","maturity":"working-fruit","routes":["/platform/capabilities/lingua"],"systemOfRecord":"browser-native-capability","evidence":["modules/capability-fusion.js","scripts/validate-capability-fusion.mjs"],"limitations":["device-browser-support-varies"]},
+    {"id":"language-coach","name":"Language Coach","maturity":"working-fruit","routes":["/platform/capabilities/language-coach"],"systemOfRecord":"browser-native-capability","evidence":["modules/capability-fusion.js","modules/sensory.js","scripts/validate-capability-fusion.mjs"]},
+    {"id":"academy","name":"Academy","maturity":"green-fruit","routes":["/platform/capabilities/academy"],"systemOfRecord":null,"evidence":["modules/capability-fusion.js"],"requiredLineage":["hr-training","knowledge"],"limitations":["workflow-ready-not-full-durable-lms"]},
+    {"id":"tax-compliance","name":"Tax Compliance","maturity":"green-fruit","routes":["/platform/capabilities/tax-compliance"],"systemOfRecord":null,"evidence":["modules/capability-fusion.js"],"requiredLineage":["finance-taxes","documents-evidence"]},
+    {"id":"tax-pro","name":"Tax Pro","maturity":"green-fruit","routes":["/platform/capabilities/tax-pro"],"systemOfRecord":null,"evidence":["modules/capability-fusion.js"],"requiredLineage":["finance-taxes","tax-compliance"]},
+    {"id":"candidate-hub","name":"Candidate Hub","maturity":"green-fruit","routes":["/platform/capabilities/candidate-hub"],"systemOfRecord":null,"evidence":["modules/capability-fusion.js"],"requiredLineage":["hr-people","hr-recruiting","hr-assessment"]},
+    {"id":"forms","name":"Forms","maturity":"working-fruit","routes":["/platform/capabilities/forms"],"systemOfRecord":"browser-local-form-foundation","evidence":["modules/capability-fusion.js","scripts/validate-capability-fusion.mjs"],"limitations":["durable-enterprise-form-state-owned-by-documents-forms"]},
+    {"id":"stream","name":"Stream","maturity":"working-fruit","routes":["/platform/capabilities/stream","/platform/stream-control"],"systemOfRecord":"browser-local-media-state","evidence":["modules/capability-fusion.js","modules/stream-subscription-control.js","scripts/validate-stream-subscription-control.mjs"],"limitations":["no-cloud-upload-or-third-party-catalog-claim"]},
+    {"id":"subscription-control","name":"Subscription Control","maturity":"working-fruit","routes":["/platform/capabilities/subscriptions","/platform/subscriptions"],"systemOfRecord":"browser-local-subscription-register","evidence":["modules/capability-fusion.js","modules/stream-subscription-control.js","scripts/validate-stream-subscription-control.mjs"],"limitations":["no-payment-or-provider-cancellation-execution"]},
+    {"id":"personalization","name":"Personalization","maturity":"working-fruit","routes":["/platform/capabilities/personalization"],"systemOfRecord":"browser-local-preference-foundation","evidence":["modules/capability-fusion.js","scripts/validate-capability-fusion.mjs"],"limitations":["cross-device-durable-portability-pending"]},
+    {"id":"capability-bridges","name":"Capability Bridges","maturity":"working-fruit","routes":["/platform/capabilities"],"systemOfRecord":"worker-meta-bridge-map","evidence":["worker-meta.js","scripts/validate-capability-bridges.mjs"]},
+    {"id":"public-directory-feed","name":"Public Capability Directory & Feed","maturity":"working-fruit","routes":["/capabilities","/feeds/capabilities.json"],"systemOfRecord":"ATLAS_CAPABILITY_REGISTRY","evidence":["modules/capability-public.js","scripts/validate-public-capabilities.mjs","worker-meta.js"]},
+    {"id":"safe-dom","name":"ATLAS Safe DOM","maturity":"working-fruit","routes":["/assets/atlas-capability-security.js"],"systemOfRecord":"capability-security-runtime","evidence":["modules/capability-security-runtime.js","scripts/validate-capability-safe-dom.mjs","worker-meta.js"]},
+    {"id":"release-gates","name":"Capability Release Gates","maturity":"working-fruit","routes":["/api/release","/api/readiness"],"systemOfRecord":"release-validation-contract","evidence":["scripts/validate-capability-fusion.mjs","scripts/validate-capability-bridges.mjs","scripts/validate-public-capabilities.mjs","scripts/verify-production-live.mjs"]},
+    {"id":"durable-capability-state","name":"Durable Capability State","maturity":"green-fruit","routes":[],"systemOfRecord":null,"requiredLineage":["identity-authentication","organization-dba-scope","domain-authorities"],"limitations":["verified-database-schema-and-ownership-contract-pending"]},
+    {"id":"capability-analytics-recommendations","name":"Capability Analytics & Recommendations","maturity":"green-fruit","routes":[],"systemOfRecord":"derived-read-only","evidence":["modules/capability-fusion.js"],"requiredLineage":["durable-capability-state","global-context"],"derivesFrom":["capability-registry","durable-capability-state"],"limitations":["permission-aware-event-model-and-explainable-recommendations-pending"]}
+  ],
+  "invariants": [
+    "capability-fusion-never-duplicates-authoritative-system-of-record",
+    "public-state-matches-implementation-reality",
+    "native-browser-does-not-guarantee-universal-support",
+    "workflow-ready-does-not-imply-durable-persistence",
+    "atlas-bridge-does-not-imply-third-party-connection",
+    "protected-control-routes-require-session",
+    "public-capability-surfaces-contain-no-private-tenant-data",
+    "safe-dom-loads-before-capability-inline-scripts",
+    "browser-local-state-is-not-cloud-sync-by-default",
+    "regulated-execution-remains-domain-partner-bound"
+  ],
+  "nextFruitSequence": [
+    "canonical-capability-state-schema",
+    "cross-device-preference-portability",
+    "academy-persistence-bridge",
+    "candidate-hub-durable-portal-contract",
+    "forms-persisted-workflow-bridge",
+    "permission-aware-capability-event-analytics",
+    "explainable-capability-recommendations"
+  ]
+}
