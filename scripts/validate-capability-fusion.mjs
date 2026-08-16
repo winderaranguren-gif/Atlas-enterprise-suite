@@ -1,3 +1,4 @@
+import { Script } from 'node:vm';
 import { ATLAS_CAPABILITY_REGISTRY, capabilityFusionRoutes } from '../modules/capability-fusion.js';
 
 const expectedSlugs=[
@@ -7,6 +8,14 @@ const expectedSlugs=[
 
 const fail=(message)=>{throw new Error(`[capability-fusion] ${message}`)};
 const assert=(condition,message)=>{if(!condition)fail(message)};
+const compileInlineScripts=(html,slug)=>{
+  const sources=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(match=>match[1]);
+  for(let i=0;i<sources.length;i+=1){
+    try{new Script(sources[i],{filename:`capability-${slug}-${i}.browser.js`})}
+    catch(error){fail(`${slug} browser script ${i+1} does not compile: ${error.message}`)}
+  }
+  return sources.length;
+};
 
 assert(Array.isArray(ATLAS_CAPABILITY_REGISTRY),'registry must be an array');
 assert(ATLAS_CAPABILITY_REGISTRY.length===expectedSlugs.length,`expected ${expectedSlugs.length} capabilities, found ${ATLAS_CAPABILITY_REGISTRY.length}`);
@@ -46,12 +55,15 @@ assert(grid?.status===200,'capability grid must return 200');
 const gridHtml=await grid.text();
 for(const slug of expectedSlugs)assert(gridHtml.includes(`/platform/capabilities/${slug}`),`grid missing link for ${slug}`);
 
+let compiledBrowserScripts=0;
 for(const item of ATLAS_CAPABILITY_REGISTRY){
   const page=await call(`/platform/capabilities/${item.slug}`);
   assert(page?.status===200,`${item.slug} workspace must return 200`);
   const body=await page.text();
   assert(body.includes(item.name),`${item.slug} workspace must render its ATLAS name`);
   assert(body.includes('/platform/capabilities'),`${item.slug} workspace must retain Capability Grid navigation`);
+  compiledBrowserScripts+=compileInlineScripts(body,item.slug);
+  if(['language-coach','candidate-hub','forms','subscriptions'].includes(item.slug))assert(body.includes('const safe='),`${item.slug} must escape user-controlled values before innerHTML rendering`);
 }
 
-console.log(`ATLAS Capability Fusion gate passed: ${expectedSlugs.length} workspaces, registry API, detail APIs and workspace routes verified.`);
+console.log(`ATLAS Capability Fusion gate passed: ${expectedSlugs.length} workspaces, ${compiledBrowserScripts} browser scripts compiled, APIs and routes verified.`);
