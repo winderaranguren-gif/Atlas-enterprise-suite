@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "branchId": "06-documents-forms-confidential-exchange",
+  "branchNumber": 6,
+  "name": "Documents, Forms & Confidential Exchange",
+  "parent": "atlas-os-core",
+  "dossier": "docs/branches/06_DOCUMENTS_FORMS_CONFIDENTIAL_EXCHANGE.md",
+  "masterSection": "## 13. DOCUMENTS, FORMS & CONFIDENTIAL EXCHANGE",
+  "roots": [
+    "version-and-provenance",
+    "tenant-scoped-least-privilege",
+    "audited-material-actions",
+    "no-silent-version-overwrite",
+    "local-draft-is-not-durable-evidence",
+    "approval-is-not-legal-signature",
+    "confidential-sharing-is-explicit-revocable-auditable"
+  ],
+  "trunkDependencies": [
+    "identity-authentication",
+    "organizations-dbas-memberships",
+    "rbac-tenant-guard",
+    "audit-ledger",
+    "people-user-identities",
+    "safe-browser-runtime",
+    "provider-adapters",
+    "release-verification"
+  ],
+  "subbranches": [
+    {"id":"document-registry","name":"Document Registry","maturity":"working-fruit","routes":["/platform/documents"],"systemOfRecord":"documents","evidence":["modules/documents.js","modules/documents-schema.js"],"ownedObjects":["documents"]},
+    {"id":"document-versions","name":"Document Versions","maturity":"working-fruit","routes":["/platform/documents"],"systemOfRecord":"document_versions","evidence":["modules/documents.js","modules/documents-schema.js"],"ownedObjects":["document_versions"]},
+    {"id":"document-templates","name":"Document Templates","maturity":"working-fruit","routes":["/platform/documents"],"systemOfRecord":"document_templates","evidence":["modules/documents.js","modules/documents-schema.js"],"ownedObjects":["document_templates"]},
+    {"id":"document-approvals","name":"Document Approvals","maturity":"working-fruit","routes":["/platform/documents"],"systemOfRecord":"document_approvals","evidence":["modules/documents.js","modules/documents-schema.js"],"ownedObjects":["document_approvals"],"limitations":["business-approval-is-not-legal-signature"]},
+    {"id":"archive-lifecycle","name":"Archive & Lifecycle","maturity":"working-fruit","routes":["/platform/documents"],"systemOfRecord":"documents","evidence":["modules/documents.js","modules/documents-schema.js"]},
+    {"id":"forms-capability","name":"Forms Capability","maturity":"working-fruit","routes":["/platform/capabilities/forms"],"systemOfRecord":"browser-local-form-foundation","evidence":["modules/capability-fusion.js","scripts/validate-capability-fusion.mjs"]},
+    {"id":"forms-control","name":"Forms Control","maturity":"working-fruit","routes":["/platform/forms-control"],"systemOfRecord":"browser-local-form-designer","evidence":["modules/forms-control.js","worker-crm.js","scripts/validate-forms-control.mjs"],"limitations":["no-remote-submission-or-upload-claim","acknowledgment-is-not-legal-signature"]},
+    {"id":"durable-form-definition","name":"Durable Form Definition","maturity":"green-fruit","routes":[],"systemOfRecord":null,"requiredLineage":["document-registry","forms-control"],"limitations":["tenant-scoped-field-rule-version-schema-pending"]},
+    {"id":"form-submission-evidence","name":"Form Submission / Case Evidence","maturity":"green-fruit","routes":[],"systemOfRecord":null,"requiredLineage":["durable-form-definition","document-approvals","audit-ledger"],"limitations":["versioned-answer-attachment-workflow-schema-pending"]},
+    {"id":"attachment-vault","name":"File / Attachment Vault","maturity":"green-fruit","routes":[],"systemOfRecord":null,"requiredLineage":["document-registry","provider-adapters"],"limitations":["binary-storage-hash-scan-retention-access-grant-contract-pending"]},
+    {"id":"ocr-intake","name":"OCR / Document Intake","maturity":"green-fruit","routes":[],"systemOfRecord":null,"requiredLineage":["attachment-vault","document-versions"],"limitations":["original-preservation-extracted-text-provenance-confidence-pending"]},
+    {"id":"document-conversion-editing","name":"Document Conversion & Editing","maturity":"green-fruit","routes":[],"systemOfRecord":null,"requiredLineage":["attachment-vault","document-versions"],"limitations":["conversion-fidelity-and-version-contract-pending"]},
+    {"id":"controlled-sharing","name":"Controlled Sharing","maturity":"green-fruit","routes":[],"systemOfRecord":null,"requiredLineage":["document-registry","people-user-identities","audit-ledger"],"limitations":["recipient-right-expiration-revocation-ledger-pending"]},
+    {"id":"confidential-exchange-nda","name":"Confidential Exchange / NDA","maturity":"green-fruit","routes":[],"systemOfRecord":null,"requiredLineage":["controlled-sharing","document-versions","document-approvals"],"limitations":["disclosure-and-revocation-evidence-model-pending"]},
+    {"id":"legal-esignature","name":"Legal E-signature","maturity":"partner-bound","routes":[],"systemOfRecord":null,"requiredLineage":["document-registry","confidential-exchange-nda"],"limitations":["validated-authorized-signature-method-provider-required"]},
+    {"id":"search-retrieval","name":"Search & Retrieval","maturity":"working-fruit","routes":["/platform/documents"],"systemOfRecord":"documents-query","evidence":["modules/documents.js"],"limitations":["unified-ranked-cross-document-attachment-search-pending"]},
+    {"id":"retention-legal-hold","name":"Retention & Legal Hold","maturity":"green-fruit","routes":[],"systemOfRecord":null,"requiredLineage":["archive-lifecycle","audit-ledger"],"limitations":["policy-hold-deletion-schedule-evidence-pending"]},
+    {"id":"external-storage-sync","name":"External Storage / Provider Sync","maturity":"partner-bound","routes":[],"systemOfRecord":null,"requiredLineage":["document-registry","attachment-vault"],"limitations":["authorized-storage-adapter-and-provenance-contract-required"]}
+  ],
+  "invariants": [
+    "historical-versions-are-not-silently-overwritten",
+    "document-approval-is-not-legal-signature",
+    "typed-acknowledgment-is-not-binding-esignature",
+    "browser-local-form-state-is-not-durable-enterprise-submission",
+    "binary-evidence-preserves-provenance-integrity",
+    "sharing-is-explicit-scoped-revocable-auditable",
+    "policies-remain-governed-documents",
+    "external-storage-is-adapter-not-source-of-truth",
+    "confidential-material-fails-closed-on-unverified-access",
+    "ocr-conversion-retains-original-source-lineage"
+  ],
+  "nextFruitSequence": [
+    "canonical-durable-form-definition-schema",
+    "form-submission-evidence-schema",
+    "attachment-vault",
+    "ocr-intake-provenance-pipeline",
+    "controlled-sharing-ledger",
+    "confidential-exchange-nda-workflow",
+    "authorized-esignature-adapter-contract",
+    "permission-aware-search-and-retention-holds"
+  ]
+}
