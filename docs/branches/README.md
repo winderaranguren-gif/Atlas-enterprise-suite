@@ -12,8 +12,8 @@ This directory expands the canonical `docs/ATLAS_MASTER_INDEX_GENEALOGY.md` one 
 | 06 | Documents, Forms & Confidential Exchange | `06_DOCUMENTS_FORMS_CONFIDENTIAL_EXCHANGE.md` | `architecture/genealogy/06-documents-forms-confidential-exchange.json` | Structured |
 | 07 | Health & Care | `07_HEALTH_CARE.md` | `architecture/genealogy/07-health-care.json` | Structured |
 | 08 | Mobility, Maps & Vehicles | `08_MOBILITY_MAPS_VEHICLES.md` | `architecture/genealogy/08-mobility-maps-vehicles.json` | Structured |
-| 09 | Safety, City & Infrastructure | pending | pending | Next |
-| 10 | Community & Humanity | pending | pending | Queued |
+| 09 | Safety, City & Infrastructure | `09_SAFETY_CITY_INFRASTRUCTURE.md` | `architecture/genealogy/09-safety-city-infrastructure.json` | Structured |
+| 10 | Community & Humanity | pending | pending | Next |
 | 11 | Commerce, Market & Regulated Finance | pending | pending | Queued |
 | 12 | Creator, Media & Communications | pending | pending | Queued |
 | 13 | Robotics, Hardware & Spatial Systems | pending | pending | Queued |
