@@ -1,0 +1,251 @@
+{
+  "schemaVersion": 1,
+  "branchId": "15-research-future-observatory-invention",
+  "branchNumber": 15,
+  "name": "Research, Future Observatory & Invention",
+  "parent": "atlas-os-core",
+  "dossier": "docs/branches/15_RESEARCH_FUTURE_OBSERVATORY_INVENTION.md",
+  "masterSection": "## 22. RESEARCH, FUTURE OBSERVATORY & INVENTION",
+  "roots": [
+    "evidence-over-confidence",
+    "hypothesis-is-not-fact",
+    "prototype-is-not-production-proof",
+    "functional-reference-rebuild-not-proprietary-copy",
+    "source-date-license-provenance-preserved",
+    "negative-results-retained",
+    "risk-appropriate-validation-before-promotion",
+    "novelty-patentability-never-assumed"
+  ],
+  "trunkDependencies": [
+    "identity-authentication",
+    "documents-vault",
+    "knowledge-provenance",
+    "audit-ledger",
+    "capability-fusion",
+    "global-context",
+    "security-privacy",
+    "branch-genealogy",
+    "provider-source-adapters",
+    "release-verification"
+  ],
+  "subbranches": [
+    {
+      "id": "future-observatory",
+      "name": "Future Observatory",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": null,
+      "evidence": ["docs/branches/15_RESEARCH_FUTURE_OBSERVATORY_INVENTION.md"],
+      "requiredLineage": ["knowledge-provenance", "branch-genealogy"]
+    },
+    {
+      "id": "functional-reference-intake",
+      "name": "Functional Reference Intake",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": null,
+      "evidence": ["docs/ATLAS_FUNCTIONAL_REFERENCE_REBUILD_RULE.md"],
+      "requiredLineage": ["capability-fusion", "knowledge-provenance", "security-privacy"],
+      "limitations": ["no-proprietary-code-private-data-protected-content-brand-trade-dress-copying"]
+    },
+    {
+      "id": "capability-harvest-rebuild",
+      "name": "Capability Harvest / ATLAS Rebuild",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": null,
+      "evidence": ["docs/ATLAS_FUNCTIONAL_REFERENCE_REBUILD_RULE.md"],
+      "requiredLineage": ["functional-reference-intake", "capability-fusion", "branch-genealogy"],
+      "limitations": ["reference-study-does-not-imply-atlas-implementation"]
+    },
+    {
+      "id": "research-question-registry",
+      "name": "Research Question Registry",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": null,
+      "requiredLineage": ["identity-authentication", "documents-vault", "knowledge-provenance"]
+    },
+    {
+      "id": "hypothesis-registry",
+      "name": "Hypothesis Registry",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": null,
+      "requiredLineage": ["research-question-registry", "evidence-source-registry"]
+    },
+    {
+      "id": "evidence-source-registry",
+      "name": "Evidence / Source Registry",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": null,
+      "requiredLineage": ["knowledge-provenance", "documents-vault"],
+      "limitations": ["source-quality-confidence-supersession-schema-pending"]
+    },
+    {
+      "id": "experiment-protocol-registry",
+      "name": "Experiment / Protocol Registry",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": null,
+      "requiredLineage": ["hypothesis-registry", "documents-vault", "audit-ledger"]
+    },
+    {
+      "id": "result-observation-registry",
+      "name": "Result / Observation Registry",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": null,
+      "requiredLineage": ["experiment-protocol-registry", "evidence-source-registry", "audit-ledger"]
+    },
+    {
+      "id": "reproducibility-replication",
+      "name": "Reproducibility / Replication",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": "derived-read-only",
+      "requiredLineage": ["result-observation-registry", "experiment-protocol-registry"],
+      "derivesFrom": ["result-observation-registry", "experiment-protocol-registry"]
+    },
+    {
+      "id": "negative-null-results",
+      "name": "Negative / Null Results",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": null,
+      "requiredLineage": ["result-observation-registry", "knowledge-provenance"]
+    },
+    {
+      "id": "prototype-registry",
+      "name": "Prototype Registry",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": null,
+      "requiredLineage": ["experiment-protocol-registry", "documents-vault", "branch-genealogy"],
+      "limitations": ["prototype-does-not-equal-production"]
+    },
+    {
+      "id": "validation-ladder",
+      "name": "Validation Ladder",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": null,
+      "requiredLineage": ["prototype-registry", "reproducibility-replication", "safety-ethics-review"]
+    },
+    {
+      "id": "novelty-prior-art-review",
+      "name": "Novelty / Prior-Art Review",
+      "maturity": "partner-bound",
+      "routes": [],
+      "systemOfRecord": null,
+      "requiredLineage": ["evidence-source-registry", "invention-candidate-registry"],
+      "limitations": ["formal-patentability-freedom-to-operate-legal-opinions-require-qualified-current-review"]
+    },
+    {
+      "id": "safety-ethics-review",
+      "name": "Safety / Ethics / Abuse Review",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": null,
+      "requiredLineage": ["prototype-registry", "security-privacy", "branch-genealogy"]
+    },
+    {
+      "id": "horizon-technology-watch",
+      "name": "Horizon / Technology Watch",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": "derived-read-only",
+      "requiredLineage": ["evidence-source-registry", "future-observatory"],
+      "derivesFrom": ["evidence-source-registry", "sourced-external-observations"]
+    },
+    {
+      "id": "standards-regulation-watch",
+      "name": "Standards / Regulation Watch",
+      "maturity": "partner-bound",
+      "routes": [],
+      "systemOfRecord": null,
+      "requiredLineage": ["evidence-source-registry", "global-context"],
+      "limitations": ["current-authoritative-jurisdiction-effective-date-review-required"]
+    },
+    {
+      "id": "health-frontiers-research",
+      "name": "Health Frontiers Research",
+      "maturity": "artifact-verified",
+      "routes": [],
+      "systemOfRecord": "research-artifacts",
+      "evidence": ["docs/branches/07_HEALTH_CARE.md"],
+      "requiredLineage": ["evidence-source-registry", "safety-ethics-review"],
+      "limitations": ["research-is-not-clinical-treatment-diagnosis-or-cure"]
+    },
+    {
+      "id": "digital-assets-regulatory-research",
+      "name": "Digital Assets Regulatory Research",
+      "maturity": "artifact-verified",
+      "routes": [],
+      "systemOfRecord": "research-compliance-artifacts",
+      "evidence": ["docs/branches/11_COMMERCE_MARKET_REGULATED_FINANCE.md"],
+      "requiredLineage": ["standards-regulation-watch", "evidence-source-registry"],
+      "limitations": ["research-readiness-does-not-authorize-regulated-activity"]
+    },
+    {
+      "id": "invention-candidate-registry",
+      "name": "Invention Candidate Registry",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": null,
+      "requiredLineage": ["prototype-registry", "novelty-prior-art-review", "evidence-source-registry"]
+    },
+    {
+      "id": "failure-lessons-registry",
+      "name": "Failure & Lessons Registry",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": null,
+      "requiredLineage": ["negative-null-results", "audit-ledger", "knowledge-provenance"]
+    },
+    {
+      "id": "research-to-branch-promotion",
+      "name": "Research-to-Branch Promotion Gate",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": null,
+      "requiredLineage": ["validation-ladder", "branch-genealogy", "release-verification"],
+      "limitations": ["research-never-silently-mutates-production"]
+    },
+    {
+      "id": "research-data-dataset-registry",
+      "name": "Research Data / Dataset Registry",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": null,
+      "requiredLineage": ["evidence-source-registry", "security-privacy", "documents-vault"],
+      "limitations": ["origin-license-consent-permitted-use-sensitive-fields-retention-required"]
+    }
+  ],
+  "invariants": [
+    "hypothesis-is-not-fact",
+    "prototype-is-not-production-proof",
+    "negative-results-are-preserved",
+    "functional-reference-rebuild-does-not-copy-proprietary-code-content-assets",
+    "reference-study-and-atlas-implementation-are-distinct-states",
+    "source-date-license-transformation-lineage-is-preserved",
+    "reproducibility-status-is-explicit",
+    "risk-appropriate-validation-precedes-promotion",
+    "novelty-patentability-is-never-assumed",
+    "research-does-not-silently-mutate-production",
+    "partner-or-institution-reference-does-not-imply-endorsement",
+    "promotion-requires-destination-evidence-maturity-change-and-release-review"
+  ],
+  "nextFruitSequence": [
+    "canonical-research-question-hypothesis-evidence-schema",
+    "functional-reference-intake-capability-decomposition-schema",
+    "experiment-prototype-result-replication-registry",
+    "negative-result-failure-lessons-search",
+    "novelty-prior-art-ip-review-record",
+    "cross-domain-safety-impact-review",
+    "research-to-branch-promotion-package",
+    "future-observatory-dashboard",
+    "research-production-verifier"
+  ]
+}
