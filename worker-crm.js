@@ -10,6 +10,7 @@ import { menuToolPage } from './modules/menu-tools.js';
 import { metaSocialRoutes } from './modules/meta-social.js';
 import { streamSubscriptionRoutes } from './modules/stream-subscription-control.js';
 import { formsControlRoutes } from './modules/forms-control.js';
+import { knowledgeReaderRoutes } from './modules/knowledge-reader.js';
 
 function securityUnavailable(){
   return new Response(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Security verification · ATLAS</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#020711;color:#eef7ff;font-family:Inter,system-ui,sans-serif}.card{max-width:560px;margin:24px;padding:28px;border:1px solid #25527a;border-radius:18px;background:#071522}.card p{color:#9fb4c7;line-height:1.6}.card a{color:#59c9ff}</style></head><body><main class="card"><h1>Security verification unavailable.</h1><p>ATLAS will not open a protected workspace without validating the active session.</p><a href="/login">Return to sign in</a></main></body></html>`,{status:503,headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'}});
@@ -50,6 +51,10 @@ async function enhanceCoreResponse(response,url){
     const forms='<a href="/platform/forms-control" style="position:fixed;right:18px;bottom:18px;z-index:50;padding:10px 14px;border:1px solid #2f8cff;border-radius:999px;background:linear-gradient(135deg,#7ee6ff,#2f8cff);color:#03111d;text-decoration:none;font-weight:800;box-shadow:0 12px 34px #0007">Open ATLAS Forms Control</a>';
     body=body.replace('</body>',forms+'</body>');
   }
+  if(url.pathname==='/platform/hr-payroll/training'&&!body.includes('href="/platform/knowledge-reader"')){
+    const reader='<a href="/platform/knowledge-reader" style="position:fixed;right:18px;bottom:18px;z-index:50;padding:10px 14px;border:1px solid #2f8cff;border-radius:999px;background:linear-gradient(135deg,#7ee6ff,#2f8cff);color:#03111d;text-decoration:none;font-weight:800;box-shadow:0 12px 34px #0007">Open ATLAS Knowledge Reader</a>';
+    body=body.replace('</body>',reader+'</body>');
+  }
   if(url.pathname.startsWith('/platform/')&&!body.includes('/assets/atlas-module-visual.js'))body=body.replace('</body>','<script src="/assets/atlas-module-visual.js" defer></script></body>');
   const headers=new Headers(response.headers);headers.delete('content-length');return new Response(body,{status:response.status,statusText:response.statusText,headers});
 }
@@ -80,6 +85,10 @@ export default {async fetch(request,env){
   }
   if(request.method==='GET'&&url.pathname==='/platform/forms-control'){
     const workspace=await formsControlRoutes(request,env,url);
+    if(workspace)return verifiedWorkspaceResponse(request,env,url,workspace);
+  }
+  if(request.method==='GET'&&url.pathname==='/platform/knowledge-reader'){
+    const workspace=await knowledgeReaderRoutes(request,env,url);
     if(workspace)return verifiedWorkspaceResponse(request,env,url,workspace);
   }
 
