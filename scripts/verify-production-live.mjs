@@ -33,7 +33,8 @@ const checks=[
   {path:'/platform/capabilities/stream',status:302,redirect:'manual',locationContains:'/login'},
   {path:'/platform/capabilities/subscriptions',status:302,redirect:'manual',locationContains:'/login'},
   {path:'/platform/stream-control',status:302,redirect:'manual',locationContains:'/login'},
-  {path:'/platform/subscriptions',status:302,redirect:'manual',locationContains:'/login'}
+  {path:'/platform/subscriptions',status:302,redirect:'manual',locationContains:'/login'},
+  {path:'/platform/forms-control',status:302,redirect:'manual',locationContains:'/login'}
 ];
 
 let failed=false;
@@ -41,7 +42,7 @@ for(const check of checks){
   const url=origin+check.path;
   let thisFailed=false;
   try{
-    const response=await fetch(url,{redirect:check.redirect||'follow',headers:{'user-agent':'ATLAS-Production-Verifier/3.4'},signal:AbortSignal.timeout(15000)});
+    const response=await fetch(url,{redirect:check.redirect||'follow',headers:{'user-agent':'ATLAS-Production-Verifier/3.5'},signal:AbortSignal.timeout(15000)});
     const text=await response.text();
     if(response.status!==check.status){console.error(`FAIL ${check.path}: HTTP ${response.status}, expected ${check.status}${text?` · ${text.slice(0,300)}`:''}`);failed=thisFailed=true;continue}
     if(check.locationContains){const location=response.headers.get('location')||'';if(!location.includes(check.locationContains)){console.error(`FAIL ${check.path}: redirect location ${JSON.stringify(location)} missing ${JSON.stringify(check.locationContains)}`);failed=thisFailed=true}}
