@@ -1,0 +1,151 @@
+{
+  "schemaVersion": 1,
+  "branchId": "01-enterprise-operations",
+  "branchNumber": 1,
+  "name": "Enterprise & Operations",
+  "parent": "atlas-os-core",
+  "roots": [
+    "one-ecosystem-no-islands",
+    "organization-dba-user-scope",
+    "least-privilege",
+    "immutable-audit-evidence",
+    "truthful-maturity",
+    "provider-adapters-not-source-of-truth"
+  ],
+  "trunkDependencies": [
+    "identity-authentication",
+    "organizations-dbas-memberships",
+    "rbac-tenant-guard",
+    "audit-ledger",
+    "hr-people-references",
+    "finance-authoritative-ledger",
+    "global-context",
+    "release-verification"
+  ],
+  "subbranches": [
+    {
+      "id": "enterprise-administration",
+      "name": "Enterprise Administration",
+      "maturity": "working-fruit",
+      "routes": ["/platform/enterprise-suite", "/platform/access-control", "/platform/audit-security"],
+      "systemOfRecord": "atlas-core",
+      "evidence": ["modules/enterprise-workspace.js", "modules/access-control.js", "modules/audit-security-ui.js"]
+    },
+    {
+      "id": "crm",
+      "name": "CRM & Sales Relationships",
+      "maturity": "working-fruit",
+      "routes": ["/platform/crm"],
+      "systemOfRecord": "crm",
+      "evidence": ["migrations/0005_crm.sql", "modules/crm.js", "scripts/validate-crm.mjs"]
+    },
+    {
+      "id": "operations",
+      "name": "Operations Control",
+      "maturity": "working-fruit",
+      "routes": ["/platform/operations"],
+      "systemOfRecord": "operations",
+      "evidence": ["migrations/0012_operations_core.sql", "modules/operations.js"],
+      "ownedObjects": ["operations_tasks", "operations_workflows", "operations_workflow_steps", "operations_approvals", "operations_vendors", "operations_compliance_items"]
+    },
+    {
+      "id": "inventory",
+      "name": "Inventory",
+      "maturity": "working-fruit",
+      "routes": ["/platform/inventory"],
+      "systemOfRecord": "inventory-movement-ledger",
+      "evidence": ["migrations/0013_inventory_core.sql", "modules/inventory.js", "modules/inventory-counts.js"],
+      "ownedObjects": ["inventory_items", "inventory_locations", "inventory_movements", "inventory_counts", "inventory_count_lines"]
+    },
+    {
+      "id": "projects",
+      "name": "Projects",
+      "maturity": "working-fruit",
+      "routes": ["/platform/projects"],
+      "systemOfRecord": "projects",
+      "evidence": ["migrations/0015_projects_core.sql", "modules/projects.js"],
+      "ownedObjects": ["projects", "project_members", "project_milestones", "project_tasks", "project_costs"]
+    },
+    {
+      "id": "transportation",
+      "name": "Transportation / Fleet",
+      "maturity": "working-fruit",
+      "routes": ["/platform/transportation"],
+      "systemOfRecord": "fleet",
+      "evidence": ["modules/transportation.js", "modules/transportation-schema.js", "modules/transportation-safety.js"]
+    },
+    {
+      "id": "documents",
+      "name": "Documents",
+      "maturity": "working-fruit",
+      "routes": ["/platform/documents"],
+      "systemOfRecord": "documents",
+      "evidence": ["modules/documents.js", "modules/documents-schema.js"],
+      "ownedObjects": ["documents", "document_versions", "document_templates", "document_approvals"]
+    },
+    {
+      "id": "reports",
+      "name": "Reports & Analytics",
+      "maturity": "working-fruit",
+      "routes": ["/platform/reports"],
+      "systemOfRecord": "derived-read-only",
+      "evidence": ["modules/reports.js"],
+      "derivesFrom": ["finance", "hr", "operations", "inventory", "transportation", "projects"]
+    },
+    {
+      "id": "commercial-orders",
+      "name": "Quotes / Sales Orders",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": null,
+      "requiredLineage": ["crm", "inventory", "documents", "finance"]
+    },
+    {
+      "id": "procurement",
+      "name": "Procurement / Purchase Orders",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": null,
+      "requiredLineage": ["operations", "inventory", "finance"]
+    },
+    {
+      "id": "partner-negotiation-hub",
+      "name": "Partner & Negotiation Hub",
+      "maturity": "seed",
+      "routes": [],
+      "systemOfRecord": null,
+      "requiredLineage": ["crm", "operations", "documents"]
+    },
+    {
+      "id": "elevator-operations",
+      "name": "Elevator Operations",
+      "maturity": "artifact-verified",
+      "routes": [],
+      "systemOfRecord": "artifact-specific",
+      "requiredLineage": ["operations", "projects", "documents", "reports"]
+    },
+    {
+      "id": "hospitality",
+      "name": "Hospitality Industry Solution",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": null,
+      "requiredLineage": ["enterprise-administration", "crm", "operations", "documents", "reports"]
+    }
+  ],
+  "invariants": [
+    "no-duplicate-core-identity",
+    "no-duplicate-financial-ledger",
+    "inventory-balance-derived-from-movements",
+    "reports-never-own-source-transactions",
+    "industry-solutions-compose-core-branch-systems",
+    "ui-ready-label-is-not-persistence-or-production-proof"
+  ],
+  "nextFruitSequence": [
+    "canonical-commercial-transaction-spine",
+    "canonical-procurement-spine",
+    "enterprise-cross-reference-contract",
+    "enterprise-activity-graph",
+    "industry-composition-layer"
+  ]
+}
