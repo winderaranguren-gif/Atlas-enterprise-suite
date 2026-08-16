@@ -50,6 +50,22 @@ const hasOfferRegistry=data=>{
   });
 };
 const hasCommerceRegistryStatus=data=>data?.ok===true&&data?.productAuthority==='ATLAS_PRODUCT_REGISTRY'&&data?.offerAuthority==='ATLAS_COMMERCIAL_OFFER_REGISTRY'&&data?.commercialPolicy?.policy==='fail-closed'&&data?.registry?.storage==='repository-source-controlled'&&data?.registry?.dynamicAdmin===false&&data?.d1Persistence===false&&data?.d1PersistenceReason==='verified_d1_identity_pending';
+const hasMerchantOfferContract=data=>data?.ok===true&&data?.schemaVersion===1&&data?.authority==='ATLAS_MERCHANT_OFFER_CONTRACT'&&data?.providerBound===true&&Array.isArray(data?.sourceTypes)&&data.sourceTypes.includes('authorized-provider-feed')&&data.sourceTypes.includes('verified-manual-record')&&Array.isArray(data?.requiredFields)&&data.requiredFields.includes('observedAt')&&data.requiredFields.includes('expiresAt');
+const hasMerchantOfferStatus=data=>{
+  if(data?.ok!==true||data?.authority!=='ATLAS_MERCHANT_OFFER_DIRECTORY'||data?.providerBound!==true)return false;
+  const numeric=['total','fresh','usable','stale','invalid','liveProviderCount','verifiedManualOfferCount'];
+  if(numeric.some(key=>!Number.isFinite(Number(data?.[key]))||Number(data[key])<0))return false;
+  if(Number(data.usable)>Number(data.total)||Number(data.fresh)>Number(data.total))return false;
+  if(Number(data.liveProviderCount)===0&&Number(data.verifiedManualOfferCount)===0&&Number(data.total)!==0)return false;
+  return true;
+};
+const hasMerchantOfferFeed=data=>{
+  const items=Array.isArray(data?.items)?data.items:[];
+  if(data?.ok!==true||data?.source!=='ATLAS_MERCHANT_OFFER_DIRECTORY'||data?.contract?.authority!=='ATLAS_MERCHANT_OFFER_CONTRACT'||data?.status?.authority!=='ATLAS_MERCHANT_OFFER_DIRECTORY'||data?.status?.providerBound!==true)return false;
+  if(items.length!==Number(data.status.usable||0))return false;
+  if(Number(data.status.liveProviderCount||0)===0&&Number(data.status.verifiedManualOfferCount||0)===0&&items.length!==0)return false;
+  return items.every(item=>item?.merchantOfferId&&item?.merchantId&&item?.productId&&item?.market&&item?.currency&&Number.isFinite(item?.unitPrice)&&['in_stock','limited'].includes(item?.inventoryStatus)&&item?.observedAt&&item?.expiresAt&&item?.source?.reference&&Array.isArray(item?.fulfillment?.methods)&&item.fulfillment.methods.length>0);
+};
 
 const checks=[
   {path:'/',status:200,contains:['ATLAS','href="/capabilities"','>Capabilities</a>']},
@@ -60,6 +76,9 @@ const checks=[
   {path:'/feeds/commerce/products.json',status:200,json:hasProductRegistry},
   {path:'/feeds/commerce/offers.json',status:200,json:hasOfferRegistry},
   {path:'/feeds/commerce/status',status:200,json:hasCommerceRegistryStatus},
+  {path:'/feeds/commerce/merchant-offer-contract.json',status:200,json:hasMerchantOfferContract},
+  {path:'/feeds/commerce/merchant-offers.json',status:200,json:hasMerchantOfferFeed},
+  {path:'/feeds/commerce/merchant-offers/status',status:200,json:hasMerchantOfferStatus},
   {path:'/feeds/meta/atlas-catalog.json',status:200,json:hasCommercialTruth},
   {path:'/feeds/meta/status',status:200,json:hasCommercialStatus},
   {path:'/sitemap.xml',status:200,contains:[`<loc>${origin}/capabilities</loc>`]},
@@ -81,7 +100,7 @@ for(const check of checks){
   const url=origin+check.path;
   let thisFailed=false;
   try{
-    const response=await fetch(url,{redirect:check.redirect||'follow',headers:{'user-agent':'ATLAS-Production-Verifier/3.8'},signal:AbortSignal.timeout(15000)});
+    const response=await fetch(url,{redirect:check.redirect||'follow',headers:{'user-agent':'ATLAS-Production-Verifier/3.9'},signal:AbortSignal.timeout(15000)});
     const text=await response.text();
     if(response.status!==check.status){console.error(`FAIL ${check.path}: HTTP ${response.status}, expected ${check.status}${text?` · ${text.slice(0,300)}`:''}`);failed=thisFailed=true;continue}
     if(check.locationContains){const location=response.headers.get('location')||'';if(!location.includes(check.locationContains)){console.error(`FAIL ${check.path}: redirect location ${JSON.stringify(location)} missing ${JSON.stringify(check.locationContains)}`);failed=thisFailed=true}}
