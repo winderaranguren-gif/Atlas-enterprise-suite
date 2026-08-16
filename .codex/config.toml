@@ -4,7 +4,7 @@
 [mcp_servers.cloudflare]
 url = "https://mcp.cloudflare.com/mcp"
 enabled = true
-required = false
+required = true
 startup_timeout_sec = 20
 tool_timeout_sec = 60
 
