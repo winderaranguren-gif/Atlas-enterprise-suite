@@ -40,6 +40,16 @@ const CAPABILITY_BRIDGES={
   copy:'Send completed form workflows toward the existing ATLAS Documents surface for controlled templates, approvals, versions and archives. The current Forms builder remains browser-local until its secure persistence layer is promoted.',
   href:'/platform/documents',action:'Open ATLAS Documents →',tone:'blue'
  },
+ '/platform/capabilities/stream':{
+  id:'stream-control',eyebrow:'CONNECTED ATLAS MEDIA',title:'Stream Control Workspace',
+  copy:'Open the protected ATLAS Stream Control workspace for private local playback, session library, favorites, resume position, playback speed and display controls. No third-party catalog or cloud upload is implied.',
+  href:'/platform/stream-control',action:'Open ATLAS Stream Control →',tone:'green'
+ },
+ '/platform/capabilities/subscriptions':{
+  id:'subscriptions-control',eyebrow:'CONNECTED ATLAS COST CONTROL',title:'Subscription & Renewal Control',
+  copy:'Open the protected ATLAS Subscription Control workspace for plans, seats, renewal dates and recurring cost analysis. It is a management register and does not process payments or cancel third-party services.',
+  href:'/platform/subscriptions',action:'Open ATLAS Subscription Control →',tone:'green'
+ },
  '/platform/capabilities/personalization':{
   id:'personalization-settings',eyebrow:'CONNECTED ATLAS SETTINGS',title:'Workspace Configuration',
   copy:'Use the existing ATLAS Settings workspace for organization-level appearance, localization, notifications and system preferences. Personalization remains the user-facing preference model.',
