@@ -5,8 +5,8 @@ This directory expands the canonical `docs/ATLAS_MASTER_INDEX_GENEALOGY.md` one 
 | # | Primary branch | Dossier | Machine registry | State |
 |---|---|---|---|---|
 | 01 | Enterprise & Operations | `01_ENTERPRISE_OPERATIONS.md` | `architecture/genealogy/01-enterprise-operations.json` | Structured |
-| 02 | Accounting, Finance & Tax | pending | pending | Next |
-| 03 | People, HR, Payroll & Talent | pending | pending | Queued |
+| 02 | Accounting, Finance & Tax | `02_ACCOUNTING_FINANCE_TAX.md` | `architecture/genealogy/02-accounting-finance-tax.json` | Structured |
+| 03 | People, HR, Payroll & Talent | pending | pending | Next |
 | 04 | Knowledge, Education & Learning | pending | pending | Queued |
 | 05 | Capability Fusion | pending | pending | Queued |
 | 06 | Documents, Forms & Confidential Exchange | pending | pending | Queued |
