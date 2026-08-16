@@ -1,0 +1,220 @@
+{
+  "schemaVersion": 1,
+  "branchId": "02-accounting-finance-tax",
+  "branchNumber": 2,
+  "name": "Accounting, Finance & Tax",
+  "parent": "atlas-os-core",
+  "dossier": "docs/branches/02_ACCOUNTING_FINANCE_TAX.md",
+  "masterSection": "## 9. ACCOUNTING, FINANCE & TAX",
+  "roots": [
+    "truthful-financial-records",
+    "organization-dba-user-scope",
+    "least-privilege",
+    "balanced-double-entry",
+    "immutable-audit-evidence",
+    "closed-period-integrity",
+    "regulated-execution-boundary"
+  ],
+  "trunkDependencies": [
+    "identity-authentication",
+    "organizations-dbas-memberships",
+    "rbac-tenant-guard",
+    "audit-ledger",
+    "enterprise-business-context",
+    "documents-supporting-evidence",
+    "reports-derived-read-only",
+    "release-verification"
+  ],
+  "subbranches": [
+    {
+      "id": "chart-of-accounts",
+      "name": "Chart of Accounts",
+      "maturity": "working-fruit",
+      "routes": ["/platform/finance/general-ledger"],
+      "systemOfRecord": "finance_accounts",
+      "evidence": ["migrations/0007_finance_core.sql", "modules/finance.js"],
+      "ownedObjects": ["finance_accounts"]
+    },
+    {
+      "id": "general-ledger",
+      "name": "General Ledger & Journals",
+      "maturity": "working-fruit",
+      "routes": ["/platform/finance/general-ledger"],
+      "systemOfRecord": "finance-journal-ledger",
+      "evidence": ["migrations/0007_finance_core.sql", "modules/finance.js", "modules/finance-reporting.js"],
+      "ownedObjects": ["finance_journal_entries", "finance_journal_lines"]
+    },
+    {
+      "id": "accounts-payable",
+      "name": "Accounts Payable",
+      "maturity": "working-fruit",
+      "routes": ["/platform/finance/accounts-payable"],
+      "systemOfRecord": "finance_bills",
+      "evidence": ["migrations/0007_finance_core.sql", "modules/finance.js"],
+      "ownedObjects": ["finance_bills"],
+      "limitations": ["canonical-payment-allocation-ledger-pending", "purchase-order-three-way-match-pending"]
+    },
+    {
+      "id": "accounts-receivable",
+      "name": "Accounts Receivable",
+      "maturity": "working-fruit",
+      "routes": ["/platform/finance/accounts-receivable"],
+      "systemOfRecord": "finance_invoices",
+      "evidence": ["migrations/0007_finance_core.sql", "modules/finance.js"],
+      "ownedObjects": ["finance_invoices"],
+      "limitations": ["canonical-receipt-allocation-ledger-pending", "sales-order-lineage-pending"]
+    },
+    {
+      "id": "banking-ledger",
+      "name": "Banking Ledger",
+      "maturity": "working-fruit",
+      "routes": ["/platform/finance/banking"],
+      "systemOfRecord": "finance-bank-ledger",
+      "evidence": ["migrations/0008_finance_controls.sql", "modules/finance-advanced.js"],
+      "ownedObjects": ["finance_bank_accounts", "finance_bank_transactions"],
+      "limitations": ["internal-records-do-not-imply-live-institution-connection"]
+    },
+    {
+      "id": "reconciliations",
+      "name": "Bank Reconciliations",
+      "maturity": "working-fruit",
+      "routes": ["/platform/finance/reconciliations"],
+      "systemOfRecord": "finance_reconciliations",
+      "evidence": ["migrations/0008_finance_controls.sql", "modules/finance-advanced.js"],
+      "ownedObjects": ["finance_reconciliations"]
+    },
+    {
+      "id": "budgets",
+      "name": "Budgets & Variance",
+      "maturity": "working-fruit",
+      "routes": ["/platform/finance/budgets"],
+      "systemOfRecord": "finance-budgets",
+      "evidence": ["migrations/0008_finance_controls.sql", "modules/finance-advanced.js", "modules/finance-reporting.js"],
+      "ownedObjects": ["finance_budgets", "finance_budget_lines"]
+    },
+    {
+      "id": "financial-statements",
+      "name": "Financial Statements",
+      "maturity": "working-fruit",
+      "routes": ["/platform/finance/statements"],
+      "systemOfRecord": "derived-read-only",
+      "evidence": ["modules/finance-statements.js", "modules/finance-reporting.js"],
+      "derivesFrom": ["general-ledger", "banking-ledger"]
+    },
+    {
+      "id": "accounting-periods",
+      "name": "Accounting Period Close & Reopen",
+      "maturity": "working-fruit",
+      "routes": ["/platform/finance/close"],
+      "systemOfRecord": "finance_accounting_periods",
+      "evidence": ["migrations/0009_finance_reporting_controls.sql", "modules/finance-reporting.js"],
+      "ownedObjects": ["finance_accounting_periods"]
+    },
+    {
+      "id": "tax-obligations",
+      "name": "Tax Obligation & Payment Register",
+      "maturity": "working-fruit",
+      "routes": ["/platform/finance/taxes", "/platform/finance/close"],
+      "systemOfRecord": "finance-tax-register",
+      "evidence": ["migrations/0008_finance_controls.sql", "migrations/0009_finance_reporting_controls.sql", "modules/finance-advanced.js", "modules/finance-reporting.js"],
+      "ownedObjects": ["finance_tax_items", "finance_tax_payments"],
+      "limitations": ["record-does-not-imply-return-filed-or-accepted"]
+    },
+    {
+      "id": "fixed-assets",
+      "name": "Fixed Assets & Disposal",
+      "maturity": "working-fruit",
+      "routes": ["/platform/finance/fixed-assets", "/platform/finance/close"],
+      "systemOfRecord": "finance-fixed-assets",
+      "evidence": ["migrations/0008_finance_controls.sql", "migrations/0009_finance_reporting_controls.sql", "modules/finance-advanced.js", "modules/finance-reporting.js"],
+      "ownedObjects": ["finance_fixed_assets", "finance_asset_disposals"],
+      "limitations": ["straight-line-depreciation-only", "asset-disposal-journal-generation-pending"]
+    },
+    {
+      "id": "tax-compliance",
+      "name": "Tax Compliance",
+      "maturity": "green-fruit",
+      "routes": ["/platform/capabilities/tax-compliance"],
+      "systemOfRecord": null,
+      "evidence": ["modules/capability-fusion.js"],
+      "requiredLineage": ["tax-obligations", "documents-supporting-evidence"],
+      "limitations": ["versioned-jurisdiction-rule-packs-pending", "durable-case-evidence-model-pending"]
+    },
+    {
+      "id": "tax-pro",
+      "name": "Tax Pro Preparation Workflow",
+      "maturity": "green-fruit",
+      "routes": ["/platform/capabilities/tax-pro"],
+      "systemOfRecord": null,
+      "evidence": ["modules/capability-fusion.js"],
+      "requiredLineage": ["tax-obligations", "tax-compliance", "documents-supporting-evidence"],
+      "limitations": ["complete-return-calculation-engine-pending", "return-generation-pending", "efile-adapter-pending"]
+    },
+    {
+      "id": "efile-government-transmission",
+      "name": "E-file / Government Transmission",
+      "maturity": "partner-bound",
+      "routes": [],
+      "systemOfRecord": null,
+      "requiredLineage": ["tax-pro", "tax-compliance"],
+      "limitations": ["authorized-transmission-provider-required"]
+    },
+    {
+      "id": "payment-receipt-allocation",
+      "name": "Payment & Receipt Allocation Ledger",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": null,
+      "requiredLineage": ["accounts-payable", "accounts-receivable", "banking-ledger", "general-ledger", "reconciliations"]
+    },
+    {
+      "id": "live-bank-feeds-payments",
+      "name": "Live Bank Feeds & Fund Movement",
+      "maturity": "partner-bound",
+      "routes": [],
+      "systemOfRecord": null,
+      "requiredLineage": ["banking-ledger", "general-ledger", "reconciliations"],
+      "limitations": ["authorized-financial-provider-required"]
+    },
+    {
+      "id": "multi-currency-consolidation",
+      "name": "Multi-currency & Consolidation",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": null,
+      "requiredLineage": ["chart-of-accounts", "general-ledger", "financial-statements"],
+      "limitations": ["fx-remeasurement-pending", "entity-elimination-pending"]
+    },
+    {
+      "id": "corporate-commission-models",
+      "name": "Corporate Cost & Commission Models",
+      "maturity": "green-fruit",
+      "routes": [],
+      "systemOfRecord": null,
+      "requiredLineage": ["general-ledger", "accounts-receivable", "enterprise-business-context"],
+      "limitations": ["canonical-explainable-calculation-model-pending"]
+    }
+  ],
+  "invariants": [
+    "posted-journal-must-balance",
+    "financial-statements-derive-from-posted-ledger",
+    "closed-period-blocks-new-journal-posting",
+    "reconciliation-requires-zero-difference",
+    "reconciliation-requires-no-posted-unlinked-bank-activity",
+    "no-parallel-financial-ledgers-in-other-branches",
+    "ap-bill-is-not-purchase-order",
+    "ar-invoice-is-not-sales-order",
+    "tax-record-is-not-filing-acceptance",
+    "bank-record-is-not-live-bank-connection",
+    "regulated-execution-requires-authorized-provider"
+  ],
+  "nextFruitSequence": [
+    "payment-receipt-allocation-ledger",
+    "counterparty-referential-integrity",
+    "enterprise-transaction-integration",
+    "tax-evidence-model",
+    "tax-calculation-filing-boundary",
+    "fixed-asset-maturity",
+    "multi-currency-consolidation"
+  ]
+}
