@@ -1,8 +1,10 @@
 import { ATLAS_CAPABILITY_REGISTRY } from './capability-fusion.js';
 
 const ORIGIN='https://atlasenterprisesuite.com';
+const SUPABASE_RUNTIME='https://ggmanzcgtlrvqfoccgsh.supabase.co';
+const LIVE_FUNCTIONS=new Set(['atlas-live','atlas-explore','atlas-control','atlas-auth','atlas-permissions','atlas-hub']);
 const html=(body,status=200)=>new Response(body,{status,headers:{'content-type':'text/html; charset=utf-8','cache-control':'public,max-age=300','x-content-type-options':'nosniff','referrer-policy':'strict-origin-when-cross-origin','content-security-policy':"default-src 'self'; img-src 'self' data:; style-src 'unsafe-inline'; script-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"}});
-const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[ch]));
 const stateInfo=state=>state==='native-browser'
  ? {label:'Available in supported browser',detail:'Core browser-native interactions are implemented; device/browser support may vary.'}
  : state==='workflow-ready'
@@ -37,6 +39,33 @@ function publicItems(){return ATLAS_CAPABILITY_REGISTRY.map(item=>{
  };
 })}
 
+async function proxyRuntime(request,url,targetPath){
+ const upstream=new URL(SUPABASE_RUNTIME+targetPath);
+ if(targetPath.includes('?')){
+  const [path,query='']=targetPath.split('?');
+  upstream.pathname=path;
+  upstream.search=query?`?${query}`:'';
+ }else{
+  upstream.pathname=targetPath;
+  upstream.search=url.search;
+ }
+ const headers=new Headers(request.headers);
+ headers.delete('host');
+ headers.set('x-atlas-canonical-host',url.host);
+ const init={method:request.method,headers,redirect:'manual'};
+ if(!['GET','HEAD'].includes(request.method))init.body=request.body;
+ const response=await fetch(upstream,init);
+ const outHeaders=new Headers(response.headers);
+ outHeaders.delete('content-length');
+ outHeaders.set('x-atlas-runtime','canonical-live-v6');
+ outHeaders.set('x-atlas-upstream','supabase-edge');
+ const location=outHeaders.get('location');
+ if(location&&location.startsWith(SUPABASE_RUNTIME))outHeaders.set('location',location.replace(SUPABASE_RUNTIME,ORIGIN));
+ return new Response(response.body,{status:response.status,statusText:response.statusText,headers:outHeaders});
+}
+
+function canonicalRedirect(path){return new Response(null,{status:302,headers:{location:path,'cache-control':'no-store','x-atlas-runtime':'canonical-live-v6'}})};
+
 function page(){
  const items=publicItems();
  const cards=items.map(item=>`<article class="card"><div class="status">${esc(item.statusLabel)}</div><h2>${esc(item.name)}</h2><p>${esc(item.summary)}</p>${item.connectedAtlasWorkspace?`<div class="connection">Connected: ${esc(item.connectedAtlasWorkspace)}</div>`:''}<ul>${item.features.map(feature=>`<li>${esc(feature)}</li>`).join('')}</ul><a class="open" href="/platform/capabilities/${encodeURIComponent(item.slug)}">Open workspace</a></article>`).join('');
@@ -44,6 +73,13 @@ function page(){
 }
 
 export async function capabilityPublicRoutes(request,env,url){
+ if(url.pathname==='/')return proxyRuntime(request,url,'/functions/v1/atlas-live');
+ if(url.pathname==='/login')return canonicalRedirect('/#/login');
+ if(url.pathname==='/signup')return canonicalRedirect('/#/signup');
+ if(url.pathname==='/dashboard')return canonicalRedirect('/#/dashboard');
+ if(url.pathname==='/explore')return canonicalRedirect('/functions/v1/atlas-explore');
+ const liveMatch=url.pathname.match(/^\/functions\/v1\/([^/]+)/);
+ if(liveMatch&&LIVE_FUNCTIONS.has(liveMatch[1]))return proxyRuntime(request,url,url.pathname+url.search);
  if(request.method!=='GET')return null;
  if(url.pathname==='/capabilities')return html(page());
  if(url.pathname==='/feeds/capabilities.json')return Response.json({ok:true,source:'ATLAS Enterprise Suite',count:ATLAS_CAPABILITY_REGISTRY.length,generatedFrom:'ATLAS_CAPABILITY_REGISTRY',items:publicItems()},{headers:{'cache-control':'public,max-age=300','access-control-allow-origin':'*','x-content-type-options':'nosniff'}});
