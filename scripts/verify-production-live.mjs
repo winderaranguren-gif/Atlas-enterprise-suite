@@ -19,7 +19,7 @@ const hasPublicCapabilitySet=data=>{
 };
 const hasCommercialTruth=data=>{
   const policy=data?.commercialPolicy,items=Array.isArray(data?.items)?data.items:[];
-  if(data?.ok!==true||data?.count!==30||policy?.policy!=='fail-closed'||policy?.defaultState!=='preview'||!Array.isArray(policy?.activeIds)||!Array.isArray(policy?.communityIds))return false;
+  if(data?.ok!==true||data?.count!==30||data?.generatedFrom!=='ATLAS_PRODUCT_AND_COMMERCIAL_OFFER_REGISTRIES'||policy?.policy!=='fail-closed'||policy?.authority!=='ATLAS_COMMERCIAL_OFFER_REGISTRY'||policy?.defaultState!=='preview'||!Array.isArray(policy?.activeIds)||!Array.isArray(policy?.communityIds))return false;
   const active=new Set(policy.activeIds);
   for(const item of items){
     if(!['active','preview','community'].includes(item?.commercialStatus))return false;
@@ -31,10 +31,25 @@ const hasCommercialTruth=data=>{
   return true;
 };
 const hasCommercialStatus=data=>{
-  if(data?.ok!==true||data?.commercialPolicy?.policy!=='fail-closed'||typeof data?.commercialCounts!=='object')return false;
+  if(data?.ok!==true||data?.commercialPolicy?.policy!=='fail-closed'||data?.commercialPolicy?.authority!=='ATLAS_COMMERCIAL_OFFER_REGISTRY'||typeof data?.commercialCounts!=='object')return false;
   const activeCount=Number(data.commercialCounts.active||0);
-  return activeCount===data.commercialPolicy.activeIds.length;
+  return activeCount===data.commercialPolicy.activeIds.length&&data?.registry?.storage==='repository-source-controlled'&&data?.registry?.dynamicAdmin===false;
 };
+const hasProductRegistry=data=>{
+  const items=Array.isArray(data?.items)?data.items:[];
+  const ids=new Set(items.map(item=>item?.id));
+  return data?.ok===true&&data?.source==='ATLAS_PRODUCT_REGISTRY'&&data?.storage==='repository-source-controlled'&&data?.dynamicAdmin===false&&data?.count===30&&items.length===30&&ids.size===30&&items.every(item=>item?.id&&item?.title&&item?.category&&item?.description&&item?.image&&item?.brand);
+};
+const hasOfferRegistry=data=>{
+  const items=Array.isArray(data?.items)?data.items:[],offerIds=new Set(items.map(item=>item?.offerId)),productIds=new Set(items.map(item=>item?.productId));
+  if(data?.ok!==true||data?.source!=='ATLAS_COMMERCIAL_OFFER_REGISTRY'||data?.storage!=='repository-source-controlled'||data?.dynamicAdmin!==false||data?.productCount!==30||data?.offerCount!==30||items.length!==30||offerIds.size!==30||productIds.size!==30||data?.policy?.policy!=='fail-closed')return false;
+  return items.every(item=>{
+    if(!['preview','community','active'].includes(item?.status)||item?.market!=='US'||item?.currency!=='USD')return false;
+    if(item.status==='active')return item.approvedForSale===true&&Boolean(item.approvedAt&&item.approvedBy&&item.effectiveFrom)&&Array.isArray(item.fulfillmentEvidence)&&item.fulfillmentEvidence.length>0;
+    return item.approvedForSale===false;
+  });
+};
+const hasCommerceRegistryStatus=data=>data?.ok===true&&data?.productAuthority==='ATLAS_PRODUCT_REGISTRY'&&data?.offerAuthority==='ATLAS_COMMERCIAL_OFFER_REGISTRY'&&data?.commercialPolicy?.policy==='fail-closed'&&data?.registry?.storage==='repository-source-controlled'&&data?.registry?.dynamicAdmin===false&&data?.d1Persistence===false&&data?.d1PersistenceReason==='verified_d1_identity_pending';
 
 const checks=[
   {path:'/',status:200,contains:['ATLAS','href="/capabilities"','>Capabilities</a>']},
@@ -42,6 +57,9 @@ const checks=[
   {path:'/signup',status:200,contains:['Create your ATLAS account']},
   {path:'/capabilities',status:200,contains:['ATLAS CAPABILITY DIRECTORY','One ecosystem.','Implementation transparency:','Connected: ATLAS Stream Control','Connected: ATLAS Subscription Control']},
   {path:'/feeds/capabilities.json',status:200,json:hasPublicCapabilitySet},
+  {path:'/feeds/commerce/products.json',status:200,json:hasProductRegistry},
+  {path:'/feeds/commerce/offers.json',status:200,json:hasOfferRegistry},
+  {path:'/feeds/commerce/status',status:200,json:hasCommerceRegistryStatus},
   {path:'/feeds/meta/atlas-catalog.json',status:200,json:hasCommercialTruth},
   {path:'/feeds/meta/status',status:200,json:hasCommercialStatus},
   {path:'/sitemap.xml',status:200,contains:[`<loc>${origin}/capabilities</loc>`]},
@@ -63,7 +81,7 @@ for(const check of checks){
   const url=origin+check.path;
   let thisFailed=false;
   try{
-    const response=await fetch(url,{redirect:check.redirect||'follow',headers:{'user-agent':'ATLAS-Production-Verifier/3.7'},signal:AbortSignal.timeout(15000)});
+    const response=await fetch(url,{redirect:check.redirect||'follow',headers:{'user-agent':'ATLAS-Production-Verifier/3.8'},signal:AbortSignal.timeout(15000)});
     const text=await response.text();
     if(response.status!==check.status){console.error(`FAIL ${check.path}: HTTP ${response.status}, expected ${check.status}${text?` · ${text.slice(0,300)}`:''}`);failed=thisFailed=true;continue}
     if(check.locationContains){const location=response.headers.get('location')||'';if(!location.includes(check.locationContains)){console.error(`FAIL ${check.path}: redirect location ${JSON.stringify(location)} missing ${JSON.stringify(check.locationContains)}`);failed=thisFailed=true}}
