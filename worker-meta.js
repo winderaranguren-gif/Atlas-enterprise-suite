@@ -89,6 +89,17 @@ async function enhancePublicCapabilityDiscovery(response,url,method){
  return new Response(body,{status:response.status,statusText:response.statusText,headers});
 }
 
+async function enhanceCapabilitySitemap(response,url,method){
+ if(url.pathname!=='/sitemap.xml'||method!=='GET')return response;
+ const type=response.headers.get('content-type')||'';
+ if(!type.includes('xml'))return response;
+ let body=await response.text();
+ const location=`${url.origin}/capabilities`;
+ if(!body.includes(`<loc>${location}</loc>`))body=body.replace('</urlset>',`<url><loc>${location}</loc></url></urlset>`);
+ const headers=new Headers(response.headers);headers.delete('content-length');
+ return new Response(body,{status:response.status,statusText:response.statusText,headers});
+}
+
 async function enhanceCapabilityBridge(response,url){
  const config=CAPABILITY_BRIDGES[url.pathname];
  if(!config)return response;
@@ -124,6 +135,7 @@ export default {
   if(catalogResponse)return catalogResponse;
   let response=await app.fetch(request,env,ctx);
   response=await enhancePublicCapabilityDiscovery(response,url,request.method);
+  response=await enhanceCapabilitySitemap(response,url,request.method);
   return enhanceCapabilityBridge(response,url);
  }
 };
