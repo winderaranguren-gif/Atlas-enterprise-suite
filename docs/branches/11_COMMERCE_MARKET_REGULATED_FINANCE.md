@@ -27,14 +27,27 @@ Identity/Auth, Organization/DBA, CRM, Enterprise Orders/Procurement, Inventory, 
 
 ## 4. Canonical sub-branches
 
-### 4.1 ATLAS Product / Meta Catalog Feed — WORKING FRUIT / COMMERCIAL-TRUTH GAP
+### 4.1 ATLAS Product / Meta Catalog Feed — WORKING FRUIT
 
 **Routes:** `/feeds/meta/atlas-catalog.csv`, `/feeds/meta/atlas-catalog.json`, `/feeds/meta/status`.  
-**Runtime:** `modules/meta-catalog.js`.
+**Runtime:** `modules/meta-catalog.js`.  
+**Commercial policy:** `modules/commercial-catalog-state.js`.  
+**Validation:** `scripts/validate-meta-catalog.mjs`.
 
-ATLAS has a functional public scheduled-feed representation with IDs, titles, descriptions, USD pricing, sale pricing, images and links.
+ATLAS has a functional public scheduled-feed representation with IDs, titles, descriptions, USD pricing, sale pricing, images and links. Availability no longer means “a row exists in the feed.” The feed now derives `availability` from an explicit ATLAS commercial state.
 
-**Important gap:** the current implementation emits `availability: in stock` uniformly. That is a feed behavior, not verified evidence that every listed module/concept is commercially purchasable or deployable. Commercial availability must become maturity-aware before this feed can be treated as authoritative sales inventory.
+### 4.1A Commercial Catalog Truth Policy — WORKING FRUIT
+
+The commercial catalog is fail-closed:
+
+- default commercial state = `preview`;
+- community-only entries remain non-retail listings;
+- only catalog IDs explicitly placed in the repository-owned `ACTIVE_FOR_SALE` set can become `active`;
+- only `active` becomes Meta `in stock`;
+- every non-active item becomes `out of stock`;
+- current policy intentionally has no active-for-sale IDs until a real commercial approval/offer registry exists.
+
+This means ATLAS may still show a design, proposed price or catalog concept without falsely claiming that the item is presently sellable, provisionable or fulfillable.
 
 ### 4.2 Commercial Offer / Pricing Governance — GREEN FRUIT
 
@@ -146,7 +159,14 @@ Commerce may collect transaction facts needed for tax calculation. Tax determina
 
 ## 5. Current WORKING FRUIT status
 
-The strongest canonical Commerce-specific runtime is the public Meta catalog feed. It is technically functional, but its present uniform `in stock` status is **not sufficient commercial evidence** for each listed product. Therefore ATLAS must distinguish:
+Commerce now has two related code-backed fruits:
+
+1. the public Meta catalog/feed runtime;
+2. the fail-closed Commercial Catalog Truth Policy.
+
+The prior unconditional `in stock` gap is closed at source level: presence in the catalog no longer proves availability. Commercial activation must be explicit. The next missing layer is the canonical Product + Commercial Offer Registry that can own approved plan/price/market/effective-date status instead of leaving pricing as a static marketing definition.
+
+ATLAS continues to distinguish:
 
 1. implementation maturity;
 2. commercial publication status;
@@ -161,6 +181,7 @@ No wallet, bank, insurance, lending, securities or payment-processing function i
 | Object | Authority |
 |---|---|
 | ATLAS product/service definition | future Product Registry / approved catalog source |
+| Catalog commercial activation | repository-owned Commercial Catalog Truth Policy until Product/Offer Registry replaces it |
 | Price/plan/offer | future Commerce Offer Registry |
 | Stock/item movement | Inventory |
 | Merchant/company identity | CRM/Organization/Business Network composition |
@@ -174,7 +195,7 @@ No wallet, bank, insurance, lending, securities or payment-processing function i
 
 ## 7. Fruit chains
 
-`Product identity → merchant offer → price/availability revalidation → cart → order → fulfillment → invoice/payment handoff → accounting/audit`
+`Product identity → commercial approval → merchant offer → price/availability revalidation → cart → order → fulfillment → invoice/payment handoff → accounting/audit`
 
 `Plan → approved commercial offer → checkout provider → entitlement → billing event → Finance accounting → Subscription management`
 
@@ -183,22 +204,24 @@ No wallet, bank, insurance, lending, securities or payment-processing function i
 ## 8. Commerce invariants
 
 1. A catalog entry is not proof of availability.
-2. `in stock` must be backed by actual commercial/inventory/capacity evidence.
-3. Price includes source/effective date/market and is revalidated before charge.
-4. Product identity is separate from merchant offer/inventory.
-5. Commerce does not create a second Inventory or Finance ledger.
-6. Checkout UI does not imply payment processing or settlement.
-7. Wallet UI does not imply custody or banking authority.
-8. Banking/lending/insurance/investment execution remains provider/licensing bound.
-9. Refund status distinguishes requested/approved/provider-confirmed/settled.
-10. Ads/promotions do not alter objective knowledge/safety/resource ranking without disclosure.
-11. Proposal/investment artifacts do not imply an offer is legally available.
-12. Commercial plan/entitlement state must be authoritative before access is granted.
+2. `in stock` must be backed by explicit approved commercial state and, where applicable, real inventory/capacity evidence.
+3. Meta availability derives from explicit commercial state; it is never hard-coded globally.
+4. Price includes source/effective date/market and is revalidated before charge.
+5. Product identity is separate from merchant offer/inventory.
+6. Commerce does not create a second Inventory or Finance ledger.
+7. Checkout UI does not imply payment processing or settlement.
+8. Wallet UI does not imply custody or banking authority.
+9. Banking/lending/insurance/investment execution remains provider/licensing bound.
+10. Refund status distinguishes requested/approved/provider-confirmed/settled.
+11. Ads/promotions do not alter objective knowledge/safety/resource ranking without disclosure.
+12. Proposal/investment artifacts do not imply an offer is legally available.
+13. Commercial plan/entitlement state must be authoritative before access is granted.
 
 ## 9. Next fruit sequence
 
+**Completed:** COM2 — Meta feed now derives availability from explicit commercial state instead of unconditional `in stock`.
+
 COM1. Canonical Product + Commercial Offer Registry with maturity/commercial-state separation.  
-COM2. Make Meta feed derive truthful availability from approved commercial state instead of unconditional `in stock`.  
 COM3. Merchant Offer + price/inventory freshness contract.  
 COM4. Cart + checkout revalidation model.  
 COM5. Integrate Branch 01 Sales Order spine and fulfillment lineage.  
