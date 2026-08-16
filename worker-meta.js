@@ -1,8 +1,9 @@
 import app from './worker-crm.js';
 import { metaCatalogRoutes } from './modules/meta-catalog.js';
+import { capabilityStateRoutes } from './modules/capability-state.js';
 import { RELEASE_SHA, RELEASE_BRANCH } from './modules/release-identity.js';
 
-const CORE_TABLES=['users','sessions','organizations','dbas','memberships','role_permissions'];
+const CORE_TABLES=['users','sessions','organizations','dbas','memberships','role_permissions','capability_state'];
 async function readiness(env){
  if(!env.DB)return Response.json({ok:false,state:'blocked',reason:'identity_database_binding_missing',checks:{database:false,schema:false,firstOwner:false,release:RELEASE_SHA!=='unreleased'}},{status:503,headers:{'cache-control':'no-store'}});
  try{
@@ -28,6 +29,8 @@ export default {
    return Response.json({ok:true,service:'atlas-enterprise-suite',releaseSha:RELEASE_SHA,releaseBranch:RELEASE_BRANCH},{headers:{'cache-control':'no-store'}});
   }
   if(url.pathname==='/api/readiness'&&request.method==='GET')return readiness(env);
+  const capabilityStateResponse=await capabilityStateRoutes(request,env,url);
+  if(capabilityStateResponse)return capabilityStateResponse;
   if(url.pathname==='/whatsapp-catalog.csv')url.pathname='/feeds/meta/atlas-catalog.csv';
   const catalogResponse=await metaCatalogRoutes(request,env,url);
   if(catalogResponse)return catalogResponse;
