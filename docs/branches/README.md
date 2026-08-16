@@ -14,8 +14,8 @@ This directory expands the canonical `docs/ATLAS_MASTER_INDEX_GENEALOGY.md` one 
 | 08 | Mobility, Maps & Vehicles | `08_MOBILITY_MAPS_VEHICLES.md` | `architecture/genealogy/08-mobility-maps-vehicles.json` | Structured |
 | 09 | Safety, City & Infrastructure | `09_SAFETY_CITY_INFRASTRUCTURE.md` | `architecture/genealogy/09-safety-city-infrastructure.json` | Structured |
 | 10 | Community & Humanity | `10_COMMUNITY_HUMANITY.md` | `architecture/genealogy/10-community-humanity.json` | Structured |
-| 11 | Commerce, Market & Regulated Finance | pending | pending | Next |
-| 12 | Creator, Media & Communications | pending | pending | Queued |
+| 11 | Commerce, Market & Regulated Finance | `11_COMMERCE_MARKET_REGULATED_FINANCE.md` | `architecture/genealogy/11-commerce-market-regulated-finance.json` | Structured |
+| 12 | Creator, Media & Communications | pending | pending | Next |
 | 13 | Robotics, Hardware & Spatial Systems | pending | pending | Queued |
 | 14 | Global, Regional & Country Layers | pending | pending | Queued |
 | 15 | Research, Future Observatory & Invention | pending | pending | Queued |
