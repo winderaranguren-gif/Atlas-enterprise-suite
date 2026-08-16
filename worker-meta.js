@@ -75,8 +75,8 @@ async function readiness(env){
  }catch{return Response.json({ok:false,state:'blocked',reason:'readiness_query_failed',checks:{database:true,schema:false,firstOwner:false,release:false}},{status:503,headers:{'cache-control':'no-store'}})}
 }
 
-async function enhancePublicCapabilityDiscovery(response,url){
- if(url.pathname!=='/'||requestMethodSafe(url)!=='GET')return response;
+async function enhancePublicCapabilityDiscovery(response,url,method){
+ if(url.pathname!=='/'||method!=='GET')return response;
  const type=response.headers.get('content-type')||'';
  if(!type.includes('text/html'))return response;
  let body=await response.text();
@@ -88,7 +88,6 @@ async function enhancePublicCapabilityDiscovery(response,url){
  const headers=new Headers(response.headers);headers.delete('content-length');
  return new Response(body,{status:response.status,statusText:response.statusText,headers});
 }
-function requestMethodSafe(url){return url?.__atlasMethod||'GET'}
 
 async function enhanceCapabilityBridge(response,url){
  const config=CAPABILITY_BRIDGES[url.pathname];
@@ -112,7 +111,7 @@ async function enhanceCapabilityBridge(response,url){
 
 export default {
  async fetch(request,env,ctx){
-  const url=new URL(request.url);url.__atlasMethod=request.method;
+  const url=new URL(request.url);
   if(url.pathname==='/assets/atlas-capability-security.js'&&request.method==='GET')return new Response(capabilitySecurityRuntime(),{headers:{'content-type':'text/javascript; charset=utf-8','cache-control':'public,max-age=900','x-content-type-options':'nosniff'}});
   if(url.pathname==='/api/release'&&request.method==='GET'){
    return Response.json({ok:true,service:'atlas-enterprise-suite',releaseSha:RELEASE_SHA,releaseBranch:RELEASE_BRANCH},{headers:{'cache-control':'no-store'}});
@@ -124,7 +123,7 @@ export default {
   const catalogResponse=await metaCatalogRoutes(request,env,url);
   if(catalogResponse)return catalogResponse;
   let response=await app.fetch(request,env,ctx);
-  response=await enhancePublicCapabilityDiscovery(response,url);
+  response=await enhancePublicCapabilityDiscovery(response,url,request.method);
   return enhanceCapabilityBridge(response,url);
  }
 };
