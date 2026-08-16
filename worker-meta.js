@@ -4,6 +4,16 @@ import { RELEASE_SHA, RELEASE_BRANCH } from './modules/release-identity.js';
 
 const CORE_TABLES=['users','sessions','organizations','dbas','memberships','role_permissions'];
 const CAPABILITY_BRIDGES={
+ '/platform/capabilities/lingua':{
+  id:'lingua-localization',eyebrow:'CONNECTED ATLAS SETTINGS',title:'Localization & Workspace Preferences',
+  copy:'Use ATLAS Settings for organization language, region and timezone preferences. Lingua remains the translation experience while Settings remains the scoped configuration surface.',
+  href:'/platform/settings',action:'Open ATLAS Settings →',tone:'blue'
+ },
+ '/platform/capabilities/language-coach':{
+  id:'language-coach-voice',eyebrow:'CONNECTED ATLAS SENSORY',title:'Voice & Vision Workspace',
+  copy:'Continue pronunciation and speech practice with the existing ATLAS Voice & Vision workspace for device voice, microphone and sensory capabilities. Language Coach remains the guided learning experience.',
+  href:'/platform/voice-vision',action:'Open ATLAS Voice & Vision →',tone:'blue'
+ },
  '/platform/capabilities/academy':{
   id:'academy-training',eyebrow:'CONNECTED ATLAS RECORDS',title:'Live Training & Certification Records',
   copy:'Open the existing HR Training workspace for tenant-scoped course catalog, assignments, completion scores and expiration tracking. Academy remains the learner-facing experience while HR Training remains the accountable system of record.',
@@ -23,6 +33,16 @@ const CAPABILITY_BRIDGES={
   id:'candidate-recruiting',eyebrow:'CONNECTED ATLAS WORKSPACE',title:'HR Recruiting Workspace',
   copy:'Open the existing ATLAS HR recruiting workspace for the organization recruiting flow. Candidate Hub remains the candidate-experience and assessment layer; this bridge does not claim a separate candidate database.',
   href:'/platform/hr-payroll/recruiting',action:'Open ATLAS Recruiting →',tone:'blue'
+ },
+ '/platform/capabilities/forms':{
+  id:'forms-documents',eyebrow:'CONNECTED ATLAS DOCUMENTS',title:'Documents, Templates & Approvals',
+  copy:'Send completed form workflows toward the existing ATLAS Documents surface for controlled templates, approvals, versions and archives. The current Forms builder remains browser-local until its secure persistence layer is promoted.',
+  href:'/platform/documents',action:'Open ATLAS Documents →',tone:'blue'
+ },
+ '/platform/capabilities/personalization':{
+  id:'personalization-settings',eyebrow:'CONNECTED ATLAS SETTINGS',title:'Workspace Configuration',
+  copy:'Use the existing ATLAS Settings workspace for organization-level appearance, localization, notifications and system preferences. Personalization remains the user-facing preference model.',
+  href:'/platform/settings',action:'Open ATLAS Settings →',tone:'blue'
  }
 };
 async function readiness(env){
