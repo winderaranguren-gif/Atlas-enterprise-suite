@@ -46,6 +46,10 @@ async function enhanceCoreResponse(response,url){
   const type=response.headers.get('content-type')||'';if(!type.includes('text/html'))return response;
   let body=await response.text();
   if(url.pathname==='/dashboard'||url.pathname==='/menu-experience')body=repairDashboardNavigation(body);
+  if(url.pathname==='/platform/documents'&&!body.includes('href="/platform/forms-control"')){
+    const forms='<a href="/platform/forms-control" style="position:fixed;right:18px;bottom:18px;z-index:50;padding:10px 14px;border:1px solid #2f8cff;border-radius:999px;background:linear-gradient(135deg,#7ee6ff,#2f8cff);color:#03111d;text-decoration:none;font-weight:800;box-shadow:0 12px 34px #0007">Open ATLAS Forms Control</a>';
+    body=body.replace('</body>',forms+'</body>');
+  }
   if(url.pathname.startsWith('/platform/')&&!body.includes('/assets/atlas-module-visual.js'))body=body.replace('</body>','<script src="/assets/atlas-module-visual.js" defer></script></body>');
   const headers=new Headers(response.headers);headers.delete('content-length');return new Response(body,{status:response.status,statusText:response.statusText,headers});
 }
