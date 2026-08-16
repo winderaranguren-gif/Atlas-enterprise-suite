@@ -27,8 +27,10 @@ for(const item of body.items||[]){
   assert(['native-browser','workflow-ready','foundation'].includes(item.implementationState),`${item.slug} has invalid implementation state`);
   assert(Array.isArray(item.features)&&item.features.length>=6,`${item.slug} public features incomplete`);
   assert(String(item.workspace||'').startsWith('https://atlasenterprisesuite.com/platform/capabilities/'),`${item.slug} public workspace URL invalid`);
+  assert(typeof item.connectedAtlasWorkspace==='string'&&item.connectedAtlasWorkspace.startsWith('ATLAS '),`${item.slug} must identify its connected ATLAS workspace`);
 }
 
+for(const marker of ['Connected: ATLAS Stream Control','Connected: ATLAS Subscription Control'])assert(html.includes(marker),`public page missing ${marker}`);
 const miss=await call('/not-capabilities');
 assert(miss===null,'unrelated route must fall through');
-console.log(`ATLAS public Capability directory passed: ${expected.length} items, honest states, public page and JSON feed verified.`);
+console.log(`ATLAS public Capability directory passed: ${expected.length} connected items, honest states, public page and JSON feed verified.`);
