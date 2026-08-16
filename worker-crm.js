@@ -28,8 +28,12 @@ function repairDashboardNavigation(body){
   let next=body;
   for(const [from,to] of Object.entries(DASHBOARD_ROUTES))next=next.replaceAll(`href="${from}"`,`href="${to}"`);
   next=next.replaceAll('>Logistics<','>Transportation<');
+  const marker='<div class="nav-group" data-menu-group="settings"';
+  if(next.includes('class="menu"')&&!next.includes('href="/platform/capabilities"')){
+    const capabilities='<div class="nav-group" data-menu-group="capabilities" data-search="capabilities language learning tax recruiting forms stream subscriptions personalization"><div class="nav-row"><a class="nav-link" href="/platform/capabilities"><span class="nav-icon">✦</span><span class="nav-label">Capabilities</span></a></div></div>';
+    if(next.includes(marker))next=next.replace(marker,capabilities+marker);
+  }
   if(next.includes('class="menu"')&&!next.includes('href="/platform/integrations"')){
-    const marker='<div class="nav-group" data-menu-group="settings"';
     const integration='<div class="nav-group" data-menu-group="integrations" data-search="integrations connections sync webhooks api access logs"><div class="nav-row"><a class="nav-link" href="/platform/integrations"><span class="nav-icon">⌘</span><span class="nav-label">Integrations</span></a></div></div>';
     if(next.includes(marker))next=next.replace(marker,integration+marker);
   }
