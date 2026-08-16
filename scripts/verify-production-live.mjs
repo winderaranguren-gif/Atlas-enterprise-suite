@@ -17,6 +17,24 @@ const hasPublicCapabilitySet=data=>{
   const slugs=items.map(item=>item?.slug);
   return data?.ok===true&&data?.count===expectedCapabilities.length&&data?.generatedFrom==='ATLAS_CAPABILITY_REGISTRY'&&expectedCapabilities.every(slug=>slugs.includes(slug))&&items.every(item=>typeof item?.connectedAtlasWorkspace==='string'&&item.connectedAtlasWorkspace.startsWith('ATLAS '));
 };
+const hasCommercialTruth=data=>{
+  const policy=data?.commercialPolicy,items=Array.isArray(data?.items)?data.items:[];
+  if(data?.ok!==true||data?.count!==30||policy?.policy!=='fail-closed'||policy?.defaultState!=='preview'||!Array.isArray(policy?.activeIds)||!Array.isArray(policy?.communityIds))return false;
+  const active=new Set(policy.activeIds);
+  for(const item of items){
+    if(!['active','preview','community'].includes(item?.commercialStatus))return false;
+    if(item?.approvedForSale!==(item.commercialStatus==='active'))return false;
+    if(item.commercialStatus==='active'){
+      if(item.availability!=='in stock'||!active.has(item.id))return false;
+    }else if(item.availability!=='out of stock')return false;
+  }
+  return true;
+};
+const hasCommercialStatus=data=>{
+  if(data?.ok!==true||data?.commercialPolicy?.policy!=='fail-closed'||typeof data?.commercialCounts!=='object')return false;
+  const activeCount=Number(data.commercialCounts.active||0);
+  return activeCount===data.commercialPolicy.activeIds.length;
+};
 
 const checks=[
   {path:'/',status:200,contains:['ATLAS','href="/capabilities"','>Capabilities</a>']},
@@ -24,6 +42,8 @@ const checks=[
   {path:'/signup',status:200,contains:['Create your ATLAS account']},
   {path:'/capabilities',status:200,contains:['ATLAS CAPABILITY DIRECTORY','One ecosystem.','Implementation transparency:','Connected: ATLAS Stream Control','Connected: ATLAS Subscription Control']},
   {path:'/feeds/capabilities.json',status:200,json:hasPublicCapabilitySet},
+  {path:'/feeds/meta/atlas-catalog.json',status:200,json:hasCommercialTruth},
+  {path:'/feeds/meta/status',status:200,json:hasCommercialStatus},
   {path:'/sitemap.xml',status:200,contains:[`<loc>${origin}/capabilities</loc>`]},
   {path:'/assets/atlas-capability-security.js',status:200,contains:['__ATLAS_CAPABILITY_SAFE_DOM__','javascript:','data:text/html']},
   {path:'/api/health',status:200,json:d=>d?.ok===true&&d?.state==='operational'},
@@ -43,7 +63,7 @@ for(const check of checks){
   const url=origin+check.path;
   let thisFailed=false;
   try{
-    const response=await fetch(url,{redirect:check.redirect||'follow',headers:{'user-agent':'ATLAS-Production-Verifier/3.6'},signal:AbortSignal.timeout(15000)});
+    const response=await fetch(url,{redirect:check.redirect||'follow',headers:{'user-agent':'ATLAS-Production-Verifier/3.7'},signal:AbortSignal.timeout(15000)});
     const text=await response.text();
     if(response.status!==check.status){console.error(`FAIL ${check.path}: HTTP ${response.status}, expected ${check.status}${text?` · ${text.slice(0,300)}`:''}`);failed=thisFailed=true;continue}
     if(check.locationContains){const location=response.headers.get('location')||'';if(!location.includes(check.locationContains)){console.error(`FAIL ${check.path}: redirect location ${JSON.stringify(location)} missing ${JSON.stringify(check.locationContains)}`);failed=thisFailed=true}}
