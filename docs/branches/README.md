@@ -10,8 +10,8 @@ This directory expands the canonical `docs/ATLAS_MASTER_INDEX_GENEALOGY.md` one 
 | 04 | Knowledge, Education & Learning | `04_KNOWLEDGE_EDUCATION_LEARNING.md` | `architecture/genealogy/04-knowledge-education-learning.json` | Structured |
 | 05 | Capability Fusion | `05_CAPABILITY_FUSION.md` | `architecture/genealogy/05-capability-fusion.json` | Structured |
 | 06 | Documents, Forms & Confidential Exchange | `06_DOCUMENTS_FORMS_CONFIDENTIAL_EXCHANGE.md` | `architecture/genealogy/06-documents-forms-confidential-exchange.json` | Structured |
-| 07 | Health & Care | pending | pending | Next |
-| 08 | Mobility, Maps & Vehicles | pending | pending | Queued |
+| 07 | Health & Care | `07_HEALTH_CARE.md` | `architecture/genealogy/07-health-care.json` | Structured |
+| 08 | Mobility, Maps & Vehicles | pending | pending | Next |
 | 09 | Safety, City & Infrastructure | pending | pending | Queued |
 | 10 | Community & Humanity | pending | pending | Queued |
 | 11 | Commerce, Market & Regulated Finance | pending | pending | Queued |
