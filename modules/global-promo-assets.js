@@ -53,6 +53,7 @@ export function globalPromoArtworkAssetFileName(value){
 }
 export function globalPromoArtworkAssetExtension(value){const name=String(value??'').toLowerCase(),i=name.lastIndexOf('.');return i>=0?name.slice(i):''}
 export function globalPromoArtworkAssetAllowed(value){return ALLOWED_EXTENSIONS.has(globalPromoArtworkAssetExtension(value))}
+export function globalPromoArtworkAssetReferenceId(value){const ref=String(value??'').trim();if(!ref.startsWith('asset:'))return null;const id=ref.slice(6).trim();return /^[A-Za-z0-9_-]{8,128}$/.test(id)?id:null}
 export function globalPromoArtworkAssetChunks(bytes,chunkSize=GLOBAL_PROMO_ASSET_CHUNK_BYTES){
  const view=bytes instanceof Uint8Array?bytes:new Uint8Array(bytes);if(!Number.isSafeInteger(chunkSize)||chunkSize<1||chunkSize>1000000)throw new Error('invalid_chunk_size');
  const out=[];for(let offset=0;offset<view.byteLength;offset+=chunkSize)out.push(view.slice(offset,Math.min(view.byteLength,offset+chunkSize)));return out;
@@ -67,13 +68,24 @@ export async function ensureGlobalPromoAssetSchema(env){
 async function authorize(request,env,permission,action){const a=await requireTenantPermission(request,env,permission,action);if(!a.ok)return{response:json({ok:false,error:a.error},a.status)};try{const ready=await ensureGlobalPromoAssetSchema(env);if(!ready.ok)return{response:json({ok:false,error:ready.error},503)}}catch{return{response:json({ok:false,error:'global_promo_asset_schema_unavailable'},503)}}return{authz:a}}
 async function audit(env,a,action,id,metadata){try{await appendAuditLedger(env,{organizationId:a.organizationId,dbaId:a.dbaId,actorUserId:a.session.user_id,category:'global_promo',action,resourceType:'global_promo_artwork_asset',resourceId:id,decision:'allow',severity:'info',correlationId:a.correlationId,metadata});return true}catch{return false}}
 async function job(env,a,id){return env.DB.prepare(`SELECT id,status FROM global_promo_jobs WHERE id=? AND organization_id=? AND dba_id=?`).bind(id,a.organizationId,a.dbaId).first()}
-function uploadAllowed(status){return status==='artwork'}
+function uploadAllowed(status){return status==='artwork'||status==='approval'}
 function contentType(fileName,provided){const ext=globalPromoArtworkAssetExtension(fileName);return CONTENT_TYPES.get(ext)||text(provided,120)||'application/octet-stream'}
+async function validAssetForJob(env,a,jobId,reference){const assetId=globalPromoArtworkAssetReferenceId(reference);if(reference&&String(reference).trim().startsWith('asset:')&&!assetId)return{ok:false,error:'invalid_artwork_asset_reference'};if(!assetId)return{ok:true,external:true};const row=await env.DB.prepare(`SELECT id,job_id FROM global_promo_artwork_assets WHERE id=? AND job_id=? AND organization_id=? AND dba_id=?`).bind(assetId,jobId,a.organizationId,a.dbaId).first();return row?{ok:true,assetId}:{ok:false,error:'artwork_asset_not_found_for_job'}}
+
+export async function preflightGlobalPromoAssetReferences(request,env,url=new URL(request.url)){
+ const path=url.pathname.length>1?url.pathname.replace(/\/+$/,''):url.pathname,create=request.method==='POST'&&path==='/api/global-promo/artwork',decision=path.match(/^\/api\/global-promo\/artwork\/([^/]+)\/decision$/);
+ if(!create&&!(request.method==='POST'&&decision))return{request};
+ const gate=await authorize(request,env,'module.write',create?'global_promo.artwork.create':'global_promo.artwork.decide');if(gate.response)return gate;const a=gate.authz;
+ let body;try{body=await request.clone().json()}catch{return{response:json({ok:false,error:'invalid_json'},400)}}
+ let jobId=text(body.jobId,128);if(!create){const artwork=await env.DB.prepare(`SELECT job_id FROM global_promo_artwork_versions WHERE id=? AND organization_id=? AND dba_id=?`).bind(decodeURIComponent(decision[1]),a.organizationId,a.dbaId).first();if(!artwork)return{response:json({ok:false,error:'artwork_not_found'},404)};jobId=artwork.job_id}
+ const refs=create?[body.fileReference,body.mockupReference]:[body.approvalEvidenceReference];for(const ref of refs){if(!ref)continue;const checked=await validAssetForJob(env,a,jobId,ref);if(!checked.ok)return{response:json({ok:false,error:checked.error},409)}}
+ const headers=new Headers(request.headers);headers.set('content-type','application/json');return{request:new Request(request.url,{method:request.method,headers,body:JSON.stringify(body),redirect:request.redirect})};
+}
 
 async function uploadAsset(request,env){
  const gate=await authorize(request,env,'module.write','global_promo.artwork.asset.upload');if(gate.response)return gate.response;const a=gate.authz;
  let form;try{form=await request.formData()}catch{return json({ok:false,error:'multipart_form_required'},400)}
- const jobId=text(form.get('jobId'),128),owner=await job(env,a,jobId);if(!owner)return json({ok:false,error:'global_promo_job_not_found'},404);if(!uploadAllowed(owner.status))return json({ok:false,error:'artwork_asset_requires_artwork_phase',jobStatus:owner.status},409);
+ const jobId=text(form.get('jobId'),128),owner=await job(env,a,jobId);if(!owner)return json({ok:false,error:'global_promo_job_not_found'},404);if(!uploadAllowed(owner.status))return json({ok:false,error:'artwork_asset_requires_artwork_or_approval_phase',jobStatus:owner.status},409);
  const file=form.get('file');if(!file||typeof file.arrayBuffer!=='function')return json({ok:false,error:'artwork_file_required'},400);
  const fileName=globalPromoArtworkAssetFileName(file.name);if(!fileName||!globalPromoArtworkAssetAllowed(fileName))return json({ok:false,error:'unsupported_artwork_file_type',allowedExtensions:[...ALLOWED_EXTENSIONS]},415);
  const declaredSize=Number(file.size||0);if(!Number.isFinite(declaredSize)||declaredSize<=0)return json({ok:false,error:'artwork_file_empty'},400);if(declaredSize>GLOBAL_PROMO_ASSET_MAX_BYTES)return json({ok:false,error:'artwork_file_too_large',maxBytes:GLOBAL_PROMO_ASSET_MAX_BYTES},413);
