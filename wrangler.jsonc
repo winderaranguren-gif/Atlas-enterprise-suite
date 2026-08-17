@@ -1,6 +1,6 @@
 {
   "name": "atlas-enterprise-suite",
-  "main": "worker.js",
+  "main": "atlas-router.js",
   "compatibility_date": "2026-08-12",
   "workers_dev": false,
   "routes": [
