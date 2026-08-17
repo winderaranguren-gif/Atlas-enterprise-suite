@@ -1,6 +1,8 @@
-name: Deploy ATLAS Climate-Aware Dashboard
+name: Validate and Deploy ATLAS
 
 on:
+  pull_request:
+    branches: [main]
   push:
     branches: [main]
   workflow_dispatch:
@@ -9,11 +11,30 @@ permissions:
   contents: read
 
 concurrency:
-  group: atlas-production
+  group: atlas-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - run: npm install --no-audit --no-fund
+
+      - name: Validate ATLAS Finance Intelligence
+        run: npm run check:finance
+
+      - name: Validate Worker bundle
+        run: npx wrangler deploy --dry-run
+
   deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: validate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -47,3 +68,5 @@ jobs:
           curl --retry 5 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/healthz
           curl --retry 5 --retry-delay 3 --retry-all-errors -fsS "https://atlasenterprisesuite.com/api/weather?lat=28.5383&lon=-81.3792"
           curl --retry 5 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/dashboard > /dev/null
+          curl --retry 5 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/api/finance/health
+          curl --retry 5 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/finance > /dev/null
