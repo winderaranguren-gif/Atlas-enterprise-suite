@@ -21,7 +21,7 @@ const requiredApis=['/api/global-promo/overview','/api/global-promo/jobs','/api/
 for(const route of requiredApis)if(!api.includes(route))throw new Error(`Global Promo API missing ${route}`);
 for(const route of ['/api/global-promo/billing','/invoice','/payments'])if(!financeHandoff.includes(route))throw new Error(`Global Promo finance route missing ${route}`);
 if(!integrity.includes('/commercial-context'))throw new Error('Post-request commercial linking endpoint missing');
-for(const guard of ['quote_customer_scope_mismatch','purchase_order_inventory_item_not_found','global_promo.job.commercial_context.update'])if(!integrity.includes(guard))throw new Error(`Commercial/inventory integrity guard missing: ${guard}`);
+for(const guard of ['quote_customer_scope_mismatch','purchase_order_inventory_item_not_found','global_promo.job.commercial_context.update','commercial_context_locked_after_invoice'])if(!integrity.includes(guard))throw new Error(`Commercial/inventory integrity guard missing: ${guard}`);
 for(const guard of ['quality_pass_required_before_packing','package_required_before_delivery','delivered_package_required','packages_not_delivered'])if(!integrity.includes(guard))throw new Error(`Mandatory QC/delivery transition guard missing: ${guard}`);
 for(const guard of ['trg_finance_invoice_payments_validate','payment_exceeds_invoice_balance','invoice_not_payable','SUM(amount_cents)','finance.invoice.payment.record'])if(!financeHandoff.includes(guard))throw new Error(`Finance/payment integrity guard missing: ${guard}`);
 if(!commercialUi.includes('commercialContextForm')||!commercialUi.includes('/commercial-context'))throw new Error('Commercial context UI is not functional');
