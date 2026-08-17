@@ -79,7 +79,16 @@ Bitácora viva para separar con precisión lo diseñado, implementado, probado, 
 **Hardening agregado durante revisión:**
 - Customer/Quote se valida contra el mismo tenant y se rechaza mismatch.
 - Purchase Orders rechazan referencias de Inventory de otro tenant.
-- Packing requiere al menos un QC con `pass`; ya no puede avanzar sin evidencia de QC.
+- Material requirements usan transiciones controladas; Production rechaza materiales existentes que todavía no estén allocated/issued/cancelled.
+- Work Orders pueden planificarse en Materials/Production, pero ejecución y completion requieren que el job esté realmente en Production.
+- Quality Control exige al menos un Work Order no cancelado completado y rechaza Work Orders todavía abiertos.
+- QC solo puede registrarse cuando el job está en `quality_control`; si referencia un Work Order, este debe estar `completed`.
+- Artwork solo se crea en fase `artwork`; decisiones de artwork solo se aceptan en `approval`.
+- Un job que entró a Approval no puede salir manualmente a Materials sin artwork aprobado.
+- Packing requiere al menos un QC con `pass`.
+- Packages solo se crean mientras el job está en Packing. Si el job ya está Ready y necesita otro paquete, debe regresar primero a Packing mediante la transición permitida `ready → packing`.
+- Los estados `packing/packed` de package pertenecen a la fase Packing; `shipped/delivered/exception` pertenecen a Ready/fulfillment.
+- Ready exige al menos un package no cancelado y cero packages todavía en `packing` o `exception`.
 - Delivered requiere al menos un package registrado, al menos uno con estado `delivered` y cero packages todavía abiertos.
 - Una vez creado un Finance invoice para el job, Customer/Quote queda bloqueado para evitar divergencia `Invoice A` ↔ `Quote B`.
 - Payments usan ledger auditable y trigger de base de datos para rechazar sobrepagos o facturas no pagables.
@@ -87,12 +96,15 @@ Bitácora viva para separar con precisión lo diseñado, implementado, probado, 
 - Se restauró `/feeds/meta/atlas-catalog.csv` después de detectar una deriva accidental durante integración.
 
 **Pruebas ejecutadas en runtime Node 22 disponible:**
-- `node --check` del archivo exacto `modules/global-promo-integrity.js`: PASS.
-- Prueba aislada de comportamiento para QC/Delivery/commercial lock: PASS 7/7 después de corregir un error de sintaxis que pertenecía únicamente al primer harness de prueba.
-- Los invariantes se convirtieron en funciones puras reutilizadas por producción y se añadió `scripts/test-global-promo-integrity.mjs` con cobertura permanente dentro de `validate:global-promo`.
-- `validate:global-promo` está incluido en `build:sovereign` y `build:prod`.
+- Node v22.16.0 utilizado para las pruebas de invariantes.
+- `node --check` sobre el módulo de invariantes extraído y sobre el test harness: PASS.
+- Primera prueba endpoint/invariant: PASS 7/7 después de corregir un error de sintaxis perteneciente únicamente al primer harness, no al código de producto.
+- Suite ampliada de invariantes de Materials, Work Orders, Artwork/Approval, QC, Packing, Ready, packages/fulfillment, Delivery y commercial lock: PASS 49/49.
+- Los invariantes están implementados como funciones reutilizadas por producción y reflejados en `scripts/test-global-promo-integrity.mjs`.
+- `scripts/validate-global-promo.mjs` exige la presencia de los guards de fase y seguridad.
+- `validate:global-promo` permanece incluido en `build:sovereign` y `build:prod`.
 
-**Limitación todavía real:** el `build:sovereign` completo de todo el repositorio todavía no ha sido ejecutado en un runner Node 22 con acceso íntegro a la rama. El runtime local no puede resolver `github.com` y el GitHub App no permite descargar el tarball privado. Por tanto no se declara el build completo como aprobado.
+**Limitación todavía real:** el `validate:global-promo` completo contra un checkout materializado y el `build:sovereign` completo de todo el repositorio todavía no han sido ejecutados en un runner Node 22 con acceso íntegro a la rama. El runtime local no puede resolver `github.com` y el GitHub App no permite descargar el tarball privado. Por tanto no se declara el build completo como aprobado.
 
 ## 2026-08-17 — Global Promo: reconciliación limpia con main actual
 
@@ -102,15 +114,15 @@ Bitácora viva para separar con precisión lo diseñado, implementado, probado, 
 
 **Main base verificado:** `b7daab78bfb7b0680f84471381cc8bbca1ef0150`.
 
-**Árbol reconciliado:** `394cf277def416b70d0be7aa3bccf97931e85b34`.
+**Árbol reconciliado inicial:** `394cf277def416b70d0be7aa3bccf97931e85b34`.
 
-**Commit limpio:** `a0b3f9b5ab100e0bd9dff1f7cd3d1f326053cdc9`, con `main` actual como padre directo.
+**Commit limpio inicial:** `a0b3f9b5ab100e0bd9dff1f7cd3d1f326053cdc9`, con `main` actual como padre directo.
 
 **Rama canónica candidata:** `feature/global-promo-operations-mainline`.
 
 **PR vigente:** `#195 — Global Promo Production ERP — reconciled canonical mainline`.
 
-**Estado de GitHub verificado:** PR abierto, draft, `mergeable=true`, base `main`, base SHA `b7daab78bfb7b0680f84471381cc8bbca1ef0150`, head SHA `a0b3f9b5ab100e0bd9dff1f7cd3d1f326053cdc9`, un commit y 12 archivos modificados.
+**Estado de GitHub verificado después del hardening:** PR abierto, draft, `mergeable=true`, base `main`, base SHA `b7daab78bfb7b0680f84471381cc8bbca1ef0150`; sigue limitado a 12 archivos modificados del alcance reconciliado. El head avanza con los commits de hardening y tests sin cambiar la base canónica.
 
 **Compatibilidad preservada:**
 - `modules/company-operations.js` existe físicamente en la nueva rama y conserva la versión de `main`.
@@ -120,9 +132,9 @@ Bitácora viva para separar con precisión lo diseñado, implementado, probado, 
 - Los adaptadores `bundle`, `cloudflare` y `sovereign-edge` existen físicamente en la rama reconciliada.
 - `wrangler.main` no fue modificado y `worker-meta.js` continúa siendo el entrypoint canónico.
 
-**PRs anteriores:** #191 y #194 quedan superseded por #195 y no deben fusionarse. Sus ramas/historial se conservan como evidencia y rollback hasta que se decida una limpieza posterior.
+**PRs anteriores:** #191 y #194 fueron cerrados sin merge como `superseded by #195`. Sus ramas/historial se conservan como evidencia y rollback; no deben fusionarse.
 
-**Estado actual exacto:** DISEÑADO ✅ · IMPLEMENTADO EN RAMA LIMPIA ✅ · HARDENING UNITARIO PROBADO ✅ · RECONCILIADO CON MAIN ✅ · PR MERGEABLE ✅ · BUILD SOBERANO COMPLETO ❌ · MERGE A MAIN ❌ · DESPLIEGUE ❌ · VERIFICACIÓN EN PRODUCCIÓN ❌.
+**Estado actual exacto:** DISEÑADO ✅ · IMPLEMENTADO EN RAMA LIMPIA ✅ · INVARIANTES CRÍTICOS PROBADOS 49/49 ✅ · RECONCILIADO CON MAIN ✅ · PR MERGEABLE ✅ · BUILD SOBERANO COMPLETO ❌ · MERGE A MAIN ❌ · DESPLIEGUE ❌ · VERIFICACIÓN EN PRODUCCIÓN ❌.
 
 **URL objetivo:** `https://www.atlasenterprisesuite.com/platform/global-promo` después de validación completa, integración, despliegue y verificación real.
 
@@ -131,8 +143,8 @@ Bitácora viva para separar con precisión lo diseñado, implementado, probado, 
 La superficie pública consultable de ATLAS mostró credenciales/código de demostración en contenido público. Las cadenas observadas no se localizaron en el `main` canónico mediante la búsqueda disponible, por lo que no se modificó autenticación a ciegas. El hallazgo queda pendiente de reconciliar con el artefacto/origen realmente desplegado antes de declarar cerrada la auditoría de producción de Voice.
 
 ## Próximo paso recomendado
-1. Mantener #195 como única ruta candidata de integración de Global Promo y cerrar #191/#194 como superseded sin borrar ramas ni historial.
-2. Ejecutar `validate:global-promo` completo y `build:sovereign` en un runner Node 22 con acceso a la rama `feature/global-promo-operations-mainline`.
+1. Mantener #195 como única ruta candidata de integración de Global Promo; #191 y #194 ya están cerrados sin merge.
+2. Conseguir un runner Node 22 con acceso al checkout completo de `feature/global-promo-operations-mainline` y ejecutar `validate:global-promo` + `build:sovereign`.
 3. Corregir cualquier error antes de sacar #195 de draft.
 4. Integrar a `main` sin cambiar `worker-meta.js` como entrypoint ni debilitar seguridad/rollback.
 5. Publicar mediante un adaptador autorizado reemplazable.
