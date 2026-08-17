@@ -22,8 +22,8 @@ Bitácora viva para separar con precisión lo diseñado, implementado, probado, 
 
 **Limitaciones verificadas:**
 - La auditoría visual en vivo del proyecto Lovable `/voice` no pudo ejecutarse mediante su agente porque el workspace se encuentra sin créditos.
-- La ruta de despliegue automática de GitHub Actions continúa fallando antes de ejecutar pasos; el job más reciente no inició ningún step.
-- Desde el runtime actual no fue posible resolver DNS directamente para realizar una prueba HTTP externa independiente de la URL canónica.
+- La ruta de despliegue automática de GitHub Actions continúa sin aportar evidencia del build requerido.
+- La verificación visual completa de la URL canónica de Voice continúa pendiente.
 
 **Estado:** IMPLEMENTADO en el repositorio canónico; revisión estática completada. VERIFICACIÓN VISUAL EN PRODUCCIÓN todavía pendiente.
 
@@ -39,41 +39,15 @@ Bitácora viva para separar con precisión lo diseñado, implementado, probado, 
 
 **API nueva:** `/api/finance/intelligence/summary`.
 
-**Fuentes reutilizadas:**
-- `finance_accounts`
-- `finance_journal_entries`
-- `finance_journal_lines`
-- `finance_bills`
-- `finance_invoices`
-- `finance_bank_accounts`
-- `finance_bank_transactions`
-- `finance_budgets`
-- `finance_budget_lines`
+**Fuentes reutilizadas:** `finance_accounts`, `finance_journal_entries`, `finance_journal_lines`, `finance_bills`, `finance_invoices`, `finance_bank_accounts`, `finance_bank_transactions`, `finance_budgets`, `finance_budget_lines`.
 
-**Funciones implementadas:**
-- Liquidez/saldo bancario únicamente cuando existen cuentas bancarias ATLAS activas.
-- Ingresos y gastos del mes desde el libro mayor.
-- Rentabilidad, eficiencia de cobro y crecimiento de ingresos derivados de datos reales.
-- Activos, pasivos y patrimonio derivados de asientos contabilizados.
-- Presupuesto vs. gasto real cuando existe un presupuesto activo.
-- Series de 12 meses para ingresos/gastos y flujo de caja.
-- Alertas transparentes para AP próximo a vencer, AR vencido, sobreconsumo presupuestario y ausencia de banca conectada.
-- Exportación CSV desde los datos cargados.
-- Navegación hacia Accounting, AR, AP, Banking, Budgets, Taxes, Payroll, Inventory y Reports.
-- Diseño responsive de escritorio, tablet y móvil.
-- Estados vacíos/honestos cuando una fuente no existe.
-- El clima se marca explícitamente como no conectado; no se muestran temperaturas inventadas.
+**Funciones implementadas:** liquidez cuando existen cuentas bancarias ATLAS; ingresos/gastos desde el libro mayor; rentabilidad y eficiencia de cobro; activos/pasivos/patrimonio; presupuesto vs. real; series de 12 meses; alertas AP/AR/presupuesto; exportación CSV; navegación a Accounting/AR/AP/Banking/Budgets/Taxes/Payroll/Inventory/Reports; responsive; estados vacíos honestos.
 
-**Seguridad:**
-- Requiere `module.read` mediante `requireTenantPermission`.
-- Mantiene alcance por `organization_id` + `dba_id`.
-- No expone secretos.
-- No utiliza cámara, micrófono ni geolocalización.
-- Solo hace `fetch` same-origin hacia la API propia de ATLAS.
+**Seguridad:** `module.read`, alcance `organization_id + dba_id`, sin exposición de secretos, sin cámara/micrófono/geolocalización y fetch same-origin.
 
 **Pruebas incorporadas:** `scripts/validate-financial-intelligence.mjs`, integrado a `build:sovereign` y `build:prod`.
 
-**Estado antes de commit:** código preparado para commit atómico. Despliegue y verificación de producción pendientes hasta disponer de una ruta autorizada de publicación que no dependa del GitHub Actions bloqueado.
+**Estado:** IMPLEMENTADO EN CÓDIGO. DESPLIEGUE Y VERIFICACIÓN DE PRODUCCIÓN PENDIENTES.
 
 ## 2026-08-17 — Global Promo LLC Production ERP
 
@@ -114,30 +88,52 @@ Bitácora viva para separar con precisión lo diseñado, implementado, probado, 
 
 **Pruebas ejecutadas en runtime Node 22 disponible:**
 - `node --check` del archivo exacto `modules/global-promo-integrity.js`: PASS.
-- Prueba unitaria aislada de los nuevos gates: PASS 7/7 después de corregir un error de sintaxis que estaba únicamente en el primer harness de prueba, no en el módulo.
-- Los invariantes se convirtieron en funciones puras reutilizadas por producción y se añadió `scripts/test-global-promo-integrity.mjs` para ejecutarlos permanentemente dentro de `validate:global-promo`.
+- Prueba aislada de comportamiento para QC/Delivery/commercial lock: PASS 7/7 después de corregir un error de sintaxis que pertenecía únicamente al primer harness de prueba.
+- Los invariantes se convirtieron en funciones puras reutilizadas por producción y se añadió `scripts/test-global-promo-integrity.mjs` con cobertura permanente dentro de `validate:global-promo`.
 - `validate:global-promo` está incluido en `build:sovereign` y `build:prod`.
 
-**Reconciliación con main:** mientras se trabajaba, `main` avanzó e incorporó Company Operations y soporte `release:sovereign:edge`. La rama Global Promo fue actualizada semánticamente para conservar `companyOperationsRoutes`, `validate:company-operations`, `release:sovereign:edge` y, en paralelo, Global Promo y sus tests. No se debe borrar trabajo nuevo de `main` al integrar.
+**Limitación todavía real:** el `build:sovereign` completo de todo el repositorio todavía no ha sido ejecutado en un runner Node 22 con acceso íntegro a la rama. El runtime local no puede resolver `github.com` y el GitHub App no permite descargar el tarball privado. Por tanto no se declara el build completo como aprobado.
 
-**Limitaciones todavía reales:** el runtime local no puede resolver `github.com`; el archive/tarball privado está bloqueado por permisos del GitHub App; por eso todavía no se ha ejecutado el `build:sovereign` completo de todo el repositorio. GitHub Actions sigue configurado solo para `workflow_dispatch` y no constituye la única puerta de producción.
+## 2026-08-17 — Global Promo: reconciliación limpia con main actual
 
-**Rama:** `feature/global-promo-operations`.
+**Problema detectado:** mientras Global Promo se desarrollaba, `main` avanzó e incorporó Company Operations y soporte de despliegue `release:sovereign:edge`. La rama original `feature/global-promo-operations` y el PR #191 quedaron divergentes; un PR temporal de sincronización #194 también resultó inadecuado para una integración limpia.
 
-**PR principal:** `#191 — Global Promo Production ERP — canonical ATLAS module`.
+**Acción aplicada:** se evitó rebase destructivo, force-push y sobrescritura de trabajo nuevo. Se construyó mediante Git tree API un árbol nuevo tomando como base lógica el `main` actual y reutilizando por SHA únicamente los blobs de Global Promo y los archivos compartidos reconciliados.
 
-**Estado:** IMPLEMENTADO EN RAMA. PR DRAFT. HARDENING UNITARIO PROBADO. BUILD SOBERANO COMPLETO PENDIENTE. NO DESPLEGADO. NO VERIFICADO EN PRODUCCIÓN.
+**Main base verificado:** `b7daab78bfb7b0680f84471381cc8bbca1ef0150`.
 
-**URL objetivo:** `https://www.atlasenterprisesuite.com/platform/global-promo` después de integración, despliegue y verificación real.
+**Árbol reconciliado:** `394cf277def416b70d0be7aa3bccf97931e85b34`.
+
+**Commit limpio:** `a0b3f9b5ab100e0bd9dff1f7cd3d1f326053cdc9`, con `main` actual como padre directo.
+
+**Rama canónica candidata:** `feature/global-promo-operations-mainline`.
+
+**PR vigente:** `#195 — Global Promo Production ERP — reconciled canonical mainline`.
+
+**Estado de GitHub verificado:** PR abierto, draft, `mergeable=true`, base `main`, base SHA `b7daab78bfb7b0680f84471381cc8bbca1ef0150`, head SHA `a0b3f9b5ab100e0bd9dff1f7cd3d1f326053cdc9`, un commit y 12 archivos modificados.
+
+**Compatibilidad preservada:**
+- `modules/company-operations.js` existe físicamente en la nueva rama y conserva la versión de `main`.
+- `worker-meta.js` conserva `companyOperationsRoutes` y añade Global Promo.
+- `package.json` conserva `validate:company-operations`, añade `validate:global-promo` y mantiene ambos dentro de las cadenas correspondientes.
+- `release:sovereign:edge` permanece disponible.
+- Los adaptadores `bundle`, `cloudflare` y `sovereign-edge` existen físicamente en la rama reconciliada.
+- `wrangler.main` no fue modificado y `worker-meta.js` continúa siendo el entrypoint canónico.
+
+**PRs anteriores:** #191 y #194 quedan superseded por #195 y no deben fusionarse. Sus ramas/historial se conservan como evidencia y rollback hasta que se decida una limpieza posterior.
+
+**Estado actual exacto:** DISEÑADO ✅ · IMPLEMENTADO EN RAMA LIMPIA ✅ · HARDENING UNITARIO PROBADO ✅ · RECONCILIADO CON MAIN ✅ · PR MERGEABLE ✅ · BUILD SOBERANO COMPLETO ❌ · MERGE A MAIN ❌ · DESPLIEGUE ❌ · VERIFICACIÓN EN PRODUCCIÓN ❌.
+
+**URL objetivo:** `https://www.atlasenterprisesuite.com/platform/global-promo` después de validación completa, integración, despliegue y verificación real.
 
 ## 2026-08-17 — Hallazgo de superficie pública / Voice
 
 La superficie pública consultable de ATLAS mostró credenciales/código de demostración en contenido público. Las cadenas observadas no se localizaron en el `main` canónico mediante la búsqueda disponible, por lo que no se modificó autenticación a ciegas. El hallazgo queda pendiente de reconciliar con el artefacto/origen realmente desplegado antes de declarar cerrada la auditoría de producción de Voice.
 
 ## Próximo paso recomendado
-1. Completar la reconciliación formal de `main` dentro de `feature/global-promo-operations` sin perder Company Operations, Sovereign Edge ni Global Promo.
-2. Ejecutar `validate:global-promo` completo y `build:sovereign` en un runner Node 22 con acceso a la rama completa.
-3. Corregir cualquier error antes de sacar el PR #191 de draft.
+1. Mantener #195 como única ruta candidata de integración de Global Promo y cerrar #191/#194 como superseded sin borrar ramas ni historial.
+2. Ejecutar `validate:global-promo` completo y `build:sovereign` en un runner Node 22 con acceso a la rama `feature/global-promo-operations-mainline`.
+3. Corregir cualquier error antes de sacar #195 de draft.
 4. Integrar a `main` sin cambiar `worker-meta.js` como entrypoint ni debilitar seguridad/rollback.
 5. Publicar mediante un adaptador autorizado reemplazable.
 6. Verificar `/platform/global-promo`, todas sus subrutas, Billing & Payments y acceso desde `/dashboard` en la URL real antes de declarar LIVE.
