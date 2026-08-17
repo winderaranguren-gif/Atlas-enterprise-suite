@@ -15,7 +15,7 @@ const required = [
 for (const file of required) await readFile(file, 'utf8');
 
 const pkg = JSON.parse(await readFile('package.json', 'utf8'));
-for (const key of ['build:sovereign', 'snapshot:sovereign', 'release:sovereign', 'validate:sovereign']) {
+for (const key of ['build:sovereign', 'snapshot:sovereign', 'release:sovereign', 'release:sovereign:edge', 'validate:sovereign']) {
   if (!pkg.scripts?.[key]) throw new Error(`Missing package script: ${key}`);
 }
 
@@ -35,12 +35,12 @@ if (!orchestrator.includes('liveVerified: verification?.verified === true')) {
 const cloudflare = await readFile('scripts/deploy-adapters/cloudflare.mjs', 'utf8');
 if (!cloudflare.includes('replaceable = true')) throw new Error('Cloudflare adapter must be explicitly replaceable.');
 const sovereignEdge = await readFile('scripts/deploy-adapters/sovereign-edge.mjs', 'utf8');
-for (const token of ['immutable_release_conflict', '/api/rollback', 'host_ready_public_origin_not_configured']) {
+for (const token of ['immutable_release_conflict', '/api/rollback', 'host_ready_public_origin_not_configured', 'destructive_migration_blocked', 'migration_drift_preflight', '/_atlas/runtime/schema']) {
   if (!sovereignEdge.includes(token)) throw new Error(`Sovereign Edge safety contract missing: ${token}`);
 }
 
 const runtime = await readFile('sovereign/runtime/server.mjs', 'utf8');
-for (const token of ['migration_drift:', 'worker-meta.js', '/_atlas/runtime/readiness', 'x-atlas-sovereign-release']) {
+for (const token of ['migration_drift:', 'worker-meta.js', '/_atlas/runtime/readiness', '/_atlas/runtime/schema', 'CONTROL_TOKEN', 'x-atlas-sovereign-release']) {
   if (!runtime.includes(token)) throw new Error(`Sovereign application runtime contract missing: ${token}`);
 }
 const sqlite = await readFile('sovereign/runtime/d1-sqlite.mjs', 'utf8');
