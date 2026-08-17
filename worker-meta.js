@@ -3,6 +3,7 @@ import { metaCatalogRoutes } from './modules/meta-catalog.js';
 import { capabilityPublicRoutes } from './modules/capability-public.js';
 import { capabilitySecurityRuntime } from './modules/capability-security-runtime.js';
 import { RELEASE_SHA, RELEASE_BRANCH } from './modules/release-identity.js';
+import { dashboardMasterRoute } from './modules/dashboard-master.js';
 
 const CORE_TABLES=['users','sessions','organizations','dbas','memberships','role_permissions'];
 const CAPABILITY_BRIDGES={
@@ -123,6 +124,8 @@ async function enhanceCapabilityBridge(response,url){
 export default {
  async fetch(request,env,ctx){
   const url=new URL(request.url);
+  const dashboardResponse=await dashboardMasterRoute(request,env,url);
+  if(dashboardResponse)return dashboardResponse;
   if(url.pathname==='/assets/atlas-capability-security.js'&&request.method==='GET')return new Response(capabilitySecurityRuntime(),{headers:{'content-type':'text/javascript; charset=utf-8','cache-control':'public,max-age=900','x-content-type-options':'nosniff'}});
   if(url.pathname==='/api/release'&&request.method==='GET'){
    return Response.json({ok:true,service:'atlas-enterprise-suite',releaseSha:RELEASE_SHA,releaseBranch:RELEASE_BRANCH},{headers:{'cache-control':'no-store'}});
