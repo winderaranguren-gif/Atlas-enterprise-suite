@@ -15,6 +15,7 @@ const DB_PATH = process.env.ATLAS_SQLITE_PATH || path.join(ROOT, 'state', 'atlas
 const PUBLIC_ORIGIN = String(process.env.ATLAS_PUBLIC_ORIGIN || '').replace(/\/$/, '');
 const CONTROL_TOKEN = String(process.env.ATLAS_CONTROL_TOKEN || '').trim();
 const MAX_BODY_BYTES = Number(process.env.ATLAS_MAX_REQUEST_BYTES || 25 * 1024 * 1024);
+const DESTRUCTIVE_MIGRATION = /\b(?:DROP\s+(?:TABLE|VIEW|INDEX)|TRUNCATE|DELETE\s+FROM|REPLACE\s+INTO|UPDATE\s+[A-Za-z0-9_"`]+\s+SET|ALTER\s+TABLE[\s\S]{0,200}\b(?:DROP|RENAME)\b)/i;
 const MIME = new Map([
   ['.avif', 'image/avif'], ['.css', 'text/css; charset=utf-8'], ['.gif', 'image/gif'], ['.ico', 'image/x-icon'],
   ['.jpeg', 'image/jpeg'], ['.jpg', 'image/jpeg'], ['.js', 'text/javascript; charset=utf-8'], ['.json', 'application/json; charset=utf-8'],
@@ -50,6 +51,7 @@ async function applyMigrations(releasePath) {
       if (existing.sha256 !== digest) throw new Error(`migration_drift:${name}`);
       continue;
     }
+    if (DESTRUCTIVE_MIGRATION.test(sql)) throw new Error(`destructive_migration_blocked:${name}`);
     DB.native.exec('BEGIN IMMEDIATE');
     try {
       DB.native.exec(sql);
