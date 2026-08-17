@@ -6,6 +6,7 @@ const required = [
   'scripts/deploy-adapters/cloudflare.mjs',
   'scripts/deploy-adapters/bundle.mjs',
   'scripts/deploy-adapters/sovereign-edge.mjs',
+  'sovereign/atlas-edge/edge.mjs',
   'sovereign/runtime/d1-sqlite.mjs',
   'sovereign/runtime/server.mjs',
   'sovereign/systemd/atlas-runtime.service',
@@ -37,6 +38,11 @@ if (!cloudflare.includes('replaceable = true')) throw new Error('Cloudflare adap
 const sovereignEdge = await readFile('scripts/deploy-adapters/sovereign-edge.mjs', 'utf8');
 for (const token of ['immutable_release_conflict', '/api/rollback', 'host_ready_public_origin_not_configured', 'destructive_migration_blocked', 'migration_drift_preflight', '/_atlas/runtime/schema']) {
   if (!sovereignEdge.includes(token)) throw new Error(`Sovereign Edge safety contract missing: ${token}`);
+}
+
+const edge = await readFile('sovereign/atlas-edge/edge.mjs', 'utf8');
+for (const token of ['release_symlink_forbidden', 'release_outside_root', "path.dirname(resolved) !== root", 'entry.isDirectory() && validId(entry.name)']) {
+  if (!edge.includes(token)) throw new Error(`ATLAS Edge release-boundary contract missing: ${token}`);
 }
 
 const runtime = await readFile('sovereign/runtime/server.mjs', 'utf8');
