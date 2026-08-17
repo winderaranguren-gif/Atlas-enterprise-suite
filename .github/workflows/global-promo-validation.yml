@@ -1,0 +1,36 @@
+name: Global Promo Sovereign Validation
+
+on:
+  push:
+    branches:
+      - feature/global-promo-operations-mainline
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: global-promo-sovereign-validation
+  cancel-in-progress: true
+
+jobs:
+  validate-global-promo:
+    name: Validate Global Promo and Sovereign Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact branch commit
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Use Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validate Global Promo
+        run: npm run validate:global-promo
+
+      - name: Validate sovereign build
+        run: npm run build:sovereign
