@@ -7,7 +7,11 @@ import {
   globalPromoWorkOrdersGate,
   globalPromoReadyGate,
   globalPromoWorkOrderExecutionAllowed,
+  globalPromoWorkOrderCreationAllowed,
   globalPromoQualityAllowed,
+  globalPromoArtworkCreationAllowed,
+  globalPromoArtworkDecisionAllowed,
+  globalPromoApprovalExitAllowed,
   globalPromoPackageCreationAllowed,
   globalPromoPackageFulfillmentAllowed
 } from '../modules/global-promo-integrity.js';
@@ -38,19 +42,32 @@ const cases=[
   [globalPromoReadyGate(0,0)==='package_required_before_ready','Ready requires a package'],
   [globalPromoReadyGate(2,1)==='packages_not_ready','Ready rejects incomplete package preparation'],
   [globalPromoReadyGate(2,0)===null,'Ready accepts prepared packages'],
+  [globalPromoWorkOrderCreationAllowed('quoted')===false,'Work orders may not be created before Materials'],
+  [globalPromoWorkOrderCreationAllowed('materials')===true,'Work orders may be planned during Materials'],
+  [globalPromoWorkOrderCreationAllowed('production')===true,'Work orders may be created during Production'],
+  [globalPromoWorkOrderCreationAllowed('quality_control')===false,'Work orders may not be created after Production'],
   [globalPromoWorkOrderExecutionAllowed('materials','in_progress')===false,'Work order execution may not begin before Production'],
   [globalPromoWorkOrderExecutionAllowed('production','in_progress')===true,'Work order execution is valid during Production'],
   [globalPromoWorkOrderExecutionAllowed('production','completed')===true,'Work order completion is valid during Production'],
   [globalPromoWorkOrderExecutionAllowed('materials','scheduled')===true,'Work orders may be scheduled before Production'],
   [globalPromoQualityAllowed('production')===false,'Final QC may not be recorded during Production'],
   [globalPromoQualityAllowed('quality_control')===true,'QC is valid in Quality Control'],
+  [globalPromoArtworkCreationAllowed('quoted')===false,'Artwork records require the Artwork phase'],
+  [globalPromoArtworkCreationAllowed('artwork')===true,'Artwork may be created in Artwork phase'],
+  [globalPromoArtworkDecisionAllowed('artwork')===false,'Artwork may not be decided before Approval'],
+  [globalPromoArtworkDecisionAllowed('approval')===true,'Submitted artwork may be decided in Approval'],
+  [globalPromoApprovalExitAllowed('approval','materials',0)===false,'Approval may not exit to Materials without approved artwork'],
+  [globalPromoApprovalExitAllowed('approval','materials',1)===true,'Approval may exit when approved artwork exists'],
+  [globalPromoApprovalExitAllowed('quoted','materials',0)===true,'Quoted jobs may intentionally bypass artwork when no artwork workflow is required'],
   [globalPromoPackageCreationAllowed('quality_control')===false,'Packages may not be created before Packing'],
   [globalPromoPackageCreationAllowed('packing')===true,'Packages may be created during Packing'],
-  [globalPromoPackageCreationAllowed('ready')===true,'Additional package records may be created while Ready'],
+  [globalPromoPackageCreationAllowed('ready')===false,'Ready jobs must return to Packing before adding a package'],
+  [globalPromoPackageFulfillmentAllowed('packing','packed')===true,'Packages may be packed during Packing'],
+  [globalPromoPackageFulfillmentAllowed('ready','packed')===false,'Ready may not be invalidated by returning a package to Packed state'],
   [globalPromoPackageFulfillmentAllowed('packing','shipped')===false,'Packages may not ship before job Ready'],
   [globalPromoPackageFulfillmentAllowed('ready','shipped')===true,'Packages may ship while job Ready'],
   [globalPromoPackageFulfillmentAllowed('ready','delivered')===true,'Package delivery evidence is valid while job Ready'],
-  [globalPromoPackageFulfillmentAllowed('packing','packed')===true,'Packing status remains valid during Packing']
+  [globalPromoPackageFulfillmentAllowed('packing','exception')===false,'Fulfillment exceptions belong to Ready/shipping phase']
 ];
 for(const [ok,message] of cases)assert(ok,message);
 console.log(`Global Promo integrity tests passed: ${cases.length}/${cases.length}`);
