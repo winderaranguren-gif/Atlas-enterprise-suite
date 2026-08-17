@@ -5,6 +5,8 @@ const read=path=>fs.readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const api=read('modules/global-promo.js');
 const schema=read('modules/global-promo-schema.js');
 const ui=read('modules/global-promo-ui.js');
+const integrity=read('modules/global-promo-integrity.js');
+const commercialUi=read('modules/global-promo-commercial-ui.js');
 const worker=read('worker-meta.js');
 const wrangler=read('wrangler.jsonc');
 
@@ -13,6 +15,9 @@ for(const table of requiredTables)if(!schema.includes(table))throw new Error(`Gl
 
 const requiredApis=['/api/global-promo/overview','/api/global-promo/jobs','/api/global-promo/artwork','/api/global-promo/embroidery','/api/global-promo/materials','/api/global-promo/purchase-orders','/api/global-promo/work-orders','/api/global-promo/quality','/api/global-promo/packages','/api/global-promo/costing'];
 for(const route of requiredApis)if(!api.includes(route))throw new Error(`Global Promo API missing ${route}`);
+if(!integrity.includes('/commercial-context'))throw new Error('Post-request commercial linking endpoint missing');
+for(const guard of ['quote_customer_scope_mismatch','purchase_order_inventory_item_not_found','global_promo.job.commercial_context.update'])if(!integrity.includes(guard))throw new Error(`Commercial/inventory integrity guard missing: ${guard}`);
+if(!commercialUi.includes('commercialContextForm')||!commercialUi.includes('/commercial-context'))throw new Error('Commercial context UI is not functional');
 
 const requiredPages=['overview','jobs','artwork','embroidery','materials','purchasing','production','quality','packing','costing'];
 for(const section of requiredPages){const html=globalPromoPage(section);if(!html.includes('GLOBAL PROMO LLC · PRODUCTION ERP'))throw new Error(`Global Promo page failed for ${section}`);if(html.includes('href="#"'))throw new Error(`Blueprint href detected in ${section}`);if(!html.includes('scopeSelect'))throw new Error(`Scoped company selector missing in ${section}`)}
@@ -20,9 +25,9 @@ for(const section of requiredPages){const html=globalPromoPage(section);if(!html
 for(const route of ['/platform/crm','/platform/inventory','/platform/operations/vendors','/platform/operations/approvals','/platform/finance/accounts-receivable','/platform/finance/accounts-payable','/platform/finance/general-ledger'])if(!ui.includes(route))throw new Error(`Connected ATLAS route missing: ${route}`);
 for(const control of ['jobForm','artForm','embForm','materialForm','poForm','workForm','qcForm','packageForm'])if(!ui.includes(control))throw new Error(`Functional control missing: ${control}`);
 for(const guard of ['requireTenantPermission','appendAuditLedger','organizationId','dbaId','invalid_job_status_transition','work_orders_incomplete','quality_pass_required','packages_not_delivered','purchase_order_approval_role_required'])if(!api.includes(guard))throw new Error(`Security/workflow guard missing: ${guard}`);
-if(!worker.includes("globalPromoRoutes"))throw new Error('Global Promo is not registered in canonical worker-meta.js');
-if(!worker.includes("requireBrowserSession"))throw new Error('Global Promo protected UI session gate missing');
+for(const wiring of ['globalPromoRoutes','globalPromoCommercialContextRoute','preflightGlobalPromoRequest','enhanceGlobalPromoCommercialUI','href="/platform/global-promo"'])if(!worker.includes(wiring))throw new Error(`Canonical Global Promo wiring missing: ${wiring}`);
+if(!worker.includes('requireBrowserSession'))throw new Error('Global Promo protected UI session gate missing');
 if(!wrangler.includes('"main": "worker-meta.js"'))throw new Error('Canonical production entrypoint changed unexpectedly');
 if(/\$\d+(?:\.\d+)?M\b|2\.45M|245,800|1,783/.test(ui))throw new Error('Fabricated dashboard metric pattern detected');
-if(ui.includes('Coming Soon')||ui.includes('console.log('))throw new Error('Static/fake control marker detected');
+if([ui,commercialUi].some(source=>source.includes('Coming Soon')||source.includes('console.log(')))throw new Error('Static/fake control marker detected');
 console.log('Global Promo Production ERP validation passed');
