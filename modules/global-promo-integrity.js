@@ -11,11 +11,15 @@ async function quote(env,a,id){if(!id)return null;return env.DB.prepare(`SELECT 
 async function audit(env,a,action,id,metadata){try{await appendAuditLedger(env,{organizationId:a.organizationId,dbaId:a.dbaId,actorUserId:a.session.user_id,category:'global_promo',action,resourceType:'global_promo_job',resourceId:id,decision:'allow',severity:'info',correlationId:a.correlationId,metadata});return true}catch{return false}}
 
 export async function preflightGlobalPromoRequest(request,env,url=new URL(request.url)){
- if(request.method!=='POST'||!['/api/global-promo/jobs','/api/global-promo/purchase-orders'].includes(url.pathname))return{request};
+ const jobUpdateMatch=url.pathname.match(/^\/api\/global-promo\/jobs\/([^/]+)$/);
+ const jobCreate=request.method==='POST'&&url.pathname==='/api/global-promo/jobs';
+ const purchaseOrderCreate=request.method==='POST'&&url.pathname==='/api/global-promo/purchase-orders';
+ const jobUpdate=request.method==='PATCH'&&Boolean(jobUpdateMatch);
+ if(!jobCreate&&!purchaseOrderCreate&&!jobUpdate)return{request};
  const parsed=await rawJson(request.clone());if(!parsed.ok)return{response:parsed.response};
- const action=url.pathname.endsWith('/jobs')?'global_promo.job.create':'global_promo.purchase_order.create';
+ const action=jobCreate?'global_promo.job.create':purchaseOrderCreate?'global_promo.purchase_order.create':'global_promo.job.update';
  const gate=await scope(request,env,action);if(gate.response)return gate;const a=gate.authz,b=parsed.body;
- if(url.pathname==='/api/global-promo/jobs'){
+ if(jobCreate){
   const accountId=nullable(b.customerAccountId,128),quoteId=nullable(b.quoteId,128);
   const [acct,q]=await Promise.all([accountId?account(env,a,accountId):null,quoteId?quote(env,a,quoteId):null]);
   if(accountId&&!acct)return{response:json({ok:false,error:'customer_account_not_found'},404)};
@@ -23,10 +27,25 @@ export async function preflightGlobalPromoRequest(request,env,url=new URL(reques
   if(q?.account_id&&accountId&&q.account_id!==accountId)return{response:json({ok:false,error:'quote_customer_scope_mismatch'},409)};
   if(q?.account_id&&!accountId)b.customerAccountId=q.account_id;
  }
- if(url.pathname==='/api/global-promo/purchase-orders'){
+ if(purchaseOrderCreate){
   const lines=Array.isArray(b.lines)?b.lines:[];
   const ids=[...new Set(lines.map(line=>nullable(line?.inventoryItemId,128)).filter(Boolean))];
   for(const id of ids){const row=await env.DB.prepare(`SELECT id FROM inventory_items WHERE id=? AND organization_id=? AND dba_id=?`).bind(id,a.organizationId,a.dbaId).first();if(!row)return{response:json({ok:false,error:'purchase_order_inventory_item_not_found',inventoryItemId:id},404)}}
+ }
+ if(jobUpdate){
+  const jobId=decodeURIComponent(jobUpdateMatch[1]),status=text(b.status,30);
+  const current=await env.DB.prepare(`SELECT id,status FROM global_promo_jobs WHERE id=? AND organization_id=? AND dba_id=?`).bind(jobId,a.organizationId,a.dbaId).first();
+  if(!current)return{response:json({ok:false,error:'global_promo_job_not_found'},404)};
+  if(status==='packing'){
+   const qc=await env.DB.prepare(`SELECT COUNT(*) total,SUM(CASE WHEN result='pass' THEN 1 ELSE 0 END) passed FROM global_promo_quality_checks WHERE job_id=? AND organization_id=? AND dba_id=?`).bind(jobId,a.organizationId,a.dbaId).first();
+   if(Number(qc?.total||0)<1||Number(qc?.passed||0)<1)return{response:json({ok:false,error:'quality_pass_required_before_packing'},409)};
+  }
+  if(status==='delivered'){
+   const packages=await env.DB.prepare(`SELECT COUNT(*) total,SUM(CASE WHEN status='delivered' THEN 1 ELSE 0 END) delivered,SUM(CASE WHEN status NOT IN ('delivered','cancelled') THEN 1 ELSE 0 END) open FROM global_promo_packages WHERE job_id=? AND organization_id=? AND dba_id=?`).bind(jobId,a.organizationId,a.dbaId).first();
+   if(Number(packages?.total||0)<1)return{response:json({ok:false,error:'package_required_before_delivery'},409)};
+   if(Number(packages?.delivered||0)<1)return{response:json({ok:false,error:'delivered_package_required'},409)};
+   if(Number(packages?.open||0)>0)return{response:json({ok:false,error:'packages_not_delivered'},409)};
+  }
  }
  const headers=new Headers(request.headers);headers.set('content-type','application/json');
  return{request:new Request(request.url,{method:request.method,headers,body:JSON.stringify(b),redirect:request.redirect})};
