@@ -8,20 +8,43 @@ async function rawJson(request,maxBytes=1048576){const raw=await request.text();
 async function scope(request,env,action){const authz=await requireTenantPermission(request,env,'module.write',action);if(!authz.ok)return{response:json({ok:false,error:authz.error},authz.status)};return{authz}}
 async function account(env,a,id){if(!id)return null;return env.DB.prepare(`SELECT id,name FROM crm_accounts WHERE id=? AND organization_id=? AND dba_id=?`).bind(id,a.organizationId,a.dbaId).first()}
 async function quote(env,a,id){if(!id)return null;return env.DB.prepare(`SELECT id,quote_number,title,account_id FROM crm_quotes WHERE id=? AND organization_id=? AND dba_id=?`).bind(id,a.organizationId,a.dbaId).first()}
+async function scopedJob(env,a,id){if(!id)return null;return env.DB.prepare(`SELECT id,status FROM global_promo_jobs WHERE id=? AND organization_id=? AND dba_id=?`).bind(id,a.organizationId,a.dbaId).first()}
 async function audit(env,a,action,id,metadata){try{await appendAuditLedger(env,{organizationId:a.organizationId,dbaId:a.dbaId,actorUserId:a.session.user_id,category:'global_promo',action,resourceType:'global_promo_job',resourceId:id,decision:'allow',severity:'info',correlationId:a.correlationId,metadata});return true}catch{return false}}
+
+const MATERIAL_TRANSITIONS={
+ required:new Set(['ordered','received','cancelled']),ordered:new Set(['received','cancelled']),received:new Set(['allocated','cancelled']),allocated:new Set(['received','issued','cancelled']),issued:new Set(),cancelled:new Set()
+};
+const PACKAGE_FULFILLMENT_STATES=new Set(['shipped','delivered','exception']);
 
 export function globalPromoPackingGate(total,passed){return Number(total||0)<1||Number(passed||0)<1?'quality_pass_required_before_packing':null}
 export function globalPromoDeliveryGate(total,delivered,open){if(Number(total||0)<1)return'package_required_before_delivery';if(Number(delivered||0)<1)return'delivered_package_required';if(Number(open||0)>0)return'packages_not_delivered';return null}
 export function globalPromoCommercialContextLocked(currentAccount,currentQuote,requestedAccount,requestedQuote,hasInvoice){return Boolean(hasInvoice&&(requestedAccount!==currentAccount||requestedQuote!==currentQuote))}
+export function globalPromoMaterialTransitionAllowed(from,to){return from===to||Boolean(MATERIAL_TRANSITIONS[from]?.has(to))}
+export function globalPromoMaterialsGate(total,incomplete){return Number(total||0)>0&&Number(incomplete||0)>0?'materials_not_ready':null}
+export function globalPromoWorkOrdersGate(active,completed,open){if(Number(active||0)<1)return'work_order_required_before_quality';if(Number(completed||0)<1)return'completed_work_order_required_before_quality';if(Number(open||0)>0)return'work_orders_incomplete';return null}
+export function globalPromoReadyGate(active,incomplete){if(Number(active||0)<1)return'package_required_before_ready';if(Number(incomplete||0)>0)return'packages_not_ready';return null}
+export function globalPromoWorkOrderExecutionAllowed(jobStatus,nextStatus){return !['in_progress','completed'].includes(nextStatus)||jobStatus==='production'}
+export function globalPromoQualityAllowed(jobStatus){return jobStatus==='quality_control'}
+export function globalPromoPackageCreationAllowed(jobStatus){return ['packing','ready'].includes(jobStatus)}
+export function globalPromoPackageFulfillmentAllowed(jobStatus,nextStatus){return !PACKAGE_FULFILLMENT_STATES.has(nextStatus)||jobStatus==='ready'}
 
 export async function preflightGlobalPromoRequest(request,env,url=new URL(request.url)){
- const jobUpdateMatch=url.pathname.match(/^\/api\/global-promo\/jobs\/([^/]+)$/);
- const jobCreate=request.method==='POST'&&url.pathname==='/api/global-promo/jobs';
- const purchaseOrderCreate=request.method==='POST'&&url.pathname==='/api/global-promo/purchase-orders';
+ const path=url.pathname.length>1?url.pathname.replace(/\/+$/,''):url.pathname;
+ const jobUpdateMatch=path.match(/^\/api\/global-promo\/jobs\/([^/]+)$/);
+ const materialUpdateMatch=path.match(/^\/api\/global-promo\/materials\/([^/]+)$/);
+ const workOrderUpdateMatch=path.match(/^\/api\/global-promo\/work-orders\/([^/]+)$/);
+ const packageUpdateMatch=path.match(/^\/api\/global-promo\/packages\/([^/]+)$/);
+ const jobCreate=request.method==='POST'&&path==='/api/global-promo/jobs';
+ const purchaseOrderCreate=request.method==='POST'&&path==='/api/global-promo/purchase-orders';
+ const qualityCreate=request.method==='POST'&&path==='/api/global-promo/quality';
+ const packageCreate=request.method==='POST'&&path==='/api/global-promo/packages';
  const jobUpdate=request.method==='PATCH'&&Boolean(jobUpdateMatch);
- if(!jobCreate&&!purchaseOrderCreate&&!jobUpdate)return{request};
+ const materialUpdate=request.method==='PATCH'&&Boolean(materialUpdateMatch);
+ const workOrderUpdate=request.method==='PATCH'&&Boolean(workOrderUpdateMatch);
+ const packageUpdate=request.method==='PATCH'&&Boolean(packageUpdateMatch);
+ if(!jobCreate&&!purchaseOrderCreate&&!qualityCreate&&!packageCreate&&!jobUpdate&&!materialUpdate&&!workOrderUpdate&&!packageUpdate)return{request};
  const parsed=await rawJson(request.clone());if(!parsed.ok)return{response:parsed.response};
- const action=jobCreate?'global_promo.job.create':purchaseOrderCreate?'global_promo.purchase_order.create':'global_promo.job.update';
+ const action=jobCreate?'global_promo.job.create':purchaseOrderCreate?'global_promo.purchase_order.create':qualityCreate?'global_promo.quality.create':packageCreate?'global_promo.package.create':materialUpdate?'global_promo.material.update':workOrderUpdate?'global_promo.work_order.update':packageUpdate?'global_promo.package.update':'global_promo.job.update';
  const gate=await scope(request,env,action);if(gate.response)return gate;const a=gate.authz,b=parsed.body;
  if(jobCreate){
   const accountId=nullable(b.customerAccountId,128),quoteId=nullable(b.quoteId,128);
@@ -36,13 +59,49 @@ export async function preflightGlobalPromoRequest(request,env,url=new URL(reques
   const ids=[...new Set(lines.map(line=>nullable(line?.inventoryItemId,128)).filter(Boolean))];
   for(const id of ids){const row=await env.DB.prepare(`SELECT id FROM inventory_items WHERE id=? AND organization_id=? AND dba_id=?`).bind(id,a.organizationId,a.dbaId).first();if(!row)return{response:json({ok:false,error:'purchase_order_inventory_item_not_found',inventoryItemId:id},404)}}
  }
+ if(materialUpdate){
+  const id=decodeURIComponent(materialUpdateMatch[1]);const row=await env.DB.prepare(`SELECT id,status FROM global_promo_material_requirements WHERE id=? AND organization_id=? AND dba_id=?`).bind(id,a.organizationId,a.dbaId).first();
+  if(!row)return{response:json({ok:false,error:'material_requirement_not_found'},404)};const next=text(b.status||row.status,30);
+  if(!globalPromoMaterialTransitionAllowed(row.status,next))return{response:json({ok:false,error:'invalid_material_transition',from:row.status,to:next},409)};
+ }
+ if(workOrderUpdate){
+  const id=decodeURIComponent(workOrderUpdateMatch[1]);const row=await env.DB.prepare(`SELECT id,job_id,status FROM global_promo_work_orders WHERE id=? AND organization_id=? AND dba_id=?`).bind(id,a.organizationId,a.dbaId).first();
+  if(!row)return{response:json({ok:false,error:'work_order_not_found'},404)};const owner=await scopedJob(env,a,row.job_id),next=text(b.status||row.status,30);
+  if(!owner)return{response:json({ok:false,error:'global_promo_job_not_found'},404)};
+  if(!globalPromoWorkOrderExecutionAllowed(owner.status,next))return{response:json({ok:false,error:'work_order_execution_requires_production',jobStatus:owner.status,to:next},409)};
+ }
+ if(qualityCreate){
+  const jobId=text(b.jobId,128),owner=await scopedJob(env,a,jobId);if(!owner)return{response:json({ok:false,error:'global_promo_job_not_found'},404)};
+  if(!globalPromoQualityAllowed(owner.status))return{response:json({ok:false,error:'quality_check_requires_quality_control',jobStatus:owner.status},409)};
+  const workOrderId=nullable(b.workOrderId,128);if(workOrderId){const work=await env.DB.prepare(`SELECT id,status FROM global_promo_work_orders WHERE id=? AND job_id=? AND organization_id=? AND dba_id=?`).bind(workOrderId,jobId,a.organizationId,a.dbaId).first();if(!work)return{response:json({ok:false,error:'work_order_not_found_for_job'},404)};if(work.status!=='completed')return{response:json({ok:false,error:'quality_work_order_not_completed',workOrderStatus:work.status},409)}}
+ }
+ if(packageCreate){
+  const jobId=text(b.jobId,128),owner=await scopedJob(env,a,jobId);if(!owner)return{response:json({ok:false,error:'global_promo_job_not_found'},404)};
+  if(!globalPromoPackageCreationAllowed(owner.status))return{response:json({ok:false,error:'package_requires_packing_or_ready',jobStatus:owner.status},409)};
+ }
+ if(packageUpdate){
+  const id=decodeURIComponent(packageUpdateMatch[1]);const row=await env.DB.prepare(`SELECT p.id,p.job_id,p.status,j.status AS job_status FROM global_promo_packages p JOIN global_promo_jobs j ON j.id=p.job_id AND j.organization_id=p.organization_id AND j.dba_id=p.dba_id WHERE p.id=? AND p.organization_id=? AND p.dba_id=?`).bind(id,a.organizationId,a.dbaId).first();
+  if(!row)return{response:json({ok:false,error:'package_not_found'},404)};const next=text(b.status||row.status,30);
+  if(!globalPromoPackageFulfillmentAllowed(row.job_status,next))return{response:json({ok:false,error:'package_fulfillment_requires_ready',jobStatus:row.job_status,to:next},409)};
+ }
  if(jobUpdate){
   const jobId=decodeURIComponent(jobUpdateMatch[1]),status=text(b.status,30);
-  const current=await env.DB.prepare(`SELECT id,status FROM global_promo_jobs WHERE id=? AND organization_id=? AND dba_id=?`).bind(jobId,a.organizationId,a.dbaId).first();
-  if(!current)return{response:json({ok:false,error:'global_promo_job_not_found'},404)};
+  const current=await scopedJob(env,a,jobId);if(!current)return{response:json({ok:false,error:'global_promo_job_not_found'},404)};
+  if(status==='production'){
+   const materials=await env.DB.prepare(`SELECT COUNT(*) total,SUM(CASE WHEN status NOT IN ('allocated','issued','cancelled') THEN 1 ELSE 0 END) incomplete FROM global_promo_material_requirements WHERE job_id=? AND organization_id=? AND dba_id=?`).bind(jobId,a.organizationId,a.dbaId).first();
+   const error=globalPromoMaterialsGate(materials?.total,materials?.incomplete);if(error)return{response:json({ok:false,error},409)};
+  }
+  if(status==='quality_control'){
+   const work=await env.DB.prepare(`SELECT SUM(CASE WHEN status<>'cancelled' THEN 1 ELSE 0 END) active,SUM(CASE WHEN status='completed' THEN 1 ELSE 0 END) completed,SUM(CASE WHEN status NOT IN ('completed','cancelled') THEN 1 ELSE 0 END) open FROM global_promo_work_orders WHERE job_id=? AND organization_id=? AND dba_id=?`).bind(jobId,a.organizationId,a.dbaId).first();
+   const error=globalPromoWorkOrdersGate(work?.active,work?.completed,work?.open);if(error)return{response:json({ok:false,error},409)};
+  }
   if(status==='packing'){
    const qc=await env.DB.prepare(`SELECT COUNT(*) total,SUM(CASE WHEN result='pass' THEN 1 ELSE 0 END) passed FROM global_promo_quality_checks WHERE job_id=? AND organization_id=? AND dba_id=?`).bind(jobId,a.organizationId,a.dbaId).first();
    const error=globalPromoPackingGate(qc?.total,qc?.passed);if(error)return{response:json({ok:false,error},409)};
+  }
+  if(status==='ready'){
+   const packages=await env.DB.prepare(`SELECT SUM(CASE WHEN status<>'cancelled' THEN 1 ELSE 0 END) active,SUM(CASE WHEN status IN ('packing','exception') THEN 1 ELSE 0 END) incomplete FROM global_promo_packages WHERE job_id=? AND organization_id=? AND dba_id=?`).bind(jobId,a.organizationId,a.dbaId).first();
+   const error=globalPromoReadyGate(packages?.active,packages?.incomplete);if(error)return{response:json({ok:false,error},409)};
   }
   if(status==='delivered'){
    const packages=await env.DB.prepare(`SELECT COUNT(*) total,SUM(CASE WHEN status='delivered' THEN 1 ELSE 0 END) delivered,SUM(CASE WHEN status NOT IN ('delivered','cancelled') THEN 1 ELSE 0 END) open FROM global_promo_packages WHERE job_id=? AND organization_id=? AND dba_id=?`).bind(jobId,a.organizationId,a.dbaId).first();
