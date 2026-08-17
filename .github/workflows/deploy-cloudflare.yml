@@ -1,4 +1,4 @@
-name: Deploy ATLAS Canonical Clean
+name: Deploy ATLAS Climate-Aware Dashboard
 
 on:
   push:
@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: atlas-canonical-clean
+  group: atlas-production
   cancel-in-progress: true
 
 jobs:
@@ -35,14 +35,15 @@ jobs:
 
       - run: npm install --no-audit --no-fund
 
-      - name: Deploy clean canonical Worker
+      - name: Deploy ATLAS production Worker
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: 1dd6dea2bb98459c66f610464354d686
         run: npx wrangler deploy
 
-      - name: Verify canonical endpoints
+      - name: Verify production endpoints
         shell: bash
         run: |
-          curl -fsS https://atlasenterprisesuite.com/health
-          curl -fsS https://atlasenterprisesuite.com/api/readiness
+          curl --retry 5 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/healthz
+          curl --retry 5 --retry-delay 3 --retry-all-errors -fsS "https://atlasenterprisesuite.com/api/weather?lat=28.5383&lon=-81.3792"
+          curl --retry 5 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/dashboard > /dev/null
