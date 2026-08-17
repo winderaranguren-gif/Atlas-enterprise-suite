@@ -6,6 +6,7 @@ import { RELEASE_SHA, RELEASE_BRANCH } from './modules/release-identity.js';
 import { dashboardMasterRoute } from './modules/dashboard-master.js';
 import { voiceSettingsRoute } from './modules/voice-settings.js';
 import { financialIntelligenceRoutes } from './modules/financial-intelligence.js';
+import { companyOperationsRoutes } from './modules/company-operations.js';
 import { requireBrowserSession } from './modules/auth.js';
 import { globalPromoRoutes } from './modules/global-promo.js';
 import { preflightGlobalPromoRequest, globalPromoCommercialContextRoute } from './modules/global-promo-integrity.js';
@@ -27,7 +28,7 @@ const CAPABILITY_BRIDGES={
  },
  '/platform/capabilities/academy':{
   id:'academy-training',eyebrow:'CONNECTED ATLAS RECORDS',title:'Live Training & Certification Records',
-  copy:'Open the existing HR Training workspace for tenant-scoped course catalog, assignments, completion scores and expiration tracking. Academy remains the learner-facing experience while HR Training remains the accountable system of record.',
+  copy:'Open the existing ATLAS HR training workspace for tenant-scoped course catalog, assignments, completion scores and expiration tracking. Academy remains the learner-facing experience while HR Training remains the accountable system of record.',
   href:'/platform/hr-payroll/training',action:'Open ATLAS Training Records →',tone:'green'
  },
  '/platform/capabilities/tax-compliance':{
@@ -188,6 +189,8 @@ export default {
   if(voiceResponse)return voiceResponse;
   const financialIntelligenceResponse=await financialIntelligenceRoutes(request,env,url);
   if(financialIntelligenceResponse)return financialIntelligenceResponse;
+  const companyOperationsResponse=await companyOperationsRoutes(request,env,url);
+  if(companyOperationsResponse)return companyOperationsResponse;
   if(url.pathname==='/assets/atlas-capability-security.js'&&request.method==='GET')return new Response(capabilitySecurityRuntime(),{headers:{'content-type':'text/javascript; charset=utf-8','cache-control':'public,max-age=900','x-content-type-options':'nosniff'}});
   if(url.pathname==='/api/release'&&request.method==='GET'){
    return Response.json({ok:true,service:'atlas-enterprise-suite',releaseSha:RELEASE_SHA,releaseBranch:RELEASE_BRANCH},{headers:{'cache-control':'no-store'}});
