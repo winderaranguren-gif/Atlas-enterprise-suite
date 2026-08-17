@@ -6,6 +6,7 @@ import { RELEASE_SHA, RELEASE_BRANCH } from './modules/release-identity.js';
 import { dashboardMasterRoute } from './modules/dashboard-master.js';
 import { voiceSettingsRoute } from './modules/voice-settings.js';
 import { financialIntelligenceRoutes } from './modules/financial-intelligence.js';
+import { companyOperationsRoutes } from './modules/company-operations.js';
 
 const CORE_TABLES=['users','sessions','organizations','dbas','memberships','role_permissions'];
 const CAPABILITY_BRIDGES={
@@ -144,6 +145,8 @@ export default {
   if(voiceResponse)return voiceResponse;
   const financialIntelligenceResponse=await financialIntelligenceRoutes(request,env,url);
   if(financialIntelligenceResponse)return financialIntelligenceResponse;
+  const companyOperationsResponse=await companyOperationsRoutes(request,env,url);
+  if(companyOperationsResponse)return companyOperationsResponse;
   if(url.pathname==='/assets/atlas-capability-security.js'&&request.method==='GET')return new Response(capabilitySecurityRuntime(),{headers:{'content-type':'text/javascript; charset=utf-8','cache-control':'public,max-age=900','x-content-type-options':'nosniff'}});
   if(url.pathname==='/api/release'&&request.method==='GET'){
    return Response.json({ok:true,service:'atlas-enterprise-suite',releaseSha:RELEASE_SHA,releaseBranch:RELEASE_BRANCH},{headers:{'cache-control':'no-store'}});
