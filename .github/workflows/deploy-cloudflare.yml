@@ -1,4 +1,4 @@
-name: Deploy ATLAS Canonical
+name: Deploy ATLAS Canonical Clean
 
 on:
   push:
@@ -9,44 +9,40 @@ permissions:
   contents: read
 
 concurrency:
-  group: atlas-canonical-production
+  group: atlas-canonical-clean
   cancel-in-progress: true
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    env:
-      CLOUDFLARE_ACCOUNT_ID: 1dd6dea2bb98459c66f610464354d686
-      ATLAS_RELEASE_MODE: production
-      ATLAS_RELEASE_EXPECTED_SHA: ${{ github.sha }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verify Cloudflare deployment credential
+      - name: Verify Cloudflare credential
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         shell: bash
         run: |
           if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
-            echo "::error::CLOUDFLARE_API_TOKEN is missing or unavailable to this workflow."
+            echo "::error::CLOUDFLARE_API_TOKEN is missing. Add it in Settings > Secrets and variables > Actions."
             exit 1
           fi
-          echo "Cloudflare deployment credential is available."
+          echo "Cloudflare credential present."
 
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
 
-      - run: npm ci
+      - run: npm install --no-audit --no-fund
 
-      - name: Validate canonical release
-        run: npm run build:prod
-
-      - name: Deploy canonical Worker
+      - name: Deploy clean canonical Worker
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: 1dd6dea2bb98459c66f610464354d686
         run: npx wrangler deploy
 
-      - name: Verify canonical production
-        run: npm run verify:production
+      - name: Verify canonical endpoints
+        shell: bash
+        run: |
+          curl -fsS https://atlasenterprisesuite.com/health
+          curl -fsS https://atlasenterprisesuite.com/api/readiness

@@ -1,2 +1,0 @@
-Official ATLAS logo source: ChatGPT Library file "Modern metallic logo design.png" (file_id: file_000000000144822f8c215e9f4f8dede6).
-Do not redesign, recolor, reinterpret, or replace this logo. The runtime should use the exact image asset or a proportional crop/resize only.
