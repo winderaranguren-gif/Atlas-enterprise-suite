@@ -144,15 +144,22 @@ function requestOrigin(req) {
   return `${proto}://${host}`;
 }
 
-function webRequest(req) {
+async function webRequest(req) {
   const target = new URL(req.url || '/', requestOrigin(req)).toString();
   const method = String(req.method || 'GET').toUpperCase();
   const init = { method, headers: requestHeaders(req), redirect: 'manual' };
   if (method !== 'GET' && method !== 'HEAD') {
-    const contentLength = Number(req.headers['content-length'] || 0);
-    if (contentLength > MAX_BODY_BYTES) throw Object.assign(new Error('request_body_too_large'), { statusCode: 413 });
-    init.body = req;
-    init.duplex = 'half';
+    const declaredLength = Number(req.headers['content-length'] || 0);
+    if (declaredLength > MAX_BODY_BYTES) throw Object.assign(new Error('request_body_too_large'), { statusCode: 413 });
+    const chunks = [];
+    let total = 0;
+    for await (const chunk of req) {
+      const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      total += buffer.length;
+      if (total > MAX_BODY_BYTES) throw Object.assign(new Error('request_body_too_large'), { statusCode: 413 });
+      chunks.push(buffer);
+    }
+    if (total) init.body = Buffer.concat(chunks, total);
   }
   return new Request(target, init);
 }
@@ -213,7 +220,7 @@ const server = http.createServer(async (req, res) => {
       waitUntil(promise) { pending.add(Promise.resolve(promise)); },
       passThroughOnException() {},
     };
-    const response = await app.worker.fetch(webRequest(req), app.env, ctx);
+    const response = await app.worker.fetch(await webRequest(req), app.env, ctx);
     res.setHeader('x-atlas-sovereign-release', app.releaseId);
     await sendWebResponse(res, response);
     Promise.allSettled([...pending]).catch((error) => console.error('ATLAS waitUntil error', error));
