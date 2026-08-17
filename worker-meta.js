@@ -13,6 +13,7 @@ import { preflightGlobalPromoRequest, globalPromoCommercialContextRoute } from '
 import { enhanceGlobalPromoCommercialUI } from './modules/global-promo-commercial-ui.js';
 import { globalPromoFinanceHandoffRoutes } from './modules/global-promo-finance-handoff.js';
 import { globalPromoBillingPage, enhanceGlobalPromoBillingNavigation } from './modules/global-promo-billing-ui.js';
+import { globalPromoAssetRoutes, preflightGlobalPromoAssetReferences } from './modules/global-promo-assets.js';
 
 const CORE_TABLES=['users','sessions','organizations','dbas','memberships','role_permissions'];
 const CAPABILITY_BRIDGES={
@@ -164,13 +165,18 @@ export default {
   const url=new URL(request.url);
   if(url.pathname.startsWith('/api/global-promo')){
    try{
+    const assetResponse=await globalPromoAssetRoutes(request,env,url);
+    if(assetResponse)return assetResponse;
     const financeHandoffResponse=await globalPromoFinanceHandoffRoutes(request,env,url);
     if(financeHandoffResponse)return financeHandoffResponse;
-    const commercialContextResponse=await globalPromoCommercialContextRoute(request,env,url);
+    const assetPreflight=await preflightGlobalPromoAssetReferences(request,env,url);
+    if(assetPreflight.response)return assetPreflight.response;
+    const guardedRequest=assetPreflight.request||request;
+    const commercialContextResponse=await globalPromoCommercialContextRoute(guardedRequest,env,url);
     if(commercialContextResponse)return commercialContextResponse;
-    const preflight=await preflightGlobalPromoRequest(request,env,url);
+    const preflight=await preflightGlobalPromoRequest(guardedRequest,env,url);
     if(preflight.response)return preflight.response;
-    const globalPromoResponse=await globalPromoRoutes(preflight.request||request,env,url);
+    const globalPromoResponse=await globalPromoRoutes(preflight.request||guardedRequest,env,url);
     if(globalPromoResponse)return globalPromoResponse;
    }catch{return Response.json({ok:false,error:'global_promo_runtime_unavailable'},{status:503,headers:{'cache-control':'no-store'}})}
   }
