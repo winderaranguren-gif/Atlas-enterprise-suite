@@ -13,6 +13,7 @@ const HOST = process.env.ATLAS_RUNTIME_HOST || '127.0.0.1';
 const PORT = Number(process.env.ATLAS_RUNTIME_PORT || 7403);
 const DB_PATH = process.env.ATLAS_SQLITE_PATH || path.join(ROOT, 'state', 'atlas.sqlite3');
 const PUBLIC_ORIGIN = String(process.env.ATLAS_PUBLIC_ORIGIN || '').replace(/\/$/, '');
+const CONTROL_TOKEN = String(process.env.ATLAS_CONTROL_TOKEN || '').trim();
 const MAX_BODY_BYTES = Number(process.env.ATLAS_MAX_REQUEST_BYTES || 25 * 1024 * 1024);
 const MIME = new Map([
   ['.avif', 'image/avif'], ['.css', 'text/css; charset=utf-8'], ['.gif', 'image/gif'], ['.ico', 'image/x-icon'],
@@ -209,6 +210,13 @@ const server = http.createServer(async (req, res) => {
       return json(res, 200, { ok: true, service: 'atlas-runtime', database: 'sqlite', loadedRelease: loaded?.releaseId || null });
     }
     if (pathname === '/_atlas/runtime/readiness') return runtimeReadiness(req, res);
+    if (pathname === '/_atlas/runtime/schema') {
+      if (!CONTROL_TOKEN || req.headers.authorization !== `Bearer ${CONTROL_TOKEN}`) {
+        return json(res, 401, { ok: false, service: 'atlas-runtime', error: 'unauthorized' });
+      }
+      const migrations = DB.native.prepare('SELECT name,sha256,applied_at FROM atlas_schema_migrations ORDER BY name').all();
+      return json(res, 200, { ok: true, service: 'atlas-runtime', database: 'sqlite', migrations });
+    }
     if (pathname === '/_atlas/runtime/release') {
       const app = await loadApplication();
       return json(res, 200, { ok: true, service: 'atlas-runtime', releaseId: app.releaseId, releasePath: app.releasePath, migrations: app.migrations, loadedAt: app.loadedAt });
