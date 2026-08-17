@@ -7,6 +7,12 @@ import { dashboardMasterRoute } from './modules/dashboard-master.js';
 import { voiceSettingsRoute } from './modules/voice-settings.js';
 import { financialIntelligenceRoutes } from './modules/financial-intelligence.js';
 import { companyOperationsRoutes } from './modules/company-operations.js';
+import { requireBrowserSession } from './modules/auth.js';
+import { globalPromoRoutes } from './modules/global-promo.js';
+import { preflightGlobalPromoRequest, globalPromoCommercialContextRoute } from './modules/global-promo-integrity.js';
+import { enhanceGlobalPromoCommercialUI } from './modules/global-promo-commercial-ui.js';
+import { globalPromoFinanceHandoffRoutes } from './modules/global-promo-finance-handoff.js';
+import { globalPromoBillingPage, enhanceGlobalPromoBillingNavigation } from './modules/global-promo-billing-ui.js';
 
 const CORE_TABLES=['users','sessions','organizations','dbas','memberships','role_permissions'];
 const CAPABILITY_BRIDGES={
@@ -22,7 +28,7 @@ const CAPABILITY_BRIDGES={
  },
  '/platform/capabilities/academy':{
   id:'academy-training',eyebrow:'CONNECTED ATLAS RECORDS',title:'Live Training & Certification Records',
-  copy:'Open the existing HR Training workspace for tenant-scoped course catalog, assignments, completion scores and expiration tracking. Academy remains the learner-facing experience while HR Training remains the accountable system of record.',
+  copy:'Open the existing ATLAS HR training workspace for tenant-scoped course catalog, assignments, completion scores and expiration tracking. Academy remains the learner-facing experience while HR Training remains the accountable system of record.',
   href:'/platform/hr-payroll/training',action:'Open ATLAS Training Records →',tone:'green'
  },
  '/platform/capabilities/tax-compliance':{
@@ -136,11 +142,49 @@ async function enhanceFinancialIntelligenceNavigation(response,url){
  const headers=new Headers(response.headers);headers.delete('content-length');return new Response(body,{status:response.status,statusText:response.statusText,headers});
 }
 
+async function enhanceGlobalPromoDashboard(response,url){
+ if(url.pathname!=='/dashboard')return response;
+ const type=response.headers.get('content-type')||'';if(!type.includes('text/html'))return response;
+ let body=await response.text();
+ if(!body.includes('href="/platform/global-promo"')){
+  const marker='<a class="nav-item" href="/platform/settings">';
+  const link='<a class="nav-item" href="/platform/global-promo"><span class="nav-icon">✦</span><span>Global Promo ERP</span><b>›</b></a>';
+  if(body.includes(marker))body=body.replace(marker,link+marker);
+ }
+ const headers=new Headers(response.headers);headers.delete('content-length');return new Response(body,{status:response.status,statusText:response.statusText,headers});
+}
+
+const protectedHeaders={'content-type':'text/html; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff','referrer-policy':'strict-origin-when-cross-origin','permissions-policy':'camera=(), microphone=(), geolocation=()','content-security-policy':"default-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline' 'self'; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"};
+function protectedUnavailable(){return new Response(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>ATLAS Identity</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#020711;color:#eef7ff;font-family:Inter,system-ui,sans-serif}.card{max-width:560px;margin:24px;padding:28px;border:1px solid #25527a;border-radius:18px;background:#071522}.card p{color:#9fb4c7;line-height:1.6}.card a{color:#59c9ff}</style></head><body><main class="card"><h1>Security verification unavailable.</h1><p>ATLAS will not open Global Promo without validating the active identity session.</p><a href="/login">Return to sign in</a></main></body></html>`,{status:503,headers:protectedHeaders})}
+function globalPromoUnavailable(){return new Response(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Global Promo · ATLAS</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#020711;color:#eef7ff;font-family:Inter,system-ui,sans-serif}.card{max-width:600px;margin:24px;padding:28px;border:1px solid #25527a;border-radius:18px;background:#071522}.card p{color:#9fb4c7;line-height:1.6}.card a{color:#59c9ff}</style></head><body><main class="card"><h1>Global Promo workspace unavailable.</h1><p>The authenticated ATLAS session remains protected, but this module could not initialize its operational runtime. No production status or data is being simulated.</p><a href="/dashboard">Return to ATLAS Dashboard</a></main></body></html>`,{status:503,headers:protectedHeaders})}
+function globalPromoHtml(body){return new Response(body,{status:200,headers:protectedHeaders})}
+
 export default {
  async fetch(request,env,ctx){
   const url=new URL(request.url);
+  if(url.pathname.startsWith('/api/global-promo')){
+   try{
+    const financeHandoffResponse=await globalPromoFinanceHandoffRoutes(request,env,url);
+    if(financeHandoffResponse)return financeHandoffResponse;
+    const commercialContextResponse=await globalPromoCommercialContextRoute(request,env,url);
+    if(commercialContextResponse)return commercialContextResponse;
+    const preflight=await preflightGlobalPromoRequest(request,env,url);
+    if(preflight.response)return preflight.response;
+    const globalPromoResponse=await globalPromoRoutes(preflight.request||request,env,url);
+    if(globalPromoResponse)return globalPromoResponse;
+   }catch{return Response.json({ok:false,error:'global_promo_runtime_unavailable'},{status:503,headers:{'cache-control':'no-store'}})}
+  }
+  if(request.method==='GET'&&(url.pathname==='/platform/global-promo'||url.pathname.startsWith('/platform/global-promo/'))){
+   const verification=await requireBrowserSession(request,env);
+   if(!verification.ok){if(verification.status===401)return Response.redirect(new URL('/login',url),302);return protectedUnavailable()}
+   try{
+    if(url.pathname.replace(/\/+$/,'')==='/platform/global-promo/billing')return globalPromoHtml(globalPromoBillingPage());
+    const globalPromoResponse=await globalPromoRoutes(request,env,url);
+    if(globalPromoResponse){const commercial=await enhanceGlobalPromoCommercialUI(globalPromoResponse,url);return enhanceGlobalPromoBillingNavigation(commercial,url)}
+   }catch{return globalPromoUnavailable()}
+  }
   const dashboardResponse=await dashboardMasterRoute(request,env,url);
-  if(dashboardResponse)return dashboardResponse;
+  if(dashboardResponse)return enhanceGlobalPromoDashboard(dashboardResponse,url);
   const voiceResponse=await voiceSettingsRoute(request,env,url);
   if(voiceResponse)return voiceResponse;
   const financialIntelligenceResponse=await financialIntelligenceRoutes(request,env,url);
