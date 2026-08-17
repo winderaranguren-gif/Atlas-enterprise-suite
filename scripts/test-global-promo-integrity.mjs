@@ -13,7 +13,11 @@ import {
   globalPromoArtworkDecisionAllowed,
   globalPromoApprovalExitAllowed,
   globalPromoPackageCreationAllowed,
-  globalPromoPackageFulfillmentAllowed
+  globalPromoPackageFulfillmentAllowed,
+  globalPromoEmbroideryCreationAllowed,
+  globalPromoMaterialCreationAllowed,
+  globalPromoPurchaseOrderCreationAllowed,
+  globalPromoPurchaseLineCents
 } from '../modules/global-promo-integrity.js';
 
 function assert(condition,message){if(!condition)throw new Error(message)}
@@ -67,7 +71,23 @@ const cases=[
   [globalPromoPackageFulfillmentAllowed('packing','shipped')===false,'Packages may not ship before job Ready'],
   [globalPromoPackageFulfillmentAllowed('ready','shipped')===true,'Packages may ship while job Ready'],
   [globalPromoPackageFulfillmentAllowed('ready','delivered')===true,'Package delivery evidence is valid while job Ready'],
-  [globalPromoPackageFulfillmentAllowed('packing','exception')===false,'Fulfillment exceptions belong to Ready/shipping phase']
+  [globalPromoPackageFulfillmentAllowed('packing','exception')===false,'Fulfillment exceptions belong to Ready/shipping phase'],
+  [globalPromoEmbroideryCreationAllowed('request')===false,'Embroidery specs may not be added before a job is quoted'],
+  [globalPromoEmbroideryCreationAllowed('quoted')===true,'Embroidery specs may be added after quotation'],
+  [globalPromoEmbroideryCreationAllowed('production')===true,'Embroidery specs may be corrected during Production'],
+  [globalPromoEmbroideryCreationAllowed('quality_control')===false,'Embroidery specs may not be added after Production closes'],
+  [globalPromoMaterialCreationAllowed('approval')===false,'Material requirements require the Materials phase'],
+  [globalPromoMaterialCreationAllowed('materials')===true,'Material requirements may be created during Materials'],
+  [globalPromoMaterialCreationAllowed('production')===true,'Additional material requirements may be recorded during Production'],
+  [globalPromoMaterialCreationAllowed('quality_control')===false,'Material requirements may not be added after Production'],
+  [globalPromoPurchaseOrderCreationAllowed(null)===true,'General unlinked purchase orders remain allowed'],
+  [globalPromoPurchaseOrderCreationAllowed('materials')===true,'Job purchase orders may be created during Materials'],
+  [globalPromoPurchaseOrderCreationAllowed('production')===true,'Job purchase orders may be created during Production'],
+  [globalPromoPurchaseOrderCreationAllowed('quality_control')===false,'Job purchase orders may not be added after Production'],
+  [globalPromoPurchaseLineCents(2,12.34)===2468,'PO line calculation must use integer cents'],
+  [globalPromoPurchaseLineCents(0,12.34)===null,'PO line quantity must be positive'],
+  [globalPromoPurchaseLineCents(10000001,1)===null,'PO line quantity must respect operational bound'],
+  [globalPromoPurchaseLineCents(1,Number.MAX_VALUE)===null,'PO line unit cost must remain in safe integer cents']
 ];
 for(const [ok,message] of cases)assert(ok,message);
 console.log(`Global Promo integrity tests passed: ${cases.length}/${cases.length}`);
