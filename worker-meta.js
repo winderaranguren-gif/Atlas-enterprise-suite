@@ -5,6 +5,7 @@ import { capabilitySecurityRuntime } from './modules/capability-security-runtime
 import { RELEASE_SHA, RELEASE_BRANCH } from './modules/release-identity.js';
 import { dashboardMasterRoute } from './modules/dashboard-master.js';
 import { voiceSettingsRoute } from './modules/voice-settings.js';
+import { financialIntelligenceRoutes } from './modules/financial-intelligence.js';
 
 const CORE_TABLES=['users','sessions','organizations','dbas','memberships','role_permissions'];
 const CAPABILITY_BRIDGES={
@@ -122,6 +123,18 @@ async function enhanceCapabilityBridge(response,url){
  return new Response(body,{status:response.status,statusText:response.statusText,headers});
 }
 
+async function enhanceFinancialIntelligenceNavigation(response,url){
+ if(!url.pathname.startsWith('/platform/finance')||url.pathname==='/platform/finance/intelligence')return response;
+ const type=response.headers.get('content-type')||'';if(!type.includes('text/html'))return response;
+ let body=await response.text();
+ if(body.includes('ATLAS ACCOUNTING')&&!body.includes('href="/platform/finance/intelligence"')){
+  const link='<a class="mod atlas-control-link" href="/platform/finance/intelligence">Financial Intelligence</a>';
+  const marker='</nav><div class="side-note">';
+  if(body.includes(marker))body=body.replace(marker,link+marker);
+ }
+ const headers=new Headers(response.headers);headers.delete('content-length');return new Response(body,{status:response.status,statusText:response.statusText,headers});
+}
+
 export default {
  async fetch(request,env,ctx){
   const url=new URL(request.url);
@@ -129,6 +142,8 @@ export default {
   if(dashboardResponse)return dashboardResponse;
   const voiceResponse=await voiceSettingsRoute(request,env,url);
   if(voiceResponse)return voiceResponse;
+  const financialIntelligenceResponse=await financialIntelligenceRoutes(request,env,url);
+  if(financialIntelligenceResponse)return financialIntelligenceResponse;
   if(url.pathname==='/assets/atlas-capability-security.js'&&request.method==='GET')return new Response(capabilitySecurityRuntime(),{headers:{'content-type':'text/javascript; charset=utf-8','cache-control':'public,max-age=900','x-content-type-options':'nosniff'}});
   if(url.pathname==='/api/release'&&request.method==='GET'){
    return Response.json({ok:true,service:'atlas-enterprise-suite',releaseSha:RELEASE_SHA,releaseBranch:RELEASE_BRANCH},{headers:{'cache-control':'no-store'}});
@@ -140,6 +155,7 @@ export default {
   const catalogResponse=await metaCatalogRoutes(request,env,url);
   if(catalogResponse)return catalogResponse;
   let response=await app.fetch(request,env,ctx);
+  if(request.method==='GET')response=await enhanceFinancialIntelligenceNavigation(response,url);
   response=await enhancePublicCapabilityDiscovery(response,url,request.method);
   response=await enhanceCapabilitySitemap(response,url,request.method);
   return enhanceCapabilityBridge(response,url);
