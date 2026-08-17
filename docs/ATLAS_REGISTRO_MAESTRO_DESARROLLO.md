@@ -20,18 +20,12 @@ Bitácora viva para separar con precisión lo diseñado, implementado, probado, 
 - Existen validadores dedicados: `scripts/validate-voice-settings.mjs` y `scripts/verify-voice-production.mjs`.
 - El copy canónico indica correctamente que las preferencias se conservan en el navegador y que el micrófono no se activa desde esa pantalla.
 
-**Auditoría pública adicional del 17 de agosto de 2026:**
-- `https://atlasenterprisesuite.com/` respondió públicamente y muestra la superficie de acceso actual.
-- La lectura pública disponible mostró credenciales de demostración y un código de verificación fijo dentro del contenido HTML de esa superficie. Esto debe tratarse como una discrepancia de seguridad/producción si ese acceso permite cualquier dato o acción significativa.
-- Las búsquedas en el repositorio canónico por las cadenas públicas de demo no encontraron coincidencias, por lo que no se modificó autenticación a ciegas. El hallazgo puede corresponder a una versión de producción divergente, un artefacto previo o una capa no representada por el `main` actual.
-- La comprobación HTTP directa de `/platform/settings/voice` no produjo una respuesta utilizable desde la herramienta pública en esta sesión; por tanto no se declara verificación visual completa de Voice.
-
 **Limitaciones verificadas:**
 - La auditoría visual en vivo del proyecto Lovable `/voice` no pudo ejecutarse mediante su agente porque el workspace se encuentra sin créditos.
-- La ruta de despliegue automática de GitHub Actions continúa sin ejecutar el build requerido.
-- El runtime local disponible no puede resolver `github.com`, por lo que no fue posible clonar el repositorio privado y ejecutar allí los validadores Node 22.
+- La ruta de despliegue automática de GitHub Actions continúa fallando antes de ejecutar pasos; el job más reciente no inició ningún step.
+- Desde el runtime actual no fue posible resolver DNS directamente para realizar una prueba HTTP externa independiente de la URL canónica.
 
-**Estado:** IMPLEMENTADO en el repositorio canónico; revisión estática completada. VERIFICACIÓN VISUAL EN PRODUCCIÓN todavía pendiente. Hallazgo de exposición de credenciales/código de demo pendiente de reconciliar con la fuente real desplegada.
+**Estado:** IMPLEMENTADO en el repositorio canónico; revisión estática completada. VERIFICACIÓN VISUAL EN PRODUCCIÓN todavía pendiente.
 
 ## 2026-08-17 — ATLAS Financial Intelligence desde especificación visual
 
@@ -79,23 +73,17 @@ Bitácora viva para separar con precisión lo diseñado, implementado, probado, 
 
 **Pruebas incorporadas:** `scripts/validate-financial-intelligence.mjs`, integrado a `build:sovereign` y `build:prod`.
 
-**Estado:** IMPLEMENTADO en código; despliegue y verificación de producción pendientes hasta disponer de una ruta autorizada de publicación que no dependa del GitHub Actions bloqueado.
+**Estado antes de commit:** código preparado para commit atómico. Despliegue y verificación de producción pendientes hasta disponer de una ruta autorizada de publicación que no dependa del GitHub Actions bloqueado.
 
 ## 2026-08-17 — Global Promo LLC Production ERP
 
-**Objetivo:** convertir la propuesta de operaciones de Global Promo LLC en software interno funcional dentro de ATLAS, tomando la Versión 2 — Global Promo Production ERP como alcance recomendado y evitando blueprints, imágenes sustitutas, botones falsos y fuentes de verdad duplicadas.
+**Objetivo:** convertir la propuesta operacional de Global Promo LLC en software interno funcional dentro de ATLAS usando Version 2 — Global Promo Production ERP como alcance inicial, sin blueprints, capturas sustitutas, métricas ficticias ni fuentes de verdad duplicadas.
 
 **Módulo propietario:** Enterprise Operations / Global Promo Production ERP.
 
-**Módulos relacionados y reutilizados:**
-- CRM para clientes y cotizaciones.
-- Inventory para artículos, ubicaciones y movimientos físicos de stock.
-- Operations para proveedores y aprobaciones compartidas.
-- Finance / Accounting para invoices, Accounts Receivable, Accounts Payable y General Ledger.
-- HR para referencias de operadores e inspectores cuando estén disponibles en el tenant.
-- Audit Ledger para evidencia de mutaciones operativas y financieras.
+**Integraciones canónicas reutilizadas:** CRM para clientes/cotizaciones; Inventory para stock; Operations para proveedores/aprobaciones; Finance para invoices/AR/AP/GL; HR para referencias de operadores/inspectores; Audit Ledger para evidencia de mutaciones.
 
-**Rutas internas implementadas en la rama:**
+**Rutas internas implementadas:**
 - `/platform/global-promo`
 - `/platform/global-promo/jobs`
 - `/platform/global-promo/artwork`
@@ -108,93 +96,49 @@ Bitácora viva para separar con precisión lo diseñado, implementado, probado, 
 - `/platform/global-promo/billing`
 - `/platform/global-promo/costing`
 
-**APIs implementadas:**
-- `/api/global-promo/overview`
-- `/api/global-promo/jobs`
-- `/api/global-promo/jobs/:id`
-- `/api/global-promo/jobs/:id/commercial-context`
-- `/api/global-promo/jobs/:id/invoice`
-- `/api/global-promo/jobs/:id/payments`
-- `/api/global-promo/billing`
-- `/api/global-promo/artwork`
-- `/api/global-promo/artwork/:id/decision`
-- `/api/global-promo/embroidery`
-- `/api/global-promo/materials`
-- `/api/global-promo/purchase-orders`
-- `/api/global-promo/work-orders`
-- `/api/global-promo/quality`
-- `/api/global-promo/packages`
-- `/api/global-promo/costing`
+**APIs principales:** `/api/global-promo/overview`, `/jobs`, `/jobs/:id`, `/jobs/:id/commercial-context`, `/jobs/:id/invoice`, `/jobs/:id/payments`, `/billing`, `/artwork`, `/artwork/:id/decision`, `/embroidery`, `/materials`, `/purchase-orders`, `/work-orders`, `/quality`, `/packages`, `/costing`.
 
-**Persistencia especializada incorporada:**
-- `global_promo_jobs`
-- `global_promo_artwork_versions`
-- `global_promo_embroidery_specs`
-- `global_promo_material_requirements`
-- `global_promo_purchase_orders`
-- `global_promo_purchase_order_lines`
-- `global_promo_work_orders`
-- `global_promo_quality_checks`
-- `global_promo_packages`
-- `global_promo_finance_links`
-- `finance_invoice_payments` como ledger auditable general contra las facturas canónicas de Finance.
+**Persistencia especializada:** `global_promo_jobs`, `global_promo_artwork_versions`, `global_promo_embroidery_specs`, `global_promo_material_requirements`, `global_promo_purchase_orders`, `global_promo_purchase_order_lines`, `global_promo_work_orders`, `global_promo_quality_checks`, `global_promo_packages`, `global_promo_finance_links` y `finance_invoice_payments`.
 
-**Funciones implementadas:**
-- Jobs de producción con ciclo controlado Request → Quoted → Artwork → Approval → Materials → Production → Quality Control → Packing → Ready → Delivered.
-- Enlace posterior de una solicitud a cliente y cotización CRM, con avance automático de Request a Quoted cuando se vincula una cotización válida.
-- Validación para impedir que una cotización de otro cliente o tenant se enlace al job.
-- Versionado de artwork, envío a decisión, aprobación/rechazo, evidencia de aprobación y superseding de versiones previas.
-- Registros especializados de bordado con stitch count, cantidad, digitizing cost, costo interno por 1,000 stitches y costo estimado derivado.
-- Requerimientos de materiales vinculables al maestro de Inventory sin crear un segundo stock ledger.
-- Purchase Orders con líneas, totales, estados y aprobación restringida por rol.
-- Preflight de Purchase Orders para impedir referencias a `inventory_items` ajenos al tenant.
-- Work Orders con operación, cantidad, operador, máquina, programación, tiempos, labor rate y machine cost.
-- Quality Control con pass/fail/rework, cantidades, defectos, inspector y evidencia.
-- Packing y delivery con package number, carrier, service level, tracking y estados controlados.
-- Billing & Payments con creación de una factura real en `finance_invoices` a partir del total de la cotización CRM enlazada; un job solo puede vincular una factura canónica.
-- Registro de depósitos/pagos contra esa misma factura de Finance. El ledger `finance_invoice_payments` es la evidencia detallada y `finance_invoices.received_cents` se deriva de la suma del ledger.
-- Trigger de base de datos para impedir pagos contra facturas no pagables y sobrepagos incluso ante concurrencia.
-- La interfaz de Billing distingue explícitamente registrar un pago ya recibido de procesarlo por tarjeta/ACH. No se simula procesamiento bancario; ese paso requerirá una integración de pagos autorizada.
-- Job Costing con revenue proveniente únicamente de la cotización CRM enlazada y costos derivados de compras/materiales, bordado, mano de obra y máquina. Cuando falta revenue real, se mantiene como no disponible; no se inventan métricas.
-- Entrada desde el dashboard canónico de ATLAS hacia Global Promo ERP.
+**Flujo y funciones:** Request → Quoted → Artwork → Approval → Materials → Production → Quality Control → Packing → Ready → Delivered; artwork versionado y aprobación con evidencia; bordado con stitch count/cost; materiales; POs; work orders; QC; packing/tracking; invoice real en Finance desde quote; depósitos/pagos auditables; job costing desde fuentes reales.
 
-**Reglas de integridad y seguridad:**
-- Todas las entidades nuevas mantienen `organization_id` + `dba_id`.
-- Las APIs usan `requireTenantPermission` y las mutaciones registran `appendAuditLedger` cuando corresponde.
-- La superficie `/platform/global-promo*` exige sesión de navegador válida.
-- No se exponen secretos ni credenciales en frontend del nuevo módulo.
-- No se modifica el `wrangler.main`; producción continúa usando `worker-meta.js` como entrypoint canónico.
-- No se alteraron DNS ni se eliminó autenticación para incorporar el módulo.
-- Las transiciones de estado inválidas se rechazan en servidor.
-- QC, work orders y packages aplican bloqueos de avance cuando el flujo registrado todavía no permite pasar a la siguiente etapa.
-- Se corrigió durante la revisión una regresión accidental en la ruta del feed Meta y se restauró exactamente `/feeds/meta/atlas-catalog.csv` antes de cerrar el diff.
-- Se separó el error de identidad del error de inicialización de Global Promo para no mostrar mensajes engañosos de seguridad cuando el problema real sea del runtime del módulo.
+**Hardening agregado durante revisión:**
+- Customer/Quote se valida contra el mismo tenant y se rechaza mismatch.
+- Purchase Orders rechazan referencias de Inventory de otro tenant.
+- Packing requiere al menos un QC con `pass`; ya no puede avanzar sin evidencia de QC.
+- Delivered requiere al menos un package registrado, al menos uno con estado `delivered` y cero packages todavía abiertos.
+- Una vez creado un Finance invoice para el job, Customer/Quote queda bloqueado para evitar divergencia `Invoice A` ↔ `Quote B`.
+- Payments usan ledger auditable y trigger de base de datos para rechazar sobrepagos o facturas no pagables.
+- `finance_invoices.received_cents` se recalcula desde el ledger de pagos.
+- Se restauró `/feeds/meta/atlas-catalog.csv` después de detectar una deriva accidental durante integración.
 
-**Validación incorporada al repositorio:**
-- `scripts/validate-global-promo.mjs` comprueba tablas, APIs, rutas, controles, wiring, protección de sesión, integridad comercial, factura/pagos, trigger anti-overpayment, preservación del feed Meta y ausencia de marcadores estáticos básicos.
-- `validate:global-promo` ejecuta `node --check` sobre todos los módulos Global Promo, Billing/Finance handoff y `worker-meta.js` antes del validador estructural.
-- `validate:global-promo` está incorporado tanto a `build:sovereign` como a `build:prod`.
+**Pruebas ejecutadas en runtime Node 22 disponible:**
+- `node --check` del archivo exacto `modules/global-promo-integrity.js`: PASS.
+- Prueba unitaria aislada de los nuevos gates: PASS 7/7 después de corregir un error de sintaxis que estaba únicamente en el primer harness de prueba, no en el módulo.
+- Los invariantes se convirtieron en funciones puras reutilizadas por producción y se añadió `scripts/test-global-promo-integrity.mjs` para ejecutarlos permanentemente dentro de `validate:global-promo`.
+- `validate:global-promo` está incluido en `build:sovereign` y `build:prod`.
 
-**Pruebas / ejecución real:**
-- Revisión del diff: la rama está por delante de `main`, sin commits por detrás y sin modificaciones de DNS o `wrangler.main`.
-- El PR es mergeable según GitHub.
-- No existe workflow asociado al commit actual; GitHub Actions no ejecutó el validador.
-- Se intentó una validación soberana local mediante acceso directo al repositorio, pero el runtime disponible devolvió `Could not resolve host: github.com`; por tanto no se declara el build Node 22 como ejecutado.
-- No se declara PROBADO integralmente mientras el validador no pueda ejecutarse en un runtime con la rama completa.
+**Reconciliación con main:** mientras se trabajaba, `main` avanzó e incorporó Company Operations y soporte `release:sovereign:edge`. La rama Global Promo fue actualizada semánticamente para conservar `companyOperationsRoutes`, `validate:company-operations`, `release:sovereign:edge` y, en paralelo, Global Promo y sus tests. No se debe borrar trabajo nuevo de `main` al integrar.
 
-**Rama de trabajo:** `feature/global-promo-operations`.
+**Limitaciones todavía reales:** el runtime local no puede resolver `github.com`; el archive/tarball privado está bloqueado por permisos del GitHub App; por eso todavía no se ha ejecutado el `build:sovereign` completo de todo el repositorio. GitHub Actions sigue configurado solo para `workflow_dispatch` y no constituye la única puerta de producción.
 
-**Pull Request:** `#191 — Global Promo Production ERP — canonical ATLAS module`.
+**Rama:** `feature/global-promo-operations`.
 
-**Estado:** IMPLEMENTADO EN RAMA / PR DRAFT. DIFF REVISADO. BUILD COMPLETO NO EJECUTADO. NO DESPLEGADO. NO VERIFICADO EN PRODUCCIÓN.
+**PR principal:** `#191 — Global Promo Production ERP — canonical ATLAS module`.
 
-**URL objetivo después de merge y despliegue:** `https://www.atlasenterprisesuite.com/platform/global-promo`.
+**Estado:** IMPLEMENTADO EN RAMA. PR DRAFT. HARDENING UNITARIO PROBADO. BUILD SOBERANO COMPLETO PENDIENTE. NO DESPLEGADO. NO VERIFICADO EN PRODUCCIÓN.
+
+**URL objetivo:** `https://www.atlasenterprisesuite.com/platform/global-promo` después de integración, despliegue y verificación real.
+
+## 2026-08-17 — Hallazgo de superficie pública / Voice
+
+La superficie pública consultable de ATLAS mostró credenciales/código de demostración en contenido público. Las cadenas observadas no se localizaron en el `main` canónico mediante la búsqueda disponible, por lo que no se modificó autenticación a ciegas. El hallazgo queda pendiente de reconciliar con el artefacto/origen realmente desplegado antes de declarar cerrada la auditoría de producción de Voice.
 
 ## Próximo paso recomendado
-1. Ejecutar `validate:global-promo` y `build:sovereign` en un runtime Node 22 con acceso a la rama completa.
-2. Corregir cualquier error que aparezca; únicamente después mover el PR #191 fuera de draft.
-3. Integrar en `main` sin cambiar `worker-meta.js` como entrypoint ni la política de rollback.
-4. Publicar mediante el adaptador autorizado disponible; Cloudflare debe seguir siendo reemplazable y no la fuente de verdad.
-5. Verificar en producción `/platform/global-promo`, cada subruta, Billing & Payments y el acceso desde `/dashboard` antes de declarar el módulo LIVE.
-6. Reconciliar la superficie pública actual de acceso que muestra credenciales/código de demo con la fuente desplegada real antes de considerar resuelta la auditoría de seguridad/Voice.
-7. Mantener pendiente la verificación de producción de ATLAS Voice y Financial Intelligence hasta que la URL real responda con evidencia verificable.
+1. Completar la reconciliación formal de `main` dentro de `feature/global-promo-operations` sin perder Company Operations, Sovereign Edge ni Global Promo.
+2. Ejecutar `validate:global-promo` completo y `build:sovereign` en un runner Node 22 con acceso a la rama completa.
+3. Corregir cualquier error antes de sacar el PR #191 de draft.
+4. Integrar a `main` sin cambiar `worker-meta.js` como entrypoint ni debilitar seguridad/rollback.
+5. Publicar mediante un adaptador autorizado reemplazable.
+6. Verificar `/platform/global-promo`, todas sus subrutas, Billing & Payments y acceso desde `/dashboard` en la URL real antes de declarar LIVE.
+7. Reconciliar la superficie pública de acceso/Voice con el origen realmente desplegado.
