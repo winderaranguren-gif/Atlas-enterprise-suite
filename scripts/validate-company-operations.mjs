@@ -22,9 +22,15 @@ need(moduleSource,"request.method==='POST'",'create_action');
 need(moduleSource,"request.method==='PATCH'",'update_action');
 need(moduleSource,"action==='advance'",'stage_transition');
 need(moduleSource,'operations_approvals','approval_integration');
+need(moduleSource,"error:'approval_required'",'approval_gate');
+need(moduleSource,"error:'terminal_item'",'terminal_state_guard');
+need(moduleSource,'company_work_item:${stage}','stage_specific_approval');
+need(moduleSource,"url.pathname==='/platform/company-ops'",'company_hub_route');
+need(moduleSource,'href="/platform/company-ops/${p.key}"','company_hub_links');
+need(moduleSource,'data-events','event_history_control');
 need(moduleSource,'No hay registros reales todavía','honest_empty_state');
 need(moduleSource,"url.pathname==='/assets/atlas-company-operations.js'",'external_client_asset');
-need(moduleSource,"permissions-policy':'camera=(), microphone=(), geolocation=()'",'device_permissions_policy');
+need(moduleSource,"'permissions-policy':'camera=(), microphone=(), geolocation=()'",'device_permissions_policy');
 
 need(migration,'CREATE TABLE IF NOT EXISTS company_work_items','work_items_migration');
 need(migration,'CREATE TABLE IF NOT EXISTS company_work_item_events','events_migration');
