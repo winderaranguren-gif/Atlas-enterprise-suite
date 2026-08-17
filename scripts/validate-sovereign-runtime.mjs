@@ -46,7 +46,7 @@ for (const token of ['release_symlink_forbidden', 'release_outside_root', "path.
 }
 
 const runtime = await readFile('sovereign/runtime/server.mjs', 'utf8');
-for (const token of ['migration_drift:', 'worker-meta.js', '/_atlas/runtime/readiness', '/_atlas/runtime/schema', 'CONTROL_TOKEN', 'x-atlas-sovereign-release']) {
+for (const token of ['migration_drift:', 'destructive_migration_blocked:', 'worker-meta.js', '/_atlas/runtime/readiness', '/_atlas/runtime/schema', 'CONTROL_TOKEN', 'x-atlas-sovereign-release']) {
   if (!runtime.includes(token)) throw new Error(`Sovereign application runtime contract missing: ${token}`);
 }
 const sqlite = await readFile('sovereign/runtime/d1-sqlite.mjs', 'utf8');
