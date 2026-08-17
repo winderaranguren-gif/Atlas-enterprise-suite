@@ -2,7 +2,7 @@ import fs from 'node:fs';
 
 const moduleSource=fs.readFileSync(new URL('../modules/company-operations.js',import.meta.url),'utf8');
 const worker=fs.readFileSync(new URL('../worker-meta.js',import.meta.url),'utf8');
-const migration=fs.readFileSync(new URL('../migrations/0013_company_operations.sql',import.meta.url),'utf8');
+const migration=fs.readFileSync(new URL('../migrations/0016_company_operations.sql',import.meta.url),'utf8');
 
 const need=(source,text,label)=>{if(!source.includes(text))throw new Error(`company_operations_validation_failed:${label}`)};
 const forbid=(source,re,label)=>{if(re.test(source))throw new Error(`company_operations_validation_failed:${label}`)};
