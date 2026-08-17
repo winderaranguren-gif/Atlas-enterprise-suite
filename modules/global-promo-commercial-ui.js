@@ -12,11 +12,14 @@ const watch=id=>{const el=document.getElementById(id);if(!el)return;const observ
 const load=async()=>{const context=await fetch('/api/core/context',{headers:{authorization:'Bearer '+token},cache:'no-store'}).then(async r=>{const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Unable to load company context');return d});scopes=context.scopes||[];if(!scopes.length)return;const [j,w]=await Promise.all([get('/api/global-promo/jobs'),get('/api/global-promo/work-orders').catch(()=>({workOrders:[]}))]);jobs=j.jobs||[];workOrders=w.workOrders||[];enforce()};
 ['artJob','embJob','materialJob','poJob','workJob','qcJob','packageJob','qcWork','artRows','workRows','packageRows'].forEach(watch);document.getElementById('qcJob')?.addEventListener('change',enforceQcWork);scopeSelect?.addEventListener('change',()=>setTimeout(()=>load().catch(()=>{}),0));setTimeout(()=>load().catch(()=>{}),0)})();</script>`}
 
+function costingNotice(){return `<div class="hint" data-global-promo-costing-basis style="margin:10px 0 14px"><strong>PROVISIONAL OPERATIONAL COSTING</strong><br>Profit and margin on this screen are operational projections until purchasing, material consumption, work orders and fulfillment are finalized. Material cost uses non-draft job procurement when present; otherwise it uses material requirements estimates. Non-cancelled production work may include scheduled/estimated labor and machine cost. Closed-period accounting and financial statements remain in ATLAS Finance / General Ledger.</div>`}
+
 export async function enhanceGlobalPromoCommercialUI(response,url){
  if(!url.pathname.startsWith('/platform/global-promo'))return response;
  const type=response.headers.get('content-type')||'';if(!type.includes('text/html'))return response;
  let body=await response.text();
  if(url.pathname==='/platform/global-promo/jobs'&&!body.includes('data-global-promo-commercial-context')){const block=panel();body=body.includes('<footer class="footer">')?body.replace('<footer class="footer">',block+'<footer class="footer">'):body.replace('</main>',block+'</main>')}
+ if(url.pathname==='/platform/global-promo/costing'&&!body.includes('data-global-promo-costing-basis')){const note=costingNotice(),marker='<h2>REAL JOB COSTING</h2>';body=body.includes(marker)?body.replace(marker,marker+note):body.replace('<footer class="footer">',note+'<footer class="footer">')}
  if(!body.includes('data-global-promo-phase-ui')){const guard=phaseUi();body=body.includes('</body>')?body.replace('</body>',guard+'</body>'):body+guard}
  const headers=new Headers(response.headers);headers.delete('content-length');return new Response(body,{status:response.status,statusText:response.statusText,headers});
 }
