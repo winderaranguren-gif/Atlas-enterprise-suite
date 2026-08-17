@@ -1,5 +1,5 @@
-import { randomUUID } from 'node:crypto';
-import { access, cp, mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
+import { createHash, randomUUID } from 'node:crypto';
+import { access, cp, mkdir, readFile, readdir, rename, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const provider = 'ATLAS Sovereign Edge';
@@ -7,6 +7,37 @@ const root = () => path.resolve(process.env.ATLAS_ROOT || '/opt/atlas');
 const edgeOrigin = () => String(process.env.ATLAS_EDGE_ORIGIN || `http://${process.env.ATLAS_EDGE_HOST || '127.0.0.1'}:${process.env.ATLAS_EDGE_PORT || '7402'}`).replace(/\/$/, '');
 const runtimeOrigin = () => String(process.env.ATLAS_RUNTIME_ORIGIN || `http://${process.env.ATLAS_RUNTIME_HOST || '127.0.0.1'}:${process.env.ATLAS_RUNTIME_PORT || '7403'}`).replace(/\/$/, '');
 const controlToken = () => String(process.env.ATLAS_CONTROL_TOKEN || '').trim();
+
+const DESTRUCTIVE_MIGRATION = /\b(?:DROP\s+(?:TABLE|VIEW|INDEX)|TRUNCATE|DELETE\s+FROM|REPLACE\s+INTO|UPDATE\s+[A-Za-z0-9_"`]+\s+SET|ALTER\s+TABLE[\s\S]{0,200}\b(?:DROP|RENAME)\b)/i;
+
+function sha256(content) {
+  return createHash('sha256').update(content).digest('hex');
+}
+
+async function migrationSafety(snapshot) {
+  const migrationDir = path.join(snapshot.releaseDir, 'source', 'migrations');
+  let names = [];
+  try { names = (await readdir(migrationDir)).filter((name) => /^\d+.*\.sql$/i.test(name)).sort(); } catch { return { ok: true, pending: [] }; }
+  const schema = await fetchJson(`${runtimeOrigin()}/_atlas/runtime/schema`, {
+    headers: { authorization: `Bearer ${controlToken()}`, accept: 'application/json' },
+  });
+  if (!schema.response.ok || schema.body?.ok !== true) {
+    return { ok: false, reason: 'runtime_schema_unavailable', status: schema.response.status };
+  }
+  const applied = new Map((schema.body.migrations || []).map((row) => [row.name, row.sha256]));
+  const pending = [];
+  for (const name of names) {
+    const sql = await readFile(path.join(migrationDir, name), 'utf8');
+    const digest = sha256(sql);
+    if (applied.has(name)) {
+      if (applied.get(name) !== digest) return { ok: false, reason: 'migration_drift_preflight', migration: name };
+      continue;
+    }
+    if (DESTRUCTIVE_MIGRATION.test(sql)) return { ok: false, reason: 'destructive_migration_blocked', migration: name };
+    pending.push({ name, sha256: digest });
+  }
+  return { ok: true, pending };
+}
 
 async function exists(target) {
   try { await stat(target); return true; } catch { return false; }
@@ -21,9 +52,10 @@ async function fetchJson(url, init = {}) {
 }
 
 async function edgePost(pathname) {
+  const token = controlToken();
   const { response, body } = await fetchJson(`${edgeOrigin()}${pathname}`, {
     method: 'POST',
-    headers: { authorization: `Bearer ${controlToken()}`, accept: 'application/json' },
+    headers: { authorization: `Bearer ${token}`, accept: 'application/json' },
   });
   if (!response.ok) throw new Error(`atlas_edge_${response.status}:${body?.error || 'request_failed'}`);
   return body;
@@ -78,10 +110,12 @@ export async function preflight({ snapshot } = {}) {
     await access(path.join(snapshot.releaseDir, 'source'));
     const { response, body } = await fetchJson(`${edgeOrigin()}/health`, { headers: { accept: 'application/json' } });
     if (!response.ok || body?.ok !== true) return { ok: false, reason: 'atlas_edge_unhealthy', status: response.status };
+    const migrationCheck = await migrationSafety(snapshot);
+    if (!migrationCheck.ok) return migrationCheck;
+    return { ok: true, provider, root: root(), edgeOrigin: edgeOrigin(), runtimeOrigin: runtimeOrigin(), pendingMigrations: migrationCheck.pending };
   } catch (error) {
     return { ok: false, reason: 'atlas_edge_unreachable', error: error?.message || String(error) };
   }
-  return { ok: true, provider, root: root(), edgeOrigin: edgeOrigin(), runtimeOrigin: runtimeOrigin() };
 }
 
 export async function deploy({ snapshot }) {
