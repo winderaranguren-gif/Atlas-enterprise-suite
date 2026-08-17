@@ -8,6 +8,8 @@ import { voiceSettingsRoute } from './modules/voice-settings.js';
 import { financialIntelligenceRoutes } from './modules/financial-intelligence.js';
 import { requireBrowserSession } from './modules/auth.js';
 import { globalPromoRoutes } from './modules/global-promo.js';
+import { preflightGlobalPromoRequest, globalPromoCommercialContextRoute } from './modules/global-promo-integrity.js';
+import { enhanceGlobalPromoCommercialUI } from './modules/global-promo-commercial-ui.js';
 
 const CORE_TABLES=['users','sessions','organizations','dbas','memberships','role_permissions'];
 const CAPABILITY_BRIDGES={
@@ -155,14 +157,22 @@ export default {
  async fetch(request,env,ctx){
   const url=new URL(request.url);
   if(url.pathname.startsWith('/api/global-promo')){
-   const globalPromoResponse=await globalPromoRoutes(request,env,url);
-   if(globalPromoResponse)return globalPromoResponse;
+   try{
+    const commercialContextResponse=await globalPromoCommercialContextRoute(request,env,url);
+    if(commercialContextResponse)return commercialContextResponse;
+    const preflight=await preflightGlobalPromoRequest(request,env,url);
+    if(preflight.response)return preflight.response;
+    const globalPromoResponse=await globalPromoRoutes(preflight.request||request,env,url);
+    if(globalPromoResponse)return globalPromoResponse;
+   }catch{return Response.json({ok:false,error:'global_promo_runtime_unavailable'},{status:503,headers:{'cache-control':'no-store'}})}
   }
   if(request.method==='GET'&&(url.pathname==='/platform/global-promo'||url.pathname.startsWith('/platform/global-promo/'))){
    const verification=await requireBrowserSession(request,env);
    if(!verification.ok){if(verification.status===401)return Response.redirect(new URL('/login',url),302);return protectedUnavailable()}
-   const globalPromoResponse=await globalPromoRoutes(request,env,url);
-   if(globalPromoResponse)return globalPromoResponse;
+   try{
+    const globalPromoResponse=await globalPromoRoutes(request,env,url);
+    if(globalPromoResponse)return enhanceGlobalPromoCommercialUI(globalPromoResponse,url);
+   }catch{return protectedUnavailable()}
   }
   const dashboardResponse=await dashboardMasterRoute(request,env,url);
   if(dashboardResponse)return enhanceGlobalPromoDashboard(dashboardResponse,url);
