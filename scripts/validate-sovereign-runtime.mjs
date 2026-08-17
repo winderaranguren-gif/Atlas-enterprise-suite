@@ -51,6 +51,9 @@ for (const token of ['DatabaseSync', 'async batch', 'PRAGMA foreign_keys=ON']) {
 const caddy = await readFile('sovereign/atlas-edge/Caddyfile.template', 'utf8');
 if (!caddy.includes('reverse_proxy 127.0.0.1:7403')) throw new Error('Caddy must proxy application traffic to ATLAS Runtime.');
 if (caddy.includes('file_server')) throw new Error('Caddy must not reduce the dynamic ATLAS application to a static file server.');
+if (!caddy.includes('handle /_atlas/runtime/*') || !caddy.includes('respond 404')) {
+  throw new Error('ATLAS Runtime control endpoints must remain unavailable on the public Caddy surface.');
+}
 
 const snapshot = await readFile('scripts/atlas-sovereign-snapshot.mjs', 'utf8');
 if (!snapshot.includes('githubRequired: false')) throw new Error('Snapshot manifest must state GitHub is not required.');
