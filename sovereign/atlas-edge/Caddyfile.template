@@ -9,10 +9,14 @@ atlasenterprisesuite.com, www.atlasenterprisesuite.com {
     uri strip_prefix /_atlas/edge
     reverse_proxy 127.0.0.1:7402
   }
+  handle /_atlas/runtime/* {
+    respond 404
+  }
   handle {
-    root * /opt/atlas/current
-    try_files {path} {path}/ /index.html
-    file_server
+    reverse_proxy 127.0.0.1:7403 {
+      header_up Host {host}
+      header_up X-Forwarded-Proto {scheme}
+    }
   }
   log {
     output file /opt/atlas/logs/access.log
