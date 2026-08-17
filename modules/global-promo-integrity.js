@@ -14,7 +14,6 @@ async function audit(env,a,action,id,metadata){try{await appendAuditLedger(env,{
 const MATERIAL_TRANSITIONS={
  required:new Set(['ordered','received','cancelled']),ordered:new Set(['received','cancelled']),received:new Set(['allocated','cancelled']),allocated:new Set(['received','issued','cancelled']),issued:new Set(),cancelled:new Set()
 };
-const PACKAGE_FULFILLMENT_STATES=new Set(['shipped','delivered','exception']);
 
 export function globalPromoPackingGate(total,passed){return Number(total||0)<1||Number(passed||0)<1?'quality_pass_required_before_packing':null}
 export function globalPromoDeliveryGate(total,delivered,open){if(Number(total||0)<1)return'package_required_before_delivery';if(Number(delivered||0)<1)return'delivered_package_required';if(Number(open||0)>0)return'packages_not_delivered';return null}
@@ -24,9 +23,13 @@ export function globalPromoMaterialsGate(total,incomplete){return Number(total||
 export function globalPromoWorkOrdersGate(active,completed,open){if(Number(active||0)<1)return'work_order_required_before_quality';if(Number(completed||0)<1)return'completed_work_order_required_before_quality';if(Number(open||0)>0)return'work_orders_incomplete';return null}
 export function globalPromoReadyGate(active,incomplete){if(Number(active||0)<1)return'package_required_before_ready';if(Number(incomplete||0)>0)return'packages_not_ready';return null}
 export function globalPromoWorkOrderExecutionAllowed(jobStatus,nextStatus){return !['in_progress','completed'].includes(nextStatus)||jobStatus==='production'}
+export function globalPromoWorkOrderCreationAllowed(jobStatus){return ['materials','production'].includes(jobStatus)}
 export function globalPromoQualityAllowed(jobStatus){return jobStatus==='quality_control'}
-export function globalPromoPackageCreationAllowed(jobStatus){return ['packing','ready'].includes(jobStatus)}
-export function globalPromoPackageFulfillmentAllowed(jobStatus,nextStatus){return !PACKAGE_FULFILLMENT_STATES.has(nextStatus)||jobStatus==='ready'}
+export function globalPromoArtworkCreationAllowed(jobStatus){return jobStatus==='artwork'}
+export function globalPromoArtworkDecisionAllowed(jobStatus){return jobStatus==='approval'}
+export function globalPromoApprovalExitAllowed(currentStatus,nextStatus,approvedCount){return !(currentStatus==='approval'&&nextStatus==='materials')||Number(approvedCount||0)>0}
+export function globalPromoPackageCreationAllowed(jobStatus){return jobStatus==='packing'}
+export function globalPromoPackageFulfillmentAllowed(jobStatus,nextStatus){if(['packing','packed'].includes(nextStatus))return jobStatus==='packing';if(['shipped','delivered','exception'].includes(nextStatus))return jobStatus==='ready';return true}
 
 export async function preflightGlobalPromoRequest(request,env,url=new URL(request.url)){
  const path=url.pathname.length>1?url.pathname.replace(/\/+$/,''):url.pathname;
@@ -34,17 +37,21 @@ export async function preflightGlobalPromoRequest(request,env,url=new URL(reques
  const materialUpdateMatch=path.match(/^\/api\/global-promo\/materials\/([^/]+)$/);
  const workOrderUpdateMatch=path.match(/^\/api\/global-promo\/work-orders\/([^/]+)$/);
  const packageUpdateMatch=path.match(/^\/api\/global-promo\/packages\/([^/]+)$/);
+ const artworkDecisionMatch=path.match(/^\/api\/global-promo\/artwork\/([^/]+)\/decision$/);
  const jobCreate=request.method==='POST'&&path==='/api/global-promo/jobs';
+ const artworkCreate=request.method==='POST'&&path==='/api/global-promo/artwork';
  const purchaseOrderCreate=request.method==='POST'&&path==='/api/global-promo/purchase-orders';
+ const workOrderCreate=request.method==='POST'&&path==='/api/global-promo/work-orders';
  const qualityCreate=request.method==='POST'&&path==='/api/global-promo/quality';
  const packageCreate=request.method==='POST'&&path==='/api/global-promo/packages';
+ const artworkDecision=request.method==='POST'&&Boolean(artworkDecisionMatch);
  const jobUpdate=request.method==='PATCH'&&Boolean(jobUpdateMatch);
  const materialUpdate=request.method==='PATCH'&&Boolean(materialUpdateMatch);
  const workOrderUpdate=request.method==='PATCH'&&Boolean(workOrderUpdateMatch);
  const packageUpdate=request.method==='PATCH'&&Boolean(packageUpdateMatch);
- if(!jobCreate&&!purchaseOrderCreate&&!qualityCreate&&!packageCreate&&!jobUpdate&&!materialUpdate&&!workOrderUpdate&&!packageUpdate)return{request};
+ if(!jobCreate&&!artworkCreate&&!purchaseOrderCreate&&!workOrderCreate&&!qualityCreate&&!packageCreate&&!artworkDecision&&!jobUpdate&&!materialUpdate&&!workOrderUpdate&&!packageUpdate)return{request};
  const parsed=await rawJson(request.clone());if(!parsed.ok)return{response:parsed.response};
- const action=jobCreate?'global_promo.job.create':purchaseOrderCreate?'global_promo.purchase_order.create':qualityCreate?'global_promo.quality.create':packageCreate?'global_promo.package.create':materialUpdate?'global_promo.material.update':workOrderUpdate?'global_promo.work_order.update':packageUpdate?'global_promo.package.update':'global_promo.job.update';
+ const action=jobCreate?'global_promo.job.create':artworkCreate?'global_promo.artwork.create':purchaseOrderCreate?'global_promo.purchase_order.create':workOrderCreate?'global_promo.work_order.create':qualityCreate?'global_promo.quality.create':packageCreate?'global_promo.package.create':artworkDecision?'global_promo.artwork.decide':materialUpdate?'global_promo.material.update':workOrderUpdate?'global_promo.work_order.update':packageUpdate?'global_promo.package.update':'global_promo.job.update';
  const gate=await scope(request,env,action);if(gate.response)return gate;const a=gate.authz,b=parsed.body;
  if(jobCreate){
   const accountId=nullable(b.customerAccountId,128),quoteId=nullable(b.quoteId,128);
@@ -54,10 +61,23 @@ export async function preflightGlobalPromoRequest(request,env,url=new URL(reques
   if(q?.account_id&&accountId&&q.account_id!==accountId)return{response:json({ok:false,error:'quote_customer_scope_mismatch'},409)};
   if(q?.account_id&&!accountId)b.customerAccountId=q.account_id;
  }
+ if(artworkCreate){
+  const jobId=text(b.jobId,128),owner=await scopedJob(env,a,jobId);if(!owner)return{response:json({ok:false,error:'global_promo_job_not_found'},404)};
+  if(!globalPromoArtworkCreationAllowed(owner.status))return{response:json({ok:false,error:'artwork_requires_artwork_phase',jobStatus:owner.status},409)};
+ }
+ if(artworkDecision){
+  const id=decodeURIComponent(artworkDecisionMatch[1]);const row=await env.DB.prepare(`SELECT av.id,av.job_id,j.status AS job_status FROM global_promo_artwork_versions av JOIN global_promo_jobs j ON j.id=av.job_id AND j.organization_id=av.organization_id AND j.dba_id=av.dba_id WHERE av.id=? AND av.organization_id=? AND av.dba_id=?`).bind(id,a.organizationId,a.dbaId).first();
+  if(!row)return{response:json({ok:false,error:'artwork_not_found'},404)};
+  if(!globalPromoArtworkDecisionAllowed(row.job_status))return{response:json({ok:false,error:'artwork_decision_requires_approval',jobStatus:row.job_status},409)};
+ }
  if(purchaseOrderCreate){
   const lines=Array.isArray(b.lines)?b.lines:[];
   const ids=[...new Set(lines.map(line=>nullable(line?.inventoryItemId,128)).filter(Boolean))];
   for(const id of ids){const row=await env.DB.prepare(`SELECT id FROM inventory_items WHERE id=? AND organization_id=? AND dba_id=?`).bind(id,a.organizationId,a.dbaId).first();if(!row)return{response:json({ok:false,error:'purchase_order_inventory_item_not_found',inventoryItemId:id},404)}}
+ }
+ if(workOrderCreate){
+  const jobId=text(b.jobId,128),owner=await scopedJob(env,a,jobId);if(!owner)return{response:json({ok:false,error:'global_promo_job_not_found'},404)};
+  if(!globalPromoWorkOrderCreationAllowed(owner.status))return{response:json({ok:false,error:'work_order_requires_materials_or_production',jobStatus:owner.status},409)};
  }
  if(materialUpdate){
   const id=decodeURIComponent(materialUpdateMatch[1]);const row=await env.DB.prepare(`SELECT id,status FROM global_promo_material_requirements WHERE id=? AND organization_id=? AND dba_id=?`).bind(id,a.organizationId,a.dbaId).first();
@@ -77,16 +97,20 @@ export async function preflightGlobalPromoRequest(request,env,url=new URL(reques
  }
  if(packageCreate){
   const jobId=text(b.jobId,128),owner=await scopedJob(env,a,jobId);if(!owner)return{response:json({ok:false,error:'global_promo_job_not_found'},404)};
-  if(!globalPromoPackageCreationAllowed(owner.status))return{response:json({ok:false,error:'package_requires_packing_or_ready',jobStatus:owner.status},409)};
+  if(!globalPromoPackageCreationAllowed(owner.status))return{response:json({ok:false,error:'package_requires_packing',jobStatus:owner.status},409)};
  }
  if(packageUpdate){
   const id=decodeURIComponent(packageUpdateMatch[1]);const row=await env.DB.prepare(`SELECT p.id,p.job_id,p.status,j.status AS job_status FROM global_promo_packages p JOIN global_promo_jobs j ON j.id=p.job_id AND j.organization_id=p.organization_id AND j.dba_id=p.dba_id WHERE p.id=? AND p.organization_id=? AND p.dba_id=?`).bind(id,a.organizationId,a.dbaId).first();
   if(!row)return{response:json({ok:false,error:'package_not_found'},404)};const next=text(b.status||row.status,30);
-  if(!globalPromoPackageFulfillmentAllowed(row.job_status,next))return{response:json({ok:false,error:'package_fulfillment_requires_ready',jobStatus:row.job_status,to:next},409)};
+  if(!globalPromoPackageFulfillmentAllowed(row.job_status,next))return{response:json({ok:false,error:'package_status_incompatible_with_job_phase',jobStatus:row.job_status,to:next},409)};
  }
  if(jobUpdate){
   const jobId=decodeURIComponent(jobUpdateMatch[1]),status=text(b.status,30);
   const current=await scopedJob(env,a,jobId);if(!current)return{response:json({ok:false,error:'global_promo_job_not_found'},404)};
+  if(current.status==='approval'&&status==='materials'){
+   const artwork=await env.DB.prepare(`SELECT COUNT(*) approved FROM global_promo_artwork_versions WHERE job_id=? AND organization_id=? AND dba_id=? AND status='approved'`).bind(jobId,a.organizationId,a.dbaId).first();
+   if(!globalPromoApprovalExitAllowed(current.status,status,artwork?.approved))return{response:json({ok:false,error:'approved_artwork_required_before_materials'},409)};
+  }
   if(status==='production'){
    const materials=await env.DB.prepare(`SELECT COUNT(*) total,SUM(CASE WHEN status NOT IN ('allocated','issued','cancelled') THEN 1 ELSE 0 END) incomplete FROM global_promo_material_requirements WHERE job_id=? AND organization_id=? AND dba_id=?`).bind(jobId,a.organizationId,a.dbaId).first();
    const error=globalPromoMaterialsGate(materials?.total,materials?.incomplete);if(error)return{response:json({ok:false,error},409)};
