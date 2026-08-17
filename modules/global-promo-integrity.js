@@ -58,6 +58,8 @@ export async function globalPromoCommercialContextRoute(request,env,url=new URL(
  const id=decodeURIComponent(match[1]),current=await env.DB.prepare(`SELECT id,status,customer_account_id,quote_id,request_reference FROM global_promo_jobs WHERE id=? AND organization_id=? AND dba_id=?`).bind(id,a.organizationId,a.dbaId).first();
  if(!current)return json({ok:false,error:'global_promo_job_not_found'},404);
  const b=parsed.body,requestedAccount=b.customerAccountId===undefined?current.customer_account_id:nullable(b.customerAccountId,128),requestedQuote=b.quoteId===undefined?current.quote_id:nullable(b.quoteId,128),requestReference=b.requestReference===undefined?current.request_reference:nullable(b.requestReference,300);
+ const commercialChanged=requestedAccount!==current.customer_account_id||requestedQuote!==current.quote_id;
+ if(commercialChanged){let invoiceLink=null;try{invoiceLink=await env.DB.prepare(`SELECT finance_invoice_id FROM global_promo_finance_links WHERE job_id=? AND organization_id=? AND dba_id=?`).bind(id,a.organizationId,a.dbaId).first()}catch{}if(invoiceLink)return json({ok:false,error:'commercial_context_locked_after_invoice',financeInvoiceId:invoiceLink.finance_invoice_id},409)}
  const [acct,q]=await Promise.all([requestedAccount?account(env,a,requestedAccount):null,requestedQuote?quote(env,a,requestedQuote):null]);
  if(requestedAccount&&!acct)return json({ok:false,error:'customer_account_not_found'},404);
  if(requestedQuote&&!q)return json({ok:false,error:'quote_not_found'},404);
