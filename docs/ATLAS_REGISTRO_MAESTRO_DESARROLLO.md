@@ -92,7 +92,7 @@ Bitácora viva para separar con precisión lo diseñado, implementado, probado, 
 - Delivered requiere al menos un package registrado, al menos uno con estado `delivered` y cero packages todavía abiertos.
 - Una vez creado un Finance invoice para el job, Customer/Quote queda bloqueado para evitar divergencia `Invoice A` ↔ `Quote B`.
 - Payments usan ledger auditable y trigger de base de datos para rechazar sobrepagos o facturas no pagables.
-- `finance_invoices.received_cents` se recalcula desde el ledger de pagos.
+- `finance_invoices.received_cents` se deriva del ledger de pagos.
 - Se restauró `/feeds/meta/atlas-catalog.csv` después de detectar una deriva accidental durante integración.
 
 **Pruebas ejecutadas en runtime Node 22 disponible:**
@@ -122,7 +122,7 @@ Bitácora viva para separar con precisión lo diseñado, implementado, probado, 
 
 **PR vigente:** `#195 — Global Promo Production ERP — reconciled canonical mainline`.
 
-**Estado de GitHub verificado después del hardening:** PR abierto, draft, `mergeable=true`, base `main`, base SHA `b7daab78bfb7b0680f84471381cc8bbca1ef0150`; sigue limitado a 12 archivos modificados del alcance reconciliado. El head avanza con los commits de hardening y tests sin cambiar la base canónica.
+**Estado de GitHub verificado:** PR abierto, draft, `mergeable=true`, base `main`, base SHA `b7daab78bfb7b0680f84471381cc8bbca1ef0150`. Después de las pruebas financieras y UX de fase el head avanzó a `5d60c0d3537666af8d0a5f487d80a96916dd7b5d` antes de los commits UX posteriores; el PR continúa como única candidata de integración y permanece en draft hasta el build completo.
 
 **Compatibilidad preservada:**
 - `modules/company-operations.js` existe físicamente en la nueva rama y conserva la versión de `main`.
@@ -134,7 +134,27 @@ Bitácora viva para separar con precisión lo diseñado, implementado, probado, 
 
 **PRs anteriores:** #191 y #194 fueron cerrados sin merge como `superseded by #195`. Sus ramas/historial se conservan como evidencia y rollback; no deben fusionarse.
 
-**Estado actual exacto:** DISEÑADO ✅ · IMPLEMENTADO EN RAMA LIMPIA ✅ · INVARIANTES CRÍTICOS PROBADOS 49/49 ✅ · RECONCILIADO CON MAIN ✅ · PR MERGEABLE ✅ · BUILD SOBERANO COMPLETO ❌ · MERGE A MAIN ❌ · DESPLIEGUE ❌ · VERIFICACIÓN EN PRODUCCIÓN ❌.
+## 2026-08-17 — Global Promo: pagos atómicos y UX consciente de fases
+
+**Objetivo financiero:** eliminar la ventana de inconsistencia entre registrar un pago y actualizar el estado de la factura.
+
+**Cambio aplicado:**
+- `GLOBAL_PROMO_PAYMENT_VALIDATE_TRIGGER_SQL` valida tenant, estado pagable y balance antes del INSERT.
+- `GLOBAL_PROMO_PAYMENT_APPLY_TRIGGER_SQL` ejecuta AFTER INSERT y actualiza en la misma operación de base de datos `finance_invoices.received_cents`, `status` y `updated_at` desde la suma del ledger.
+- `recordPayment` ya no hace un UPDATE manual separado de `received_cents/status`; inserta el ledger y vuelve a leer el estado aplicado por SQLite.
+- El validador falla si reaparece el patrón antiguo de actualización manual no atómica.
+
+**Pruebas financieras ejecutadas:** `scripts/test-global-promo-finance-integrity.mjs` usa Node 22 `node:sqlite` y verificó 8/8: pago parcial, pago total, rechazo posterior a paid, sobrepago, cross-tenant, invoice void, monto cero y reconciliación ledger ↔ invoice.
+
+**Objetivo de UX:** evitar que un operador vea acciones que el backend ya sabe que son incompatibles con la fase del job.
+
+**Cambio aplicado:** `modules/global-promo-commercial-ui.js` ahora incorpora una capa `data-global-promo-phase-ui` sobre las pantallas existentes. No crea endpoints ni un segundo estado. Filtra jobs reales por fase: Artwork=`artwork`; Work Orders=`materials|production`; QC=`quality_control`; Package creation=`packing`. También limita Work Orders ejecutables, decisiones de artwork, Work Orders elegibles para QC y estados de package según la fase real del job. MutationObserver mantiene los filtros después de re-renderizados de la UI base.
+
+**Prueba de sintaxis UX:** el JavaScript exacto inyectado por la capa de fase pasó `node --check`.
+
+**Validación permanente:** `scripts/validate-global-promo.mjs` exige la presencia de la capa de fase, sus selectores/rules y los triggers financieros atómicos. `validate:global-promo` ejecuta tanto `test:global-promo-integrity` como `test:global-promo-finance-integrity`.
+
+**Estado actual exacto:** DISEÑADO ✅ · IMPLEMENTADO EN RAMA LIMPIA ✅ · WORKFLOW INVARIANTS 49/49 ✅ · FINANCE INTEGRITY 8/8 ✅ · UX PHASE SCRIPT SYNTAX ✅ · RECONCILIADO CON MAIN ✅ · PR #195 MERGEABLE/DRAFT ✅ · BUILD SOBERANO COMPLETO ❌ · MERGE A MAIN ❌ · DESPLIEGUE ❌ · VERIFICACIÓN EN PRODUCCIÓN ❌.
 
 **URL objetivo:** `https://www.atlasenterprisesuite.com/platform/global-promo` después de validación completa, integración, despliegue y verificación real.
 
