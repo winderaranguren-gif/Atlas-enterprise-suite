@@ -20,10 +20,15 @@ const target = (targetArg?.split('=')[1] || process.env.ATLAS_DEPLOY_TARGET || '
 const skipBuild = args.includes('--skip-build');
 if (!/^[a-z0-9-]+$/i.test(target)) throw new Error('Invalid ATLAS deploy target.');
 
-if (!skipBuild) run('npm', ['run', 'build:sovereign']);
 const snapshotRaw = run('node', ['scripts/atlas-sovereign-snapshot.mjs'], { capture: true });
 let snapshot = null;
 try { snapshot = JSON.parse(snapshotRaw.split('\n').at(-1)); } catch { snapshot = { raw: snapshotRaw }; }
+if (!snapshot?.aggregateSha256 || !/^[0-9a-f]{64}$/i.test(snapshot.aggregateSha256)) {
+  throw new Error('Sovereign snapshot did not produce a valid aggregate SHA-256.');
+}
+process.env.ATLAS_RELEASE_SHA = snapshot.aggregateSha256.slice(0, 40);
+process.env.ATLAS_RELEASE_BRANCH = 'main';
+if (!skipBuild) run('npm', ['run', 'build:sovereign']);
 
 const adapterPath = path.resolve('scripts', 'deploy-adapters', `${target}.mjs`);
 let adapter;
@@ -39,16 +44,14 @@ if (preflight && !preflight.ok) {
   console.error(JSON.stringify({ ok: false, phase: 'preflight', target, preflight, snapshot }));
   process.exit(2);
 }
-
 const deployment = await adapter.deploy?.({ snapshot });
-let verification = null;
-if (target !== 'bundle') verification = await adapter.verify?.({ snapshot, deployment });
-else verification = await adapter.verify?.({ snapshot, deployment });
+const verification = await adapter.verify?.({ snapshot, deployment });
 
 console.log(JSON.stringify({
   ok: Boolean(deployment?.ok) && (verification?.ok !== false),
   mode: 'ATLAS Sovereign Runtime',
   githubRequired: false,
+  releaseIdentity: process.env.ATLAS_RELEASE_SHA,
   target,
   snapshot,
   deployment,
