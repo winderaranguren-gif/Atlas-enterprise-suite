@@ -12,7 +12,7 @@ GitHub may mirror source and accept collaboration, but it is outside this requir
 - `npm run build:sovereign` runs the provider-neutral ATLAS validation/build contract.
 - `npm run snapshot:sovereign` creates a self-contained source snapshot under `.atlas/sovereign/snapshots/` with a SHA-256 manifest.
 - `npm run release:sovereign` builds and creates a bundle-only release without publishing externally.
-- `node scripts/atlas-sovereign-release.mjs --target=sovereign-edge` stages an immutable release on an ATLAS-controlled host, promotes it through ATLAS Edge, verifies ATLAS Runtime, and automatically rolls back if runtime readiness fails.
+- `npm run release:sovereign:edge` stages an immutable release on an ATLAS-controlled host, promotes it through ATLAS Edge, verifies ATLAS Runtime, and automatically rolls back if runtime readiness fails.
 - `npm run release:sovereign:cloudflare` uses Cloudflare only as a replaceable production adapter and requires direct Cloudflare credentials in the execution environment.
 - `npm run validate:sovereign` enforces the sovereign runtime contract.
 
@@ -30,9 +30,17 @@ The runtime currently provides:
 - ordered SQL migration application with SHA-256 drift detection
 - an `ASSETS` binding backed by the promoted release's `assets/` directory
 - runtime health, readiness and active-release endpoints
+- a token-protected schema/migration-state endpoint used only by the sovereign deployment preflight
 - automatic loading of a newly promoted immutable release without rebuilding it
 
 SQLite is the compatibility bridge for the current D1-oriented schema. PostgreSQL remains the target database/auth system for the later full sovereign data cutover; that migration must preserve tenant scope, RBAC, audit and ledger invariants before PostgreSQL becomes authoritative.
+
+## Migration safety
+Code rollback cannot reliably undo a database mutation after it has committed. For that reason the automatic Sovereign Edge release path is intentionally stricter than ordinary application loading.
+
+Before a release is staged or promoted, the adapter authenticates to ATLAS Runtime and compares every migration in the candidate snapshot with the migration ledger already applied on the host. A previously applied migration whose SHA-256 changed is blocked as `migration_drift_preflight`. A new migration containing destructive schema changes or direct data rewrites such as `DROP`, `TRUNCATE`, `DELETE FROM`, `REPLACE INTO`, direct `UPDATE ... SET`, or destructive `ALTER TABLE` operations is blocked as `destructive_migration_blocked`.
+
+The automatic release path is therefore for forward-compatible/additive migrations. A genuinely destructive or data-rewrite migration requires a separate planned migration procedure with an explicit database backup, compatibility assessment, controlled execution, post-migration validation and a data recovery plan. It must not be smuggled through ordinary release promotion merely because application code itself can roll back.
 
 ## ATLAS Edge and rollback
 ATLAS Edge owns release promotion state and atomic `current` switching. The `sovereign-edge` adapter never overwrites an immutable release ID with different content. After promotion it verifies ATLAS Runtime. If the runtime cannot load the release, a migration drifts/fails, or application readiness fails, the adapter requests an ATLAS Edge rollback to the previous release.
