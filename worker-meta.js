@@ -6,6 +6,8 @@ import { RELEASE_SHA, RELEASE_BRANCH } from './modules/release-identity.js';
 import { dashboardMasterRoute } from './modules/dashboard-master.js';
 import { voiceSettingsRoute } from './modules/voice-settings.js';
 import { financialIntelligenceRoutes } from './modules/financial-intelligence.js';
+import { requireBrowserSession } from './modules/auth.js';
+import { globalPromoRoutes } from './modules/global-promo.js';
 
 const CORE_TABLES=['users','sessions','organizations','dbas','memberships','role_permissions'];
 const CAPABILITY_BRIDGES={
@@ -98,7 +100,7 @@ async function enhanceCapabilitySitemap(response,url,method){
  if(!type.includes('xml'))return response;
  let body=await response.text();
  const location=`${url.origin}/capabilities`;
- if(!body.includes(`<loc>${location}</loc>`))body=body.replace('</urlset>',`<url><loc>${location}</loc></url></urlset>`);
+ if(!body.includes(`<loc>${location}</loc>`))body=body.replace('</urlset>',`<url><loc>${location}</loc></url></set>`).replace('</url></set>','</url></urlset>');
  const headers=new Headers(response.headers);headers.delete('content-length');
  return new Response(body,{status:response.status,statusText:response.statusText,headers});
 }
@@ -135,9 +137,21 @@ async function enhanceFinancialIntelligenceNavigation(response,url){
  const headers=new Headers(response.headers);headers.delete('content-length');return new Response(body,{status:response.status,statusText:response.statusText,headers});
 }
 
+function protectedUnavailable(){return new Response(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>ATLAS Identity</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#020711;color:#eef7ff;font-family:Inter,system-ui,sans-serif}.card{max-width:560px;margin:24px;padding:28px;border:1px solid #25527a;border-radius:18px;background:#071522}.card p{color:#9fb4c7;line-height:1.6}.card a{color:#59c9ff}</style></head><body><main class="card"><h1>Security verification unavailable.</h1><p>ATLAS will not open Global Promo without validating the active identity session.</p><a href="/login">Return to sign in</a></main></body></html>`,{status:503,headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'}})}
+
 export default {
  async fetch(request,env,ctx){
   const url=new URL(request.url);
+  if(url.pathname.startsWith('/api/global-promo')){
+   const globalPromoResponse=await globalPromoRoutes(request,env,url);
+   if(globalPromoResponse)return globalPromoResponse;
+  }
+  if(request.method==='GET'&&(url.pathname==='/platform/global-promo'||url.pathname.startsWith('/platform/global-promo/'))){
+   const verification=await requireBrowserSession(request,env);
+   if(!verification.ok){if(verification.status===401)return Response.redirect(new URL('/login',url),302);return protectedUnavailable()}
+   const globalPromoResponse=await globalPromoRoutes(request,env,url);
+   if(globalPromoResponse)return globalPromoResponse;
+  }
   const dashboardResponse=await dashboardMasterRoute(request,env,url);
   if(dashboardResponse)return dashboardResponse;
   const voiceResponse=await voiceSettingsRoute(request,env,url);
