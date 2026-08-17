@@ -195,7 +195,7 @@ export default {
   if(url.pathname==='/api/readiness'&&request.method==='GET')return readiness(env);
   const capabilityPublicResponse=await capabilityPublicRoutes(request,env,url);
   if(capabilityPublicResponse)return capabilityPublicResponse;
-  if(url.pathname==='/whatsapp-catalog.csv')url.pathname='/feeds/meta/atlas/atlas-catalog.csv';
+  if(url.pathname==='/whatsapp-catalog.csv')url.pathname='/feeds/meta/atlas-catalog.csv';
   const catalogResponse=await metaCatalogRoutes(request,env,url);
   if(catalogResponse)return catalogResponse;
   let response=await app.fetch(request,env,ctx);
