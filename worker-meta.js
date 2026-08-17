@@ -14,203 +14,30 @@ import { enhanceGlobalPromoCommercialUI } from './modules/global-promo-commercia
 import { globalPromoFinanceHandoffRoutes } from './modules/global-promo-finance-handoff.js';
 import { globalPromoBillingPage, enhanceGlobalPromoBillingNavigation } from './modules/global-promo-billing-ui.js';
 import { globalPromoAssetRoutes, preflightGlobalPromoAssetReferences } from './modules/global-promo-assets.js';
+import { enhanceGlobalPromoAssetUI } from './modules/global-promo-assets-ui.js';
 
 const CORE_TABLES=['users','sessions','organizations','dbas','memberships','role_permissions'];
 const CAPABILITY_BRIDGES={
- '/platform/capabilities/lingua':{
-  id:'lingua-localization',eyebrow:'CONNECTED ATLAS SETTINGS',title:'Localization & Workspace Preferences',
-  copy:'Use ATLAS Settings for organization language, region and timezone preferences. Lingua remains the translation experience while Settings remains the scoped configuration surface.',
-  href:'/platform/settings',action:'Open ATLAS Settings →',tone:'blue'
- },
- '/platform/capabilities/language-coach':{
-  id:'language-coach-voice',eyebrow:'CONNECTED ATLAS SENSORY',title:'Voice & Vision Workspace',
-  copy:'Continue pronunciation and speech practice with the existing ATLAS Voice & Vision workspace for device voice, microphone and sensory capabilities. Language Coach remains the guided learning experience.',
-  href:'/platform/voice-vision',action:'Open ATLAS Voice & Vision →',tone:'blue'
- },
- '/platform/capabilities/academy':{
-  id:'academy-training',eyebrow:'CONNECTED ATLAS RECORDS',title:'Live Training & Certification Records',
-  copy:'Open the existing ATLAS HR training workspace for tenant-scoped course catalog, assignments, completion scores and expiration tracking. Academy remains the learner-facing experience while HR Training remains the accountable system of record.',
-  href:'/platform/hr-payroll/training',action:'Open ATLAS Training Records →',tone:'green'
- },
- '/platform/capabilities/tax-compliance':{
-  id:'tax-compliance-finance',eyebrow:'CONNECTED ATLAS WORKSPACE',title:'Accounting Tax Workspace',
-  copy:'Continue from due-diligence and review controls into the existing ATLAS Finance tax workspace. Capability Fusion owns the compliance workflow; Finance remains the scoped accounting context.',
-  href:'/platform/finance/taxes',action:'Open ATLAS Finance Taxes →',tone:'blue'
- },
- '/platform/capabilities/tax-pro':{
-  id:'tax-pro-finance',eyebrow:'CONNECTED ATLAS WORKSPACE',title:'Tax Preparation + Accounting Context',
-  copy:'Move between the client tax workflow and the existing ATLAS Finance tax section without duplicating financial records or inventing a second ledger.',
-  href:'/platform/finance/taxes',action:'Open ATLAS Finance Taxes →',tone:'blue'
- },
- '/platform/capabilities/candidate-hub':{
-  id:'candidate-recruiting',eyebrow:'CONNECTED ATLAS WORKSPACE',title:'HR Recruiting Workspace',
-  copy:'Open the existing ATLAS HR recruiting workspace for the organization recruiting flow. Candidate Hub remains the candidate-experience and assessment layer; this bridge does not claim a separate candidate database.',
-  href:'/platform/hr-payroll/recruiting',action:'Open ATLAS Recruiting →',tone:'blue'
- },
- '/platform/capabilities/forms':{
-  id:'forms-documents',eyebrow:'CONNECTED ATLAS DOCUMENTS',title:'Documents, Templates & Approvals',
-  copy:'Send completed form workflows toward the existing ATLAS Documents surface for controlled templates, approvals, versions and archives. The current Forms builder remains browser-local until its secure persistence layer is promoted.',
-  href:'/platform/documents',action:'Open ATLAS Documents →',tone:'blue'
- },
- '/platform/capabilities/stream':{
-  id:'stream-control',eyebrow:'CONNECTED ATLAS MEDIA',title:'Stream Control Workspace',
-  copy:'Open the protected ATLAS Stream Control workspace for private local playback, session library, favorites, resume position, playback speed and display controls. No third-party catalog or cloud upload is implied.',
-  href:'/platform/stream-control',action:'Open ATLAS Stream Control →',tone:'green'
- },
- '/platform/capabilities/subscriptions':{
-  id:'subscriptions-control',eyebrow:'CONNECTED ATLAS COST CONTROL',title:'Subscription & Renewal Control',
-  copy:'Open the protected ATLAS Subscription Control workspace for plans, seats, renewal dates and recurring cost analysis. It is a management register and does not process payments or cancel third-party services.',
-  href:'/platform/subscriptions',action:'Open ATLAS Subscription Control →',tone:'green'
- },
- '/platform/capabilities/personalization':{
-  id:'personalization-settings',eyebrow:'CONNECTED ATLAS SETTINGS',title:'Workspace Configuration',
-  copy:'Use the existing ATLAS Settings workspace for organization-level appearance, localization, notifications and system preferences. Personalization remains the user-facing preference model.',
-  href:'/platform/settings',action:'Open ATLAS Settings →',tone:'blue'
- }
+ '/platform/capabilities/lingua':{id:'lingua-localization',eyebrow:'CONNECTED ATLAS SETTINGS',title:'Localization & Workspace Preferences',copy:'Use ATLAS Settings for organization language, region and timezone preferences. Lingua remains the translation experience while Settings remains the scoped configuration surface.',href:'/platform/settings',action:'Open ATLAS Settings →',tone:'blue'},
+ '/platform/capabilities/language-coach':{id:'language-coach-voice',eyebrow:'CONNECTED ATLAS SENSORY',title:'Voice & Vision Workspace',copy:'Continue pronunciation and speech practice with the existing ATLAS Voice & Vision workspace for device voice, microphone and sensory capabilities. Language Coach remains the guided learning experience.',href:'/platform/voice-vision',action:'Open ATLAS Voice & Vision →',tone:'blue'},
+ '/platform/capabilities/academy':{id:'academy-training',eyebrow:'CONNECTED ATLAS RECORDS',title:'Live Training & Certification Records',copy:'Open the existing ATLAS HR training workspace for tenant-scoped course catalog, assignments, completion scores and expiration tracking. Academy remains the learner-facing experience while HR Training remains the accountable system of record.',href:'/platform/hr-payroll/training',action:'Open ATLAS Training Records →',tone:'green'},
+ '/platform/capabilities/tax-compliance':{id:'tax-compliance-finance',eyebrow:'CONNECTED ATLAS WORKSPACE',title:'Accounting Tax Workspace',copy:'Continue from due-diligence and review controls into the existing ATLAS Finance tax workspace. Capability Fusion owns the compliance workflow; Finance remains the scoped accounting context.',href:'/platform/finance/taxes',action:'Open ATLAS Finance Taxes →',tone:'blue'},
+ '/platform/capabilities/tax-pro':{id:'tax-pro-finance',eyebrow:'CONNECTED ATLAS WORKSPACE',title:'Tax Preparation + Accounting Context',copy:'Move between the client tax workflow and the existing ATLAS Finance tax section without duplicating financial records or inventing a second ledger.',href:'/platform/finance/taxes',action:'Open ATLAS Finance Taxes →',tone:'blue'},
+ '/platform/capabilities/candidate-hub':{id:'candidate-recruiting',eyebrow:'CONNECTED ATLAS WORKSPACE',title:'HR Recruiting Workspace',copy:'Open the existing ATLAS HR recruiting workspace for the organization recruiting flow. Candidate Hub remains the candidate-experience and assessment layer; this bridge does not claim a separate candidate database.',href:'/platform/hr-payroll/recruiting',action:'Open ATLAS Recruiting →',tone:'blue'},
+ '/platform/capabilities/forms':{id:'forms-documents',eyebrow:'CONNECTED ATLAS DOCUMENTS',title:'Documents, Templates & Approvals',copy:'Send completed form workflows toward the existing ATLAS Documents surface for controlled templates, approvals, versions and archives. The current Forms builder remains browser-local until its secure persistence layer is promoted.',href:'/platform/documents',action:'Open ATLAS Documents →',tone:'blue'},
+ '/platform/capabilities/stream':{id:'stream-control',eyebrow:'CONNECTED ATLAS MEDIA',title:'Stream Control Workspace',copy:'Open the protected ATLAS Stream Control workspace for private local playback, session library, favorites, resume position, playback speed and display controls. No third-party catalog or cloud upload is implied.',href:'/platform/stream-control',action:'Open ATLAS Stream Control →',tone:'green'},
+ '/platform/capabilities/subscriptions':{id:'subscriptions-control',eyebrow:'CONNECTED ATLAS COST CONTROL',title:'Subscription & Renewal Control',copy:'Open the protected ATLAS Subscription Control workspace for plans, seats, renewal dates and recurring cost analysis. It is a management register and does not process payments or cancel third-party services.',href:'/platform/subscriptions',action:'Open ATLAS Subscription Control →',tone:'green'},
+ '/platform/capabilities/personalization':{id:'personalization-settings',eyebrow:'CONNECTED ATLAS SETTINGS',title:'Workspace Configuration',copy:'Use the existing ATLAS Settings workspace for organization-level appearance, localization, notifications and system preferences. Personalization remains the user-facing preference model.',href:'/platform/settings',action:'Open ATLAS Settings →',tone:'blue'}
 };
-async function readiness(env){
- if(!env.DB)return Response.json({ok:false,state:'blocked',reason:'identity_database_binding_missing',checks:{database:false,schema:false,firstOwner:false,release:RELEASE_SHA!=='unreleased'}},{status:503,headers:{'cache-control':'no-store'}});
- try{
-  const placeholders=CORE_TABLES.map(()=>'?').join(',');
-  const tables=await env.DB.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name IN (${placeholders})`).bind(...CORE_TABLES).all();
-  const found=new Set((tables.results||[]).map(r=>r.name));
-  const missing=CORE_TABLES.filter(name=>!found.has(name));
-  if(missing.length)return Response.json({ok:false,state:'blocked',reason:'core_schema_incomplete',missingTables:missing,checks:{database:true,schema:false,firstOwner:false,release:RELEASE_SHA!=='unreleased'}},{status:503,headers:{'cache-control':'no-store'}});
-  const row=await env.DB.prepare('SELECT COUNT(*) AS count FROM users').first();
-  const userCount=Number(row?.count||0);
-  const bootstrapConfigured=Boolean(env.ATLAS_BOOTSTRAP_TOKEN);
-  const firstOwnerReady=userCount>0||bootstrapConfigured;
-  const releaseReady=/^[0-9a-f]{40}$/i.test(RELEASE_SHA)&&RELEASE_BRANCH==='main';
-  const ok=firstOwnerReady&&releaseReady;
-  return Response.json({ok,state:ok?'ready':'blocked',reason:ok?null:!firstOwnerReady?'first_owner_bootstrap_secret_missing':'release_identity_unstamped',userCount,bootstrapConfigured:userCount===0?bootstrapConfigured:undefined,releaseSha:RELEASE_SHA,releaseBranch:RELEASE_BRANCH,checks:{database:true,schema:true,firstOwner:firstOwnerReady,release:releaseReady}},{status:ok?200:503,headers:{'cache-control':'no-store'}});
- }catch{return Response.json({ok:false,state:'blocked',reason:'readiness_query_failed',checks:{database:true,schema:false,firstOwner:false,release:false}},{status:503,headers:{'cache-control':'no-store'}})}
-}
-
-async function enhancePublicCapabilityDiscovery(response,url,method){
- if(url.pathname!=='/'||method!=='GET')return response;
- const type=response.headers.get('content-type')||'';
- if(!type.includes('text/html'))return response;
- let body=await response.text();
- if(!body.includes('href="/capabilities"')){
-  const trust='<a href="/trust/status">Trust</a>';
-  const link='<a href="/capabilities">Capabilities</a>';
-  if(body.includes(trust))body=body.replace(trust,link+trust);
- }
- const headers=new Headers(response.headers);headers.delete('content-length');
- return new Response(body,{status:response.status,statusText:response.statusText,headers});
-}
-
-async function enhanceCapabilitySitemap(response,url,method){
- if(url.pathname!=='/sitemap.xml'||method!=='GET')return response;
- const type=response.headers.get('content-type')||'';
- if(!type.includes('xml'))return response;
- let body=await response.text();
- const location=`${url.origin}/capabilities`;
- if(!body.includes(`<loc>${location}</loc>`))body=body.replace('</urlset>',`<url><loc>${location}</loc></url></urlset>`);
- const headers=new Headers(response.headers);headers.delete('content-length');
- return new Response(body,{status:response.status,statusText:response.statusText,headers});
-}
-
-async function enhanceCapabilityBridge(response,url){
- const config=CAPABILITY_BRIDGES[url.pathname];
- if(!config)return response;
- const type=response.headers.get('content-type')||'';
- if(!type.includes('text/html'))return response;
- let source=await response.text();
- const safeDom='<script src="/assets/atlas-capability-security.js"></script>';
- if(!source.includes('/assets/atlas-capability-security.js')&&source.includes('<script>'))source=source.replace('<script>',safeDom+'<script>');
- const marker=`data-atlas-live-bridge="${config.id}"`;
- if(source.includes(marker)){
-  const headers=new Headers(response.headers);headers.delete('content-length');
-  return new Response(source,{status:response.status,statusText:response.statusText,headers});
- }
- const green=config.tone==='green',border=green?'#235d46':'#28587c',background=green?'linear-gradient(145deg,#071e17,#071522)':'linear-gradient(145deg,#071a2b,#071522)',eyebrow=green?'#86f7bf':'#7ee6ff';
- const bridge=`<section ${marker} style="margin-top:22px;padding:18px;border:1px solid ${border};border-radius:18px;background:${background}"><div style="font-size:.68rem;letter-spacing:.14em;color:${eyebrow};margin-bottom:8px">${config.eyebrow}</div><h2 style="margin:0 0 8px">${config.title}</h2><p style="margin:0 0 14px;color:#91aac0;line-height:1.55">${config.copy}</p><a href="${config.href}" style="display:inline-block;padding:10px 14px;border:1px solid #2f8cff;border-radius:12px;background:linear-gradient(135deg,#7ee6ff,#2f8cff);color:#03111d;text-decoration:none;font-weight:800">${config.action}</a></section>`;
- const body=source.includes('</main>')?source.replace('</main>',bridge+'</main>'):source.replace('</body>',bridge+'</body>');
- const headers=new Headers(response.headers);headers.delete('content-length');
- return new Response(body,{status:response.status,statusText:response.statusText,headers});
-}
-
-async function enhanceFinancialIntelligenceNavigation(response,url){
- if(!url.pathname.startsWith('/platform/finance')||url.pathname==='/platform/finance/intelligence')return response;
- const type=response.headers.get('content-type')||'';if(!type.includes('text/html'))return response;
- let body=await response.text();
- if(body.includes('ATLAS ACCOUNTING')&&!body.includes('href="/platform/finance/intelligence"')){
-  const link='<a class="mod atlas-control-link" href="/platform/finance/intelligence">Financial Intelligence</a>';
-  const marker='</nav><div class="side-note">';
-  if(body.includes(marker))body=body.replace(marker,link+marker);
- }
- const headers=new Headers(response.headers);headers.delete('content-length');return new Response(body,{status:response.status,statusText:response.statusText,headers});
-}
-
-async function enhanceGlobalPromoDashboard(response,url){
- if(url.pathname!=='/dashboard')return response;
- const type=response.headers.get('content-type')||'';if(!type.includes('text/html'))return response;
- let body=await response.text();
- if(!body.includes('href="/platform/global-promo"')){
-  const marker='<a class="nav-item" href="/platform/settings">';
-  const link='<a class="nav-item" href="/platform/global-promo"><span class="nav-icon">✦</span><span>Global Promo ERP</span><b>›</b></a>';
-  if(body.includes(marker))body=body.replace(marker,link+marker);
- }
- const headers=new Headers(response.headers);headers.delete('content-length');return new Response(body,{status:response.status,statusText:response.statusText,headers});
-}
-
+async function readiness(env){if(!env.DB)return Response.json({ok:false,state:'blocked',reason:'identity_database_binding_missing',checks:{database:false,schema:false,firstOwner:false,release:RELEASE_SHA!=='unreleased'}},{status:503,headers:{'cache-control':'no-store'}});try{const placeholders=CORE_TABLES.map(()=>'?').join(','),tables=await env.DB.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name IN (${placeholders})`).bind(...CORE_TABLES).all(),found=new Set((tables.results||[]).map(r=>r.name)),missing=CORE_TABLES.filter(name=>!found.has(name));if(missing.length)return Response.json({ok:false,state:'blocked',reason:'core_schema_incomplete',missingTables:missing,checks:{database:true,schema:false,firstOwner:false,release:RELEASE_SHA!=='unreleased'}},{status:503,headers:{'cache-control':'no-store'}});const row=await env.DB.prepare('SELECT COUNT(*) AS count FROM users').first(),userCount=Number(row?.count||0),bootstrapConfigured=Boolean(env.ATLAS_BOOTSTRAP_TOKEN),firstOwnerReady=userCount>0||bootstrapConfigured,releaseReady=/^[0-9a-f]{40}$/i.test(RELEASE_SHA)&&RELEASE_BRANCH==='main',ok=firstOwnerReady&&releaseReady;return Response.json({ok,state:ok?'ready':'blocked',reason:ok?null:!firstOwnerReady?'first_owner_bootstrap_secret_missing':'release_identity_unstamped',userCount,bootstrapConfigured:userCount===0?bootstrapConfigured:undefined,releaseSha:RELEASE_SHA,releaseBranch:RELEASE_BRANCH,checks:{database:true,schema:true,firstOwner:firstOwnerReady,release:releaseReady}},{status:ok?200:503,headers:{'cache-control':'no-store'}})}catch{return Response.json({ok:false,state:'blocked',reason:'readiness_query_failed',checks:{database:true,schema:false,firstOwner:false,release:false}},{status:503,headers:{'cache-control':'no-store'}})}}
+async function enhancePublicCapabilityDiscovery(response,url,method){if(url.pathname!=='/'||method!=='GET')return response;const type=response.headers.get('content-type')||'';if(!type.includes('text/html'))return response;let body=await response.text();if(!body.includes('href="/capabilities"')){const trust='<a href="/trust/status">Trust</a>',link='<a href="/capabilities">Capabilities</a>';if(body.includes(trust))body=body.replace(trust,link+trust)}const headers=new Headers(response.headers);headers.delete('content-length');return new Response(body,{status:response.status,statusText:response.statusText,headers})}
+async function enhanceCapabilitySitemap(response,url,method){if(url.pathname!=='/sitemap.xml'||method!=='GET')return response;const type=response.headers.get('content-type')||'';if(!type.includes('xml'))return response;let body=await response.text();const location=`${url.origin}/capabilities`;if(!body.includes(`<loc>${location}</loc>`))body=body.replace('</urlset>',`<url><loc>${location}</loc></url></urlset>`);const headers=new Headers(response.headers);headers.delete('content-length');return new Response(body,{status:response.status,statusText:response.statusText,headers})}
+async function enhanceCapabilityBridge(response,url){const config=CAPABILITY_BRIDGES[url.pathname];if(!config)return response;const type=response.headers.get('content-type')||'';if(!type.includes('text/html'))return response;let source=await response.text();const safeDom='<script src="/assets/atlas-capability-security.js"></script>';if(!source.includes('/assets/atlas-capability-security.js')&&source.includes('<script>'))source=source.replace('<script>',safeDom+'<script>');const marker=`data-atlas-live-bridge="${config.id}"`;if(source.includes(marker)){const headers=new Headers(response.headers);headers.delete('content-length');return new Response(source,{status:response.status,statusText:response.statusText,headers})}const green=config.tone==='green',border=green?'#235d46':'#28587c',background=green?'linear-gradient(145deg,#071e17,#071522)':'linear-gradient(145deg,#071a2b,#071522)',eyebrow=green?'#86f7bf':'#7ee6ff',bridge=`<section ${marker} style="margin-top:22px;padding:18px;border:1px solid ${border};border-radius:18px;background:${background}"><div style="font-size:.68rem;letter-spacing:.14em;color:${eyebrow};margin-bottom:8px">${config.eyebrow}</div><h2 style="margin:0 0 8px">${config.title}</h2><p style="margin:0 0 14px;color:#91aac0;line-height:1.55">${config.copy}</p><a href="${config.href}" style="display:inline-block;padding:10px 14px;border:1px solid #2f8cff;border-radius:12px;background:linear-gradient(135deg,#7ee6ff,#2f8cff);color:#03111d;text-decoration:none;font-weight:800">${config.action}</a></section>`,body=source.includes('</main>')?source.replace('</main>',bridge+'</main>'):source.replace('</body>',bridge+'</body>');const headers=new Headers(response.headers);headers.delete('content-length');return new Response(body,{status:response.status,statusText:response.statusText,headers})}
+async function enhanceFinancialIntelligenceNavigation(response,url){if(!url.pathname.startsWith('/platform/finance')||url.pathname==='/platform/finance/intelligence')return response;const type=response.headers.get('content-type')||'';if(!type.includes('text/html'))return response;let body=await response.text();if(body.includes('ATLAS ACCOUNTING')&&!body.includes('href="/platform/finance/intelligence"')){const link='<a class="mod atlas-control-link" href="/platform/finance/intelligence">Financial Intelligence</a>',marker='</nav><div class="side-note">';if(body.includes(marker))body=body.replace(marker,link+marker)}const headers=new Headers(response.headers);headers.delete('content-length');return new Response(body,{status:response.status,statusText:response.statusText,headers})}
+async function enhanceGlobalPromoDashboard(response,url){if(url.pathname!=='/dashboard')return response;const type=response.headers.get('content-type')||'';if(!type.includes('text/html'))return response;let body=await response.text();if(!body.includes('href="/platform/global-promo"')){const marker='<a class="nav-item" href="/platform/settings">',link='<a class="nav-item" href="/platform/global-promo"><span class="nav-icon">✦</span><span>Global Promo ERP</span><b>›</b></a>';if(body.includes(marker))body=body.replace(marker,link+marker)}const headers=new Headers(response.headers);headers.delete('content-length');return new Response(body,{status:response.status,statusText:response.statusText,headers})}
 const protectedHeaders={'content-type':'text/html; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff','referrer-policy':'strict-origin-when-cross-origin','permissions-policy':'camera=(), microphone=(), geolocation=()','content-security-policy':"default-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline' 'self'; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"};
 function protectedUnavailable(){return new Response(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>ATLAS Identity</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#020711;color:#eef7ff;font-family:Inter,system-ui,sans-serif}.card{max-width:560px;margin:24px;padding:28px;border:1px solid #25527a;border-radius:18px;background:#071522}.card p{color:#9fb4c7;line-height:1.6}.card a{color:#59c9ff}</style></head><body><main class="card"><h1>Security verification unavailable.</h1><p>ATLAS will not open Global Promo without validating the active identity session.</p><a href="/login">Return to sign in</a></main></body></html>`,{status:503,headers:protectedHeaders})}
 function globalPromoUnavailable(){return new Response(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Global Promo · ATLAS</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#020711;color:#eef7ff;font-family:Inter,system-ui,sans-serif}.card{max-width:600px;margin:24px;padding:28px;border:1px solid #25527a;border-radius:18px;background:#071522}.card p{color:#9fb4c7;line-height:1.6}.card a{color:#59c9ff}</style></head><body><main class="card"><h1>Global Promo workspace unavailable.</h1><p>The authenticated ATLAS session remains protected, but this module could not initialize its operational runtime. No production status or data is being simulated.</p><a href="/dashboard">Return to ATLAS Dashboard</a></main></body></html>`,{status:503,headers:protectedHeaders})}
 function globalPromoHtml(body){return new Response(body,{status:200,headers:protectedHeaders})}
 
-export default {
- async fetch(request,env,ctx){
-  const url=new URL(request.url);
-  if(url.pathname.startsWith('/api/global-promo')){
-   try{
-    const assetResponse=await globalPromoAssetRoutes(request,env,url);
-    if(assetResponse)return assetResponse;
-    const financeHandoffResponse=await globalPromoFinanceHandoffRoutes(request,env,url);
-    if(financeHandoffResponse)return financeHandoffResponse;
-    const assetPreflight=await preflightGlobalPromoAssetReferences(request,env,url);
-    if(assetPreflight.response)return assetPreflight.response;
-    const guardedRequest=assetPreflight.request||request;
-    const commercialContextResponse=await globalPromoCommercialContextRoute(guardedRequest,env,url);
-    if(commercialContextResponse)return commercialContextResponse;
-    const preflight=await preflightGlobalPromoRequest(guardedRequest,env,url);
-    if(preflight.response)return preflight.response;
-    const globalPromoResponse=await globalPromoRoutes(preflight.request||guardedRequest,env,url);
-    if(globalPromoResponse)return globalPromoResponse;
-   }catch{return Response.json({ok:false,error:'global_promo_runtime_unavailable'},{status:503,headers:{'cache-control':'no-store'}})}
-  }
-  if(request.method==='GET'&&(url.pathname==='/platform/global-promo'||url.pathname.startsWith('/platform/global-promo/'))){
-   const verification=await requireBrowserSession(request,env);
-   if(!verification.ok){if(verification.status===401)return Response.redirect(new URL('/login',url),302);return protectedUnavailable()}
-   try{
-    if(url.pathname.replace(/\/+$/,'')==='/platform/global-promo/billing')return globalPromoHtml(globalPromoBillingPage());
-    const globalPromoResponse=await globalPromoRoutes(request,env,url);
-    if(globalPromoResponse){const commercial=await enhanceGlobalPromoCommercialUI(globalPromoResponse,url);return enhanceGlobalPromoBillingNavigation(commercial,url)}
-   }catch{return globalPromoUnavailable()}
-  }
-  const dashboardResponse=await dashboardMasterRoute(request,env,url);
-  if(dashboardResponse)return enhanceGlobalPromoDashboard(dashboardResponse,url);
-  const voiceResponse=await voiceSettingsRoute(request,env,url);
-  if(voiceResponse)return voiceResponse;
-  const financialIntelligenceResponse=await financialIntelligenceRoutes(request,env,url);
-  if(financialIntelligenceResponse)return financialIntelligenceResponse;
-  const companyOperationsResponse=await companyOperationsRoutes(request,env,url);
-  if(companyOperationsResponse)return companyOperationsResponse;
-  if(url.pathname==='/assets/atlas-capability-security.js'&&request.method==='GET')return new Response(capabilitySecurityRuntime(),{headers:{'content-type':'text/javascript; charset=utf-8','cache-control':'public,max-age=900','x-content-type-options':'nosniff'}});
-  if(url.pathname==='/api/release'&&request.method==='GET'){
-   return Response.json({ok:true,service:'atlas-enterprise-suite',releaseSha:RELEASE_SHA,releaseBranch:RELEASE_BRANCH},{headers:{'cache-control':'no-store'}});
-  }
-  if(url.pathname==='/api/readiness'&&request.method==='GET')return readiness(env);
-  const capabilityPublicResponse=await capabilityPublicRoutes(request,env,url);
-  if(capabilityPublicResponse)return capabilityPublicResponse;
-  if(url.pathname==='/whatsapp-catalog.csv')url.pathname='/feeds/meta/atlas-catalog.csv';
-  const catalogResponse=await metaCatalogRoutes(request,env,url);
-  if(catalogResponse)return catalogResponse;
-  let response=await app.fetch(request,env,ctx);
-  if(request.method==='GET')response=await enhanceFinancialIntelligenceNavigation(response,url);
-  response=await enhancePublicCapabilityDiscovery(response,url,request.method);
-  response=await enhanceCapabilitySitemap(response,url,request.method);
-  return enhanceCapabilityBridge(response,url);
- }
-};
+export default {async fetch(request,env,ctx){const url=new URL(request.url);if(url.pathname.startsWith('/api/global-promo')){try{const assetResponse=await globalPromoAssetRoutes(request,env,url);if(assetResponse)return assetResponse;const financeHandoffResponse=await globalPromoFinanceHandoffRoutes(request,env,url);if(financeHandoffResponse)return financeHandoffResponse;const assetPreflight=await preflightGlobalPromoAssetReferences(request,env,url);if(assetPreflight.response)return assetPreflight.response;const guardedRequest=assetPreflight.request||request,commercialContextResponse=await globalPromoCommercialContextRoute(guardedRequest,env,url);if(commercialContextResponse)return commercialContextResponse;const preflight=await preflightGlobalPromoRequest(guardedRequest,env,url);if(preflight.response)return preflight.response;const globalPromoResponse=await globalPromoRoutes(preflight.request||guardedRequest,env,url);if(globalPromoResponse)return globalPromoResponse}catch{return Response.json({ok:false,error:'global_promo_runtime_unavailable'},{status:503,headers:{'cache-control':'no-store'}})}}if(request.method==='GET'&&(url.pathname==='/platform/global-promo'||url.pathname.startsWith('/platform/global-promo/'))){const verification=await requireBrowserSession(request,env);if(!verification.ok){if(verification.status===401)return Response.redirect(new URL('/login',url),302);return protectedUnavailable()}try{if(url.pathname.replace(/\/+$/,'')==='/platform/global-promo/billing')return globalPromoHtml(globalPromoBillingPage());const globalPromoResponse=await globalPromoRoutes(request,env,url);if(globalPromoResponse){const commercial=await enhanceGlobalPromoCommercialUI(globalPromoResponse,url),assets=await enhanceGlobalPromoAssetUI(commercial,url);return enhanceGlobalPromoBillingNavigation(assets,url)}}catch{return globalPromoUnavailable()}}const dashboardResponse=await dashboardMasterRoute(request,env,url);if(dashboardResponse)return enhanceGlobalPromoDashboard(dashboardResponse,url);const voiceResponse=await voiceSettingsRoute(request,env,url);if(voiceResponse)return voiceResponse;const financialIntelligenceResponse=await financialIntelligenceRoutes(request,env,url);if(financialIntelligenceResponse)return financialIntelligenceResponse;const companyOperationsResponse=await companyOperationsRoutes(request,env,url);if(companyOperationsResponse)return companyOperationsResponse;if(url.pathname==='/assets/atlas-capability-security.js'&&request.method==='GET')return new Response(capabilitySecurityRuntime(),{headers:{'content-type':'text/javascript; charset=utf-8','cache-control':'public,max-age=900','x-content-type-options':'nosniff'}});if(url.pathname==='/api/release'&&request.method==='GET')return Response.json({ok:true,service:'atlas-enterprise-suite',releaseSha:RELEASE_SHA,releaseBranch:RELEASE_BRANCH},{headers:{'cache-control':'no-store'}});if(url.pathname==='/api/readiness'&&request.method==='GET')return readiness(env);const capabilityPublicResponse=await capabilityPublicRoutes(request,env,url);if(capabilityPublicResponse)return capabilityPublicResponse;if(url.pathname==='/whatsapp-catalog.csv')url.pathname='/feeds/meta/atlas-catalog.csv';const catalogResponse=await metaCatalogRoutes(request,env,url);if(catalogResponse)return catalogResponse;let response=await app.fetch(request,env,ctx);if(request.method==='GET')response=await enhanceFinancialIntelligenceNavigation(response,url);response=await enhancePublicCapabilityDiscovery(response,url,request.method);response=await enhanceCapabilitySitemap(response,url,request.method);return enhanceCapabilityBridge(response,url)}};
