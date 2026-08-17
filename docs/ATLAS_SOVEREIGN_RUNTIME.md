@@ -40,15 +40,17 @@ Code rollback cannot reliably undo a database mutation after it has committed. F
 
 Before a release is staged or promoted, the adapter authenticates to ATLAS Runtime and compares every migration in the candidate snapshot with the migration ledger already applied on the host. A previously applied migration whose SHA-256 changed is blocked as `migration_drift_preflight`. A new migration containing destructive schema changes or direct data rewrites such as `DROP`, `TRUNCATE`, `DELETE FROM`, `REPLACE INTO`, direct `UPDATE ... SET`, or destructive `ALTER TABLE` operations is blocked as `destructive_migration_blocked`.
 
+The same destructive-migration guard is enforced again inside ATLAS Runtime immediately before a pending migration is executed. This second layer protects the database even if an operator bypasses the normal deploy adapter and promotes a release directly through ATLAS Edge. In that case the application becomes not-ready rather than applying the destructive migration; the database remains unchanged and the release can be rolled back.
+
 The automatic release path is therefore for forward-compatible/additive migrations. A genuinely destructive or data-rewrite migration requires a separate planned migration procedure with an explicit database backup, compatibility assessment, controlled execution, post-migration validation and a data recovery plan. It must not be smuggled through ordinary release promotion merely because application code itself can roll back.
 
 ## ATLAS Edge and rollback
-ATLAS Edge owns release promotion state and atomic `current` switching. The `sovereign-edge` adapter never overwrites an immutable release ID with different content. After promotion it verifies ATLAS Runtime. If the runtime cannot load the release, a migration drifts/fails, or application readiness fails, the adapter requests an ATLAS Edge rollback to the previous release.
+ATLAS Edge owns release promotion state and atomic `current` switching. The `sovereign-edge` adapter never overwrites an immutable release ID with different content. Release identifiers are constrained to direct child directories inside the ATLAS releases root; symlink releases and release paths resolving outside that root are rejected. After promotion the adapter verifies ATLAS Runtime. If the runtime cannot load the release, a migration drifts/fails, or application readiness fails, the adapter requests an ATLAS Edge rollback to the previous release.
 
 If `ATLAS_PUBLIC_ORIGIN` is not configured, successful host verification is reported as `verified: false` with a host-ready reason. If a public origin is configured, the adapter additionally checks `/api/release` and `/api/readiness`; only a matching release identity and healthy readiness produce public verification.
 
 ## Provider boundary
-Cloudflare remains an explicitly replaceable adapter. Caddy is also replaceable and is used only for TLS/reverse proxy at the sovereign host boundary. The application source, database state, release registry and deployment authority remain inside ATLAS-controlled storage.
+Cloudflare remains an explicitly replaceable adapter. Caddy is also replaceable and is used only for TLS/reverse proxy at the sovereign host boundary. Runtime control endpoints under `/_atlas/runtime/*` remain loopback-only and are not exposed through the public Caddy application surface. The application source, database state, release registry and deployment authority remain inside ATLAS-controlled storage.
 
 ## Snapshot contract
 Every sovereign snapshot contains source files plus `manifest.json` with per-file SHA-256 hashes and one aggregate SHA-256. `.git`, `node_modules` and prior `.atlas` snapshots are excluded. The snapshot therefore survives loss of the GitHub account or repository mirror.
