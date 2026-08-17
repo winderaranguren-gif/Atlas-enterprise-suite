@@ -10,6 +10,10 @@ async function account(env,a,id){if(!id)return null;return env.DB.prepare(`SELEC
 async function quote(env,a,id){if(!id)return null;return env.DB.prepare(`SELECT id,quote_number,title,account_id FROM crm_quotes WHERE id=? AND organization_id=? AND dba_id=?`).bind(id,a.organizationId,a.dbaId).first()}
 async function audit(env,a,action,id,metadata){try{await appendAuditLedger(env,{organizationId:a.organizationId,dbaId:a.dbaId,actorUserId:a.session.user_id,category:'global_promo',action,resourceType:'global_promo_job',resourceId:id,decision:'allow',severity:'info',correlationId:a.correlationId,metadata});return true}catch{return false}}
 
+export function globalPromoPackingGate(total,passed){return Number(total||0)<1||Number(passed||0)<1?'quality_pass_required_before_packing':null}
+export function globalPromoDeliveryGate(total,delivered,open){if(Number(total||0)<1)return'package_required_before_delivery';if(Number(delivered||0)<1)return'delivered_package_required';if(Number(open||0)>0)return'packages_not_delivered';return null}
+export function globalPromoCommercialContextLocked(currentAccount,currentQuote,requestedAccount,requestedQuote,hasInvoice){return Boolean(hasInvoice&&(requestedAccount!==currentAccount||requestedQuote!==currentQuote))}
+
 export async function preflightGlobalPromoRequest(request,env,url=new URL(request.url)){
  const jobUpdateMatch=url.pathname.match(/^\/api\/global-promo\/jobs\/([^/]+)$/);
  const jobCreate=request.method==='POST'&&url.pathname==='/api/global-promo/jobs';
@@ -38,13 +42,11 @@ export async function preflightGlobalPromoRequest(request,env,url=new URL(reques
   if(!current)return{response:json({ok:false,error:'global_promo_job_not_found'},404)};
   if(status==='packing'){
    const qc=await env.DB.prepare(`SELECT COUNT(*) total,SUM(CASE WHEN result='pass' THEN 1 ELSE 0 END) passed FROM global_promo_quality_checks WHERE job_id=? AND organization_id=? AND dba_id=?`).bind(jobId,a.organizationId,a.dbaId).first();
-   if(Number(qc?.total||0)<1||Number(qc?.passed||0)<1)return{response:json({ok:false,error:'quality_pass_required_before_packing'},409)};
+   const error=globalPromoPackingGate(qc?.total,qc?.passed);if(error)return{response:json({ok:false,error},409)};
   }
   if(status==='delivered'){
    const packages=await env.DB.prepare(`SELECT COUNT(*) total,SUM(CASE WHEN status='delivered' THEN 1 ELSE 0 END) delivered,SUM(CASE WHEN status NOT IN ('delivered','cancelled') THEN 1 ELSE 0 END) open FROM global_promo_packages WHERE job_id=? AND organization_id=? AND dba_id=?`).bind(jobId,a.organizationId,a.dbaId).first();
-   if(Number(packages?.total||0)<1)return{response:json({ok:false,error:'package_required_before_delivery'},409)};
-   if(Number(packages?.delivered||0)<1)return{response:json({ok:false,error:'delivered_package_required'},409)};
-   if(Number(packages?.open||0)>0)return{response:json({ok:false,error:'packages_not_delivered'},409)};
+   const error=globalPromoDeliveryGate(packages?.total,packages?.delivered,packages?.open);if(error)return{response:json({ok:false,error},409)};
   }
  }
  const headers=new Headers(request.headers);headers.set('content-type','application/json');
@@ -58,8 +60,8 @@ export async function globalPromoCommercialContextRoute(request,env,url=new URL(
  const id=decodeURIComponent(match[1]),current=await env.DB.prepare(`SELECT id,status,customer_account_id,quote_id,request_reference FROM global_promo_jobs WHERE id=? AND organization_id=? AND dba_id=?`).bind(id,a.organizationId,a.dbaId).first();
  if(!current)return json({ok:false,error:'global_promo_job_not_found'},404);
  const b=parsed.body,requestedAccount=b.customerAccountId===undefined?current.customer_account_id:nullable(b.customerAccountId,128),requestedQuote=b.quoteId===undefined?current.quote_id:nullable(b.quoteId,128),requestReference=b.requestReference===undefined?current.request_reference:nullable(b.requestReference,300);
- const commercialChanged=requestedAccount!==current.customer_account_id||requestedQuote!==current.quote_id;
- if(commercialChanged){let invoiceLink=null;try{invoiceLink=await env.DB.prepare(`SELECT finance_invoice_id FROM global_promo_finance_links WHERE job_id=? AND organization_id=? AND dba_id=?`).bind(id,a.organizationId,a.dbaId).first()}catch{}if(invoiceLink)return json({ok:false,error:'commercial_context_locked_after_invoice',financeInvoiceId:invoiceLink.finance_invoice_id},409)}
+ let invoiceLink=null;try{invoiceLink=await env.DB.prepare(`SELECT finance_invoice_id FROM global_promo_finance_links WHERE job_id=? AND organization_id=? AND dba_id=?`).bind(id,a.organizationId,a.dbaId).first()}catch{}
+ if(globalPromoCommercialContextLocked(current.customer_account_id,current.quote_id,requestedAccount,requestedQuote,invoiceLink))return json({ok:false,error:'commercial_context_locked_after_invoice',financeInvoiceId:invoiceLink.finance_invoice_id},409);
  const [acct,q]=await Promise.all([requestedAccount?account(env,a,requestedAccount):null,requestedQuote?quote(env,a,requestedQuote):null]);
  if(requestedAccount&&!acct)return json({ok:false,error:'customer_account_not_found'},404);
  if(requestedQuote&&!q)return json({ok:false,error:'quote_not_found'},404);
