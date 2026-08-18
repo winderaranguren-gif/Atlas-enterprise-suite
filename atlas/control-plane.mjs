@@ -1,44 +1,22 @@
 import { createServer } from 'node:http';
-import { readFile, writeFile, mkdir, readdir, stat } from 'node:fs/promises';
-import { createHash } from 'node:crypto';
+import { readFile, writeFile, mkdir, readdir } from 'node:fs/promises';
+import { createHash, randomUUID } from 'node:crypto';
 import { join, resolve } from 'node:path';
-
-const ROOT = resolve(process.cwd());
-const STATE = join(ROOT, '.atlas');
-const RELEASES = join(STATE, 'releases');
-const PORT = Number(process.env.ATLAS_PORT || 8788);
-
-async function ensureState(){ await mkdir(RELEASES,{recursive:true}); }
-async function hashFile(path){ const b=await readFile(path); return createHash('sha256').update(b).digest('hex'); }
-async function snapshot(){
-  await ensureState();
-  const id = new Date().toISOString().replace(/[:.]/g,'-');
-  const manifest = { id, createdAt:new Date().toISOString(), files:{} };
-  for (const file of ['worker.js','weather-worker.js','wrangler.jsonc','package.json']) {
-    try { manifest.files[file] = await hashFile(join(ROOT,file)); } catch {}
-  }
-  await writeFile(join(RELEASES,`${id}.json`), JSON.stringify(manifest,null,2));
-  await writeFile(join(STATE,'current.json'), JSON.stringify(manifest,null,2));
-  return manifest;
-}
-async function status(){
-  await ensureState();
-  let current=null; try { current=JSON.parse(await readFile(join(STATE,'current.json'),'utf8')); } catch {}
-  const releases=(await readdir(RELEASES)).filter(x=>x.endsWith('.json')).sort().reverse();
-  return { service:'ATLAS Control Plane', status:'ready', node:process.env.ATLAS_NODE_ID||'ATLAS-NODE-01', current, releases:releases.slice(0,20), capabilities:['release-manifest','integrity-hashes','health','readiness','local-runtime-bootstrap'] };
-}
-function json(res,code,data){ res.writeHead(code,{'content-type':'application/json; charset=utf-8','cache-control':'no-store'}); res.end(JSON.stringify(data,null,2)); }
-
-await ensureState();
-if (process.argv.includes('release')) { console.log(JSON.stringify(await snapshot(),null,2)); process.exit(0); }
-if (process.argv.includes('status')) { console.log(JSON.stringify(await status(),null,2)); process.exit(0); }
-
-createServer(async (req,res)=>{
-  try {
-    if(req.url==='/health') return json(res,200,{status:'ok',service:'ATLAS Control Plane'});
-    if(req.url==='/api/readiness') return json(res,200,{ready:true,node:process.env.ATLAS_NODE_ID||'ATLAS-NODE-01'});
-    if(req.url==='/api/control-plane/status') return json(res,200,await status());
-    if(req.method==='POST' && req.url==='/api/releases') return json(res,201,await snapshot());
-    return json(res,404,{error:'not_found'});
-  } catch(error){ return json(res,500,{error:'control_plane_error',message:error.message}); }
-}).listen(PORT,'0.0.0.0',()=>console.log(`ATLAS Control Plane listening on :${PORT}`));
+const ROOT=resolve(process.cwd()),STATE=join(ROOT,'.atlas'),RELEASES=join(STATE,'releases'),NODES=join(STATE,'nodes','registry.json'),JOBS=join(STATE,'jobs','queue.json');
+const PORT=Number(process.env.ATLAS_PORT||8788);const allowed=new Set(['status','sync','verify','start','stop','deploy','logs','backup','rollback']);
+async function ensure(){await mkdir(RELEASES,{recursive:true});await mkdir(join(STATE,'nodes'),{recursive:true});await mkdir(join(STATE,'jobs'),{recursive:true});}
+async function load(path,fallback){try{return JSON.parse(await readFile(path,'utf8'))}catch{return fallback}}
+async function save(path,data){await writeFile(path,JSON.stringify(data,null,2))}
+async function hashFile(path){return createHash('sha256').update(await readFile(path)).digest('hex')}
+async function snapshot(){await ensure();const id=new Date().toISOString().replace(/[:.]/g,'-');const manifest={id,createdAt:new Date().toISOString(),files:{}};for(const file of ['worker.js','atlas-router.js','wrangler.jsonc','package.json']){try{manifest.files[file]=await hashFile(join(ROOT,file))}catch{}}await save(join(RELEASES,`${id}.json`),manifest);await save(join(STATE,'current.json'),manifest);return manifest}
+async function status(){await ensure();const current=await load(join(STATE,'current.json'),null),releases=(await readdir(RELEASES)).filter(x=>x.endsWith('.json')).sort().reverse();return{service:'ATLAS Control Plane',status:'ready',node:process.env.ATLAS_NODE_ID||'ATLAS-NODE-01',current,releases:releases.slice(0,20),capabilities:['releases','integrity','node-registry','job-queue','health','readiness']}}
+function json(res,code,data){res.writeHead(code,{'content-type':'application/json; charset=utf-8','cache-control':'no-store'});res.end(JSON.stringify(data,null,2))}
+async function body(req){let s='';for await(const c of req)s+=c;return s?JSON.parse(s):{}}
+await ensure();if(process.argv.includes('release')){console.log(JSON.stringify(await snapshot(),null,2));process.exit(0)}if(process.argv.includes('status')){console.log(JSON.stringify(await status(),null,2));process.exit(0)}
+createServer(async(req,res)=>{try{const u=new URL(req.url,'http://localhost');if(u.pathname==='/health')return json(res,200,{status:'ok',service:'ATLAS Control Plane'});if(u.pathname==='/api/readiness')return json(res,200,{ready:true,node:process.env.ATLAS_NODE_ID||'ATLAS-NODE-01'});if(u.pathname==='/api/control-plane/status')return json(res,200,await status());if(req.method==='POST'&&u.pathname==='/api/releases')return json(res,201,await snapshot());
+if(req.method==='POST'&&u.pathname==='/api/nodes/heartbeat'){const p=await body(req);if(!p.node_id)return json(res,400,{error:'node_id_required'});const nodes=await load(NODES,{});nodes[p.node_id]={...(nodes[p.node_id]||{}),...p,last_seen:new Date().toISOString(),status:'ONLINE'};await save(NODES,nodes);return json(res,200,{accepted:true,node:nodes[p.node_id]})}
+if(req.method==='GET'&&u.pathname==='/api/nodes'){const nodes=await load(NODES,{}),now=Date.now();return json(res,200,Object.values(nodes).map(n=>({...n,status:now-Date.parse(n.last_seen||0)<=90000?'ONLINE':'OFFLINE'})))}
+if(req.method==='POST'&&u.pathname==='/api/jobs'){const p=await body(req);if(!p.node_id||!allowed.has(p.action))return json(res,400,{error:'invalid_job'});const jobs=await load(JOBS,[]),job={id:randomUUID(),node_id:p.node_id,action:p.action,args:Array.isArray(p.args)?p.args:[],status:'QUEUED',created_at:new Date().toISOString()};jobs.push(job);await save(JOBS,jobs);return json(res,201,job)}
+if(req.method==='GET'&&u.pathname==='/api/jobs/next'){const node=u.searchParams.get('node_id'),jobs=await load(JOBS,[]),job=jobs.find(j=>j.node_id===node&&j.status==='QUEUED');if(job){job.status='RUNNING';job.claimed_at=new Date().toISOString();await save(JOBS,jobs)}return json(res,200,job||null)}
+if(req.method==='POST'&&u.pathname==='/api/jobs/complete'){const p=await body(req),jobs=await load(JOBS,[]),job=jobs.find(j=>j.id===p.id);if(!job)return json(res,404,{error:'job_not_found'});job.status=p.status||'SUCCESS';job.result=p.result??null;job.completed_at=new Date().toISOString();await save(JOBS,jobs);return json(res,200,job)}
+return json(res,404,{error:'not_found'});}catch(error){return json(res,500,{error:'control_plane_error',message:error.message})}}).listen(PORT,'0.0.0.0',()=>console.log(`ATLAS Control Plane listening on :${PORT}`));
