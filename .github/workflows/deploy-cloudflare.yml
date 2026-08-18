@@ -50,7 +50,7 @@ jobs:
             -H "Authorization: Bearer ${GH_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
-            -d '{"state":"pending","context":"atlas/production","description":"ATLAS production deployment in progress"}' > /dev/null
+            -d "{\"state\":\"pending\",\"context\":\"atlas/production\",\"description\":\"ATLAS production deployment in progress\",\"target_url\":\"https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}" > /dev/null
 
       - uses: actions/checkout@v4
 
@@ -157,7 +157,7 @@ jobs:
             -H "Authorization: Bearer ${GH_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
-            -d '{"state":"success","context":"atlas/production","description":"ATLAS production + TURN verified"}' > /dev/null
+            -d "{\"state\":\"success\",\"context\":\"atlas/production\",\"description\":\"ATLAS production + TURN verified\",\"target_url\":\"https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}" > /dev/null
 
       - name: Mark ATLAS production failure
         if: failure()
@@ -169,4 +169,4 @@ jobs:
             -H "Authorization: Bearer ${GH_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
-            -d '{"state":"failure","context":"atlas/production","description":"ATLAS production deployment failed; inspect Actions"}' > /dev/null || true
+            -d "{\"state\":\"failure\",\"context\":\"atlas/production\",\"description\":\"ATLAS production deployment failed; inspect Actions\",\"target_url\":\"https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}" > /dev/null || true
