@@ -1,17 +1,23 @@
 {
   "name": "atlas-enterprise-suite",
-  "version": "1.2.0-sovereign",
+  "version": "1.3.0-sovereign",
   "private": true,
   "type": "module",
   "devDependencies": { "wrangler": "4.118.0" },
   "scripts": {
     "atlas:control": "node atlas/control-plane.mjs",
+    "atlas:runtime": "node atlas/runtime.mjs",
     "atlas:status": "node atlas/control-plane.mjs status",
     "atlas:release": "node atlas/control-plane.mjs release",
+    "atlas:forge": "node atlas/forge.mjs",
+    "atlas:build": "node atlas/build.mjs",
+    "atlas:deploy": "node atlas/deploy.mjs",
+    "atlas:backup": "node atlas/backup.mjs",
     "atlas:guardian": "node atlas/guardian.mjs",
     "atlas:vault": "node atlas/vault.mjs",
     "atlas:store": "node atlas/store.mjs",
-    "atlas:verify": "node atlas/guardian.mjs && node atlas/control-plane.mjs status",
+    "atlas:e2e": "node atlas/e2e.mjs",
+    "atlas:verify": "node atlas/build.mjs && node atlas/guardian.mjs && node atlas/control-plane.mjs status",
     "check:finance": "node scripts/validate-finance.mjs",
     "deploy:provider": "wrangler deploy"
   }
