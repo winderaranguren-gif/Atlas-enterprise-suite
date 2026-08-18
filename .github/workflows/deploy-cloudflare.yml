@@ -82,3 +82,4 @@ jobs:
           curl --retry 5 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/dashboard > /dev/null
           curl --retry 5 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/api/finance/health
           curl --retry 5 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/finance > /dev/null
+          curl --retry 5 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/accounting > /dev/null
