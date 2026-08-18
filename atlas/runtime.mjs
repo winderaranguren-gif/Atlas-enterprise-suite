@@ -1,0 +1,4 @@
+import { createServer } from 'node:http';
+import app from '../atlas-router.js';
+const PORT=Number(process.env.ATLAS_RUNTIME_PORT||8787);
+createServer(async(req,res)=>{try{const origin=`http://${req.headers.host||`127.0.0.1:${PORT}`}`;const chunks=[];for await(const c of req)chunks.push(c);const request=new Request(new URL(req.url,origin),{method:req.method,headers:req.headers,body:['GET','HEAD'].includes(req.method)?undefined:Buffer.concat(chunks)});const response=await app.fetch(request,{}, {waitUntil:p=>Promise.resolve(p).catch(()=>{})});res.writeHead(response.status,Object.fromEntries(response.headers));if(response.body){for await(const chunk of response.body)res.write(Buffer.from(chunk))}res.end();}catch(error){res.writeHead(500,{'content-type':'application/json'});res.end(JSON.stringify({error:'atlas_runtime_error',message:error.message}));}}).listen(PORT,'0.0.0.0',()=>console.log(`ATLAS Runtime listening on http://0.0.0.0:${PORT}`));
