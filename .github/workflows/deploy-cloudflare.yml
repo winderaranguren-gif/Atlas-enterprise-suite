@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  statuses: write
 
 concurrency:
   group: atlas-${{ github.workflow }}-${{ github.ref }}
@@ -40,6 +41,17 @@ jobs:
     needs: validate
     runs-on: ubuntu-latest
     steps:
+      - name: Mark ATLAS production pending
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -d '{"state":"pending","context":"atlas/production","description":"ATLAS production deployment in progress"}' > /dev/null
+
       - uses: actions/checkout@v4
 
       - name: Normalize and verify Cloudflare credential
@@ -134,3 +146,27 @@ jobs:
           curl --retry 5 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/video > /dev/null
           curl --retry 5 --retry-delay 3 --retry-all-errors -fsS "https://atlasenterprisesuite.com/api/video/ice?room=deploycheck" -o /tmp/atlas-ice.json
           node -e "const j=require('/tmp/atlas-ice.json');if(!j.ok||!Array.isArray(j.iceServers)||!j.iceServers.some(s=>(Array.isArray(s.urls)?s.urls:[s.urls]).some(u=>/^turns?:/.test(String(u))))){console.error(j);process.exit(1)};console.log('ATLAS TURN production verification passed.')"
+
+      - name: Mark ATLAS production success
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -d '{"state":"success","context":"atlas/production","description":"ATLAS production + TURN verified"}' > /dev/null
+
+      - name: Mark ATLAS production failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          curl -sS -X POST \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -d '{"state":"failure","context":"atlas/production","description":"ATLAS production deployment failed; inspect Actions"}' > /dev/null || true
