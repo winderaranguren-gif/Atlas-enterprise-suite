@@ -1,0 +1,11 @@
+import { mkdir, readFile, writeFile, copyFile, readdir } from 'node:fs/promises';
+import { resolve, join } from 'node:path';
+const ROOT=resolve(process.cwd());const STATE=resolve(ROOT,'.atlas');const RELEASES=join(STATE,'deployments');await mkdir(RELEASES,{recursive:true});
+const [cmd,arg]=process.argv.slice(2);const safe=s=>String(s||'').replace(/[^a-z0-9._-]/gi,'_');
+const files=['worker.js','atlas-router.js','weather-worker.js','package.json','wrangler.jsonc'];
+async function create(){const id=safe(arg||new Date().toISOString());const dir=join(RELEASES,id);await mkdir(dir,{recursive:true});const saved=[];for(const f of files){try{await copyFile(join(ROOT,f),join(dir,safe(f)));saved.push(f)}catch{}}const manifest={id,createdAt:new Date().toISOString(),files:saved,status:'staged'};await writeFile(join(dir,'manifest.json'),JSON.stringify(manifest,null,2));return manifest}
+if(cmd==='stage'){console.log(JSON.stringify(await create(),null,2));}
+else if(cmd==='promote'&&arg){const id=safe(arg);const dir=join(RELEASES,id);const m=JSON.parse(await readFile(join(dir,'manifest.json'),'utf8'));m.status='active';m.promotedAt=new Date().toISOString();await writeFile(join(dir,'manifest.json'),JSON.stringify(m,null,2));await writeFile(join(STATE,'active-deployment.json'),JSON.stringify(m,null,2));console.log(JSON.stringify(m,null,2));}
+else if(cmd==='rollback'&&arg){const id=safe(arg);const dir=join(RELEASES,id);const m=JSON.parse(await readFile(join(dir,'manifest.json'),'utf8'));for(const f of m.files){await copyFile(join(dir,safe(f)),join(ROOT,f))}m.status='rolled-back-to';m.restoredAt=new Date().toISOString();await writeFile(join(STATE,'active-deployment.json'),JSON.stringify(m,null,2));console.log(JSON.stringify(m,null,2));}
+else if(cmd==='status'){let active=null;try{active=JSON.parse(await readFile(join(STATE,'active-deployment.json'),'utf8'))}catch{};console.log(JSON.stringify({service:'ATLAS Deploy',active,releases:(await readdir(RELEASES)).sort().reverse()},null,2));}
+else{console.error('Usage: deploy stage [id] | deploy promote <id> | deploy rollback <id> | deploy status');process.exit(2)}
