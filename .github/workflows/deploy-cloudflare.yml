@@ -63,9 +63,31 @@ jobs:
             echo "::error::CLOUDFLARE_API_TOKEN is missing."
             exit 1
           fi
-          TOKEN="$(printf '%s' "$RAW_CLOUDFLARE_API_TOKEN" | tr -d '\r\n' | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//; s/^Bearer[[:space:]]+//I; s/^"//; s/"$//')"
+          TOKEN="$(node <<'NODE'
+          const raw = process.env.RAW_CLOUDFLARE_API_TOKEN || '';
+          let s = raw.replace(/[\r\n]/g, '').trim();
+          try {
+            const parsed = JSON.parse(s);
+            if (typeof parsed === 'string') s = parsed;
+            else if (parsed && typeof parsed === 'object') s = parsed.token || parsed.apiToken || parsed.value || parsed.CLOUDFLARE_API_TOKEN || s;
+          } catch {}
+          s = String(s)
+            .trim()
+            .replace(/^CLOUDFLARE_API_TOKEN\s*=\s*/i, '')
+            .replace(/^Authorization\s*:\s*/i, '')
+            .replace(/^Bearer\s+/i, '')
+            .trim()
+            .replace(/^["']|["']$/g, '')
+            .trim();
+          process.stdout.write(s);
+          NODE
+          )"
           if [ -z "$TOKEN" ]; then
             echo "::error::Cloudflare token became empty after normalization."
+            exit 1
+          fi
+          if printf '%s' "$TOKEN" | grep -q '[[:space:]]'; then
+            echo "::error::Cloudflare token still contains whitespace after normalization."
             exit 1
           fi
           echo "::add-mask::$TOKEN"
@@ -73,7 +95,7 @@ jobs:
           HTTP_CODE="$(curl -sS -o /tmp/cf-token.json -w '%{http_code}' -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' https://api.cloudflare.com/client/v4/user/tokens/verify || true)"
           if [ "$HTTP_CODE" != "200" ]; then
             echo "::error::Cloudflare API token verification failed with HTTP $HTTP_CODE."
-            cat /tmp/cf-token.json | sed -E 's/(token|value|secret)"?:"?[A-Za-z0-9._-]+/***redacted***/Ig' || true
+            node -e "const fs=require('fs');try{const j=JSON.parse(fs.readFileSync('/tmp/cf-token.json','utf8'));console.error(JSON.stringify({success:j.success,errors:j.errors?.map(e=>({code:e.code,message:e.message}))},null,2))}catch{}"
             exit 1
           fi
           echo "Cloudflare API token format verified."
