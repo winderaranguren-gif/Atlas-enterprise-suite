@@ -29,6 +29,9 @@ jobs:
       - name: Validate ATLAS Finance Intelligence
         run: npm run check:finance
 
+      - name: Validate ATLAS launch queue modules
+        run: npm run check:launch
+
       - name: Validate Worker bundle
         run: npx wrangler deploy --dry-run
 
