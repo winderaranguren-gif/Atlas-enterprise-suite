@@ -83,3 +83,12 @@ jobs:
           curl --retry 5 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/api/finance/health
           curl --retry 5 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/finance > /dev/null
           curl --retry 5 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/accounting > /dev/null
+          curl --retry 5 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/api/work/health
+          curl --retry 5 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/api/mobility/health
+          curl --retry 5 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/api/launch-queue/health
+          curl --retry 5 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/work > /dev/null
+          curl --retry 5 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/ride > /dev/null
+          curl --retry 5 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/driver > /dev/null
+          curl --retry 5 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/marketplace > /dev/null
+          curl --retry 5 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/driver-finance > /dev/null
+          curl --retry 5 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/launch-queue > /dev/null
