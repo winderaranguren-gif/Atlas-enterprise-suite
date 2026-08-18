@@ -1,11 +1,13 @@
 {
   "name": "atlas-enterprise-suite",
-  "version": "1.4.0-sovereign",
+  "version": "1.5.0-sovereign",
   "private": true,
   "type": "module",
   "devDependencies": { "wrangler": "4.118.0" },
   "scripts": {
     "atlas:install": "node atlas/install-node.mjs",
+    "atlas:start": "node atlas/supervisor.mjs",
+    "atlas:self-heal": "node atlas/self-heal.mjs",
     "atlas:control": "node atlas/control-plane.mjs",
     "atlas:runtime": "node atlas/runtime.mjs",
     "atlas:status": "node atlas/control-plane.mjs status",
