@@ -72,6 +72,42 @@ jobs:
 
       - run: npm install --no-audit --no-fund
 
+      - name: Ensure ATLAS Cloudflare TURN relay
+        env:
+          CLOUDFLARE_ACCOUNT_ID: 1dd6dea2bb98459c66f610464354d686
+        shell: bash
+        run: |
+          set -euo pipefail
+          SECRET_LIST="$(npx wrangler secret list 2>/dev/null || true)"
+          if printf '%s' "$SECRET_LIST" | grep -q 'TURN_KEY_ID' && printf '%s' "$SECRET_LIST" | grep -q 'TURN_KEY_API_TOKEN'; then
+            echo "ATLAS TURN Worker secrets already provisioned."
+            exit 0
+          fi
+
+          echo "Provisioning Cloudflare Realtime TURN key for ATLAS Video..."
+          HTTP_CODE="$(curl -sS -o /tmp/atlas-turn.json -w '%{http_code}' \
+            -X POST "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/calls/turn_keys" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -H 'Content-Type: application/json' \
+            --data '{"name":"atlas-video-turn"}' || true)"
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "::error::Cloudflare TURN key creation failed with HTTP $HTTP_CODE. The API token needs Calls Write permission."
+            node -e "const fs=require('fs');try{const j=JSON.parse(fs.readFileSync('/tmp/atlas-turn.json','utf8'));console.error(JSON.stringify({success:j.success,errors:j.errors?.map(e=>({code:e.code,message:e.message}))},null,2))}catch{}"
+            exit 1
+          fi
+
+          TURN_KEY_ID="$(node -e "const j=require('/tmp/atlas-turn.json');process.stdout.write(j?.result?.uid||'')")"
+          TURN_KEY_API_TOKEN="$(node -e "const j=require('/tmp/atlas-turn.json');process.stdout.write(j?.result?.key||'')")"
+          if [ -z "$TURN_KEY_ID" ] || [ -z "$TURN_KEY_API_TOKEN" ]; then
+            echo "::error::Cloudflare TURN response did not contain uid/key."
+            exit 1
+          fi
+          echo "::add-mask::$TURN_KEY_ID"
+          echo "::add-mask::$TURN_KEY_API_TOKEN"
+          printf '%s' "$TURN_KEY_ID" | npx wrangler secret put TURN_KEY_ID
+          printf '%s' "$TURN_KEY_API_TOKEN" | npx wrangler secret put TURN_KEY_API_TOKEN
+          echo "ATLAS TURN secrets stored in Cloudflare Worker."
+
       - name: Deploy ATLAS production Worker
         env:
           CLOUDFLARE_ACCOUNT_ID: 1dd6dea2bb98459c66f610464354d686
@@ -95,3 +131,6 @@ jobs:
           curl --retry 5 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/marketplace > /dev/null
           curl --retry 5 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/driver-finance > /dev/null
           curl --retry 5 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/launch-queue > /dev/null
+          curl --retry 5 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/video > /dev/null
+          curl --retry 5 --retry-delay 3 --retry-all-errors -fsS "https://atlasenterprisesuite.com/api/video/ice?room=deploycheck" -o /tmp/atlas-ice.json
+          node -e "const j=require('/tmp/atlas-ice.json');if(!j.ok||!Array.isArray(j.iceServers)||!j.iceServers.some(s=>(Array.isArray(s.urls)?s.urls:[s.urls]).some(u=>/^turns?:/.test(String(u))))){console.error(j);process.exit(1)};console.log('ATLAS TURN production verification passed.')"
