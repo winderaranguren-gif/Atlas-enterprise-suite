@@ -8,6 +8,14 @@
     "binding": "ASSETS",
     "run_worker_first": true
   },
+  "durable_objects": {
+    "bindings": [
+      {"name": "VIDEO_ROOMS", "class_name": "VideoRoom"}
+    ]
+  },
+  "migrations": [
+    {"tag": "v1-video-room", "new_sqlite_classes": ["VideoRoom"]}
+  ],
   "routes": [
     {"pattern": "atlasenterprisesuite.com/*", "zone_id": "26a5b368f6a017801a4600b19748c3ab"},
     {"pattern": "www.atlasenterprisesuite.com/*", "zone_id": "26a5b368f6a017801a4600b19748c3ab"}
