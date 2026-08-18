@@ -1,6 +1,8 @@
 import baseWorker from './worker.js';
 import {handleFinance} from './modules/finance-worker.js';
 import {handleWeather} from './modules/weather-worker.js';
+import {handleEnterpriseAccounting} from './modules/enterprise-accounting-worker.js';
+import {handleDemoCenter} from './modules/demo-center-worker.js';
 
 function decodeBase64Asset(text){
   const clean=text.trim();
@@ -42,6 +44,14 @@ export default {
     if(url.pathname==='/weather/current.webp') return weatherImage(request,env);
     if(url.pathname==='/weather'){
       const response=await handleWeather(request,env,ctx);
+      if(response) return response;
+    }
+    if(url.pathname==='/demos'||url.pathname.startsWith('/demos/')){
+      const response=handleDemoCenter(request);
+      if(response) return response;
+    }
+    if(url.pathname.startsWith('/finance/multi-entity')||url.pathname.startsWith('/finance/fpa')||url.pathname.startsWith('/finance/reporting/management')||url.pathname.startsWith('/finance/reporting/kpis')||url.pathname.startsWith('/finance/reporting/audit')||url.pathname==='/finance/revenue-recognition'||url.pathname==='/finance/controls'){
+      const response=handleEnterpriseAccounting(request);
       if(response) return response;
     }
     if(url.pathname==='/api/finance/capabilities'||url.pathname==='/api/finance/health'||url.pathname==='/finance'||url.pathname.startsWith('/finance/')){
