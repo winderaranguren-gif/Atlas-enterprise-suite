@@ -1,0 +1,5 @@
+node_modules/
+.atlas/
+.env
+.env.*
+!.env.example
