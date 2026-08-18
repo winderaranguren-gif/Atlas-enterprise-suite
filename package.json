@@ -1,6 +1,6 @@
 {
   "name": "atlas-enterprise-suite",
-  "version": "1.6.0-sovereign",
+  "version": "1.7.0-sovereign",
   "private": true,
   "type": "module",
   "devDependencies": { "wrangler": "4.118.0" },
@@ -25,6 +25,7 @@
     "atlas:e2e": "node atlas/e2e.mjs",
     "atlas:verify": "node atlas/build.mjs && node atlas/guardian.mjs && node atlas/control-plane.mjs status",
     "check:finance": "node scripts/validate-finance.mjs",
+    "check:launch": "node scripts/validate-launch-queue.mjs",
     "deploy:provider": "wrangler deploy"
   }
 }
