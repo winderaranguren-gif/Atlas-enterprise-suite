@@ -1,6 +1,7 @@
 import atlasWorker from './atlas-router.js';
 import {handleRideOS} from './modules/rideos-worker.js';
 import {handleCreatorStudio} from './modules/creator-studio-worker.js';
+import {handleEnterpriseDashboard} from './modules/enterprise-dashboard-worker.js';
 export {VideoRoom} from './atlas-router.js';
 
 function isRideOSPath(path){
@@ -33,6 +34,8 @@ async function surfaceStudio(response){
 export default {
   async fetch(request,env,ctx){
     const url=new URL(request.url);
+    const enterpriseDashboard=handleEnterpriseDashboard(request,env,ctx);
+    if(enterpriseDashboard)return enterpriseDashboard;
     if(isStudioPath(url.pathname)){
       const response=handleCreatorStudio(request,env,ctx);
       if(response)return response;
