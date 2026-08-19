@@ -1,5 +1,6 @@
 import atlasWorker from './atlas-router.js';
 import {handleRideOS} from './modules/rideos-worker.js';
+import {handleCreatorStudio} from './modules/creator-studio-worker.js';
 export {VideoRoom} from './atlas-router.js';
 
 function isRideOSPath(path){
@@ -11,9 +12,17 @@ function isRideOSPath(path){
     path.startsWith('/api/rideos/')||path.startsWith('/api/mobility/');
 }
 
+function isStudioPath(path){
+  return path==='/studio'||path.startsWith('/studio/')||path.startsWith('/api/studio/');
+}
+
 export default {
   async fetch(request,env,ctx){
     const url=new URL(request.url);
+    if(isStudioPath(url.pathname)){
+      const response=handleCreatorStudio(request,env,ctx);
+      if(response)return response;
+    }
     if(isRideOSPath(url.pathname)){
       const response=await handleRideOS(request,env,ctx);
       if(response)return response;
