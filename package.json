@@ -26,6 +26,7 @@
     "atlas:verify": "node atlas/build.mjs && node atlas/guardian.mjs && node atlas/control-plane.mjs status",
     "check:finance": "node scripts/validate-finance.mjs",
     "check:launch": "node scripts/validate-launch-queue.mjs",
+    "check:connect": "node scripts/validate-connect.mjs",
     "deploy:provider": "wrangler deploy"
   }
 }
