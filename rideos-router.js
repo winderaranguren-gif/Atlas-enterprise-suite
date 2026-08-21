@@ -6,7 +6,6 @@ import {handleEnterpriseDashboard} from './modules/enterprise-dashboard-worker.j
 import {handleGlobalCountry} from './modules/global-country-worker.js';
 import {handleVenezuela} from './modules/venezuela-worker.js';
 import {ConnectStore,handleConnect} from './modules/connect-worker.js';
-import {handleBrowser} from './modules/browser-worker.js';
 export {VideoRoom} from './atlas-router.js';
 export {ConnectStore};
 
@@ -23,21 +22,14 @@ function isStudioPath(path){
   return path==='/studio'||path.startsWith('/studio/')||path.startsWith('/api/studio/');
 }
 
-function isBrowserPath(path){
-  return path==='/browser'||path.startsWith('/browser/')||path.startsWith('/api/browser/');
-}
-
-async function surfacePlatformLinks(response){
+async function surfaceStudio(response){
   const type=response.headers.get('content-type')||'';
   if(!type.includes('text/html'))return response;
   let html=await response.text();
-  const links=[];
-  if(!html.includes('href="/browser"'))links.push('<a class="nav" href="/browser"><span class="ico">◉</span>ATLAS Browser</a>');
-  if(!html.includes('href="/studio"'))links.push('<a class="nav" href="/studio"><span class="ico">✦</span>ATLAS Studio</a>');
-  if(links.length){
-    const injected=links.join('');
-    if(html.includes('</aside>'))html=html.replace('</aside>',injected+'</aside>');
-    else if(html.includes('</body>'))html=html.replace('</body>',`<div style="position:fixed;right:14px;bottom:14px;z-index:999;display:flex;gap:7px"><a href="/browser" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">ATLAS Browser</a><a href="/studio" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">ATLAS Studio</a></div></body>`);
+  if(!html.includes('href="/studio"')){
+    const link='<a class="nav" href="/studio"><span class="ico">✦</span>ATLAS Studio</a>';
+    if(html.includes('</aside>'))html=html.replace('</aside>',link+'</aside>');
+    else if(html.includes('</body>'))html=html.replace('</body>','<a href="/studio" style="position:fixed;right:14px;bottom:14px;z-index:999;padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">ATLAS Studio</a></body>');
   }
   const headers=new Headers(response.headers);
   headers.delete('content-length');
@@ -47,10 +39,6 @@ async function surfacePlatformLinks(response){
 export default {
   async fetch(request,env,ctx){
     const url=new URL(request.url);
-    if(isBrowserPath(url.pathname)){
-      const browser=handleBrowser(request,env,ctx);
-      if(browser)return browser;
-    }
     const venezuela=handleVenezuela(request,env,ctx);
     if(venezuela)return venezuela;
     if(url.pathname==='/global'||url.pathname.startsWith('/global/')||url.pathname.startsWith('/api/global/')){
@@ -73,7 +61,7 @@ export default {
       const response=await handleRideOS(request,env,ctx);
       if(response)return response;
     }
-    return surfacePlatformLinks(await atlasWorker.fetch(request,env,ctx));
+    return surfaceStudio(await atlasWorker.fetch(request,env,ctx));
   },
   async scheduled(controller,env,ctx){
     if(typeof atlasWorker.scheduled==='function')return atlasWorker.scheduled(controller,env,ctx);
