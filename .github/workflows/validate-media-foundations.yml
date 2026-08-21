@@ -1,0 +1,44 @@
+name: Validate ATLAS Media Foundations
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'modules/studio-look-worker.js'
+      - 'modules/studio-subject-worker.js'
+      - 'modules/studio-speech-worker.js'
+      - 'scripts/validate-media-foundations.mjs'
+      - 'rideos-router.js'
+      - 'package.json'
+      - '.github/workflows/validate-media-foundations.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'modules/studio-look-worker.js'
+      - 'modules/studio-subject-worker.js'
+      - 'modules/studio-speech-worker.js'
+      - 'scripts/validate-media-foundations.mjs'
+      - 'rideos-router.js'
+      - 'package.json'
+      - '.github/workflows/validate-media-foundations.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-media-foundations:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: node --check modules/studio-look-worker.js
+      - run: node --check modules/studio-subject-worker.js
+      - run: node --check modules/studio-speech-worker.js
+      - run: node --check scripts/validate-media-foundations.mjs
+      - run: node --check rideos-router.js
+      - run: npm run check:media-foundations
+      - run: npx wrangler deploy --dry-run
