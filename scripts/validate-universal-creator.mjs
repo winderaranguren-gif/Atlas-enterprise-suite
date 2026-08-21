@@ -19,7 +19,7 @@ for(const c of cases){
 const forced=buildUniversalCreatorPlan({prompt:'anything',mode:'module'});
 if(forced.classification.type!=='module'||forced.handoff.route!=='/workbench')throw new Error('Explicit module handoff failed');
 
-const neutral=buildUniversalCreatorPlan({prompt:'Create a responsive dashboard through identity with secure navigation and project summaries'});
+const neutral=buildUniversalCreatorPlan({prompt:'Create a responsive dashboard through identity with security navigation and project summaries'});
 if(neutral.classification.type!=='website')throw new Error('Neutral dashboard should classify as website');
 if(neutral.classification.owner!=='Security')throw new Error(`Expected explicit security owner, got ${neutral.classification.owner}`);
 const throughOnly=buildUniversalCreatorPlan({prompt:'Create a responsive dashboard through identity with navigation and project summaries'});
