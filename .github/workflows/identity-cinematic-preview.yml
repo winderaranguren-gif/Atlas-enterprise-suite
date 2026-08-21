@@ -1,0 +1,114 @@
+name: ATLAS Identity Cinematic Preview
+
+on:
+  push:
+    branches: [staging/identity-cinematic-preview]
+
+permissions:
+  contents: read
+  statuses: write
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build cinematic ATLAS image from source
+        run: docker build -t atlas-identity-cinematic:preview .
+
+      - name: Start ATLAS preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker volume create atlas-identity-preview-state >/dev/null
+          docker run -d --name atlas-identity-preview --network host \
+            -v atlas-identity-preview-state:/var/lib/atlas \
+            -e ATLAS_STATE_DIR=/var/lib/atlas \
+            -e ATLAS_RUNTIME_PROVIDER=identity-cinematic-preview \
+            atlas-identity-cinematic:preview
+          for i in {1..45}; do
+            if curl -fsS http://127.0.0.1:8080/_atlas/health >/tmp/health.json; then exit 0; fi
+            sleep 1
+          done
+          docker logs atlas-identity-preview
+          exit 1
+
+      - name: Validate cinematic Identity before exposure
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsS http://127.0.0.1:8080/identity >/tmp/identity.html
+          grep -q 'You are' /tmp/identity.html
+          grep -q 'the credential.' /tmp/identity.html
+          grep -q 'identityStage' /tmp/identity.html
+          grep -q 'ATLAS constellation' /tmp/identity.html
+          grep -q 'Ghost Email' /tmp/identity.html
+          grep -q 'Permission deck' /tmp/identity.html
+          grep -q '.platformLinks{position:static' /tmp/identity.html
+          if grep -q 'position:fixed;right:14px;bottom:14px;z-index:999' /tmp/identity.html; then
+            echo 'Legacy overlay launcher detected'
+            exit 1
+          fi
+          curl -fsS http://127.0.0.1:8080/browser >/tmp/browser.html
+          grep -q 'ATLAS Browser' /tmp/browser.html
+
+      - name: Start HTTPS preview tunnel
+        id: tunnel
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run -d --name atlas-identity-tunnel --network host \
+            cloudflare/cloudflared:latest \
+            tunnel --no-autoupdate --url http://127.0.0.1:8080 --loglevel info
+          PREVIEW_URL=''
+          for i in {1..60}; do
+            PREVIEW_URL="$(docker logs atlas-identity-tunnel 2>&1 | grep -Eo 'https://[-a-z0-9]+\.trycloudflare\.com' | tail -1 || true)"
+            if [ -n "$PREVIEW_URL" ]; then break; fi
+            sleep 1
+          done
+          test -n "$PREVIEW_URL"
+          echo "ATLAS_PREVIEW_URL=$PREVIEW_URL" >> "$GITHUB_ENV"
+          echo "url=$PREVIEW_URL" >> "$GITHUB_OUTPUT"
+          echo "### ATLAS Identity cinematic preview" >> "$GITHUB_STEP_SUMMARY"
+          echo "$PREVIEW_URL/identity" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Verify public Identity experience
+        shell: bash
+        run: |
+          set -euo pipefail
+          for i in {1..30}; do
+            if curl -fsS --retry 2 --retry-delay 1 "$ATLAS_PREVIEW_URL/identity" >/tmp/public-identity.html; then break; fi
+            sleep 2
+          done
+          test -s /tmp/public-identity.html
+          grep -q 'the credential.' /tmp/public-identity.html
+          grep -q 'Ghost Email' /tmp/public-identity.html
+          grep -q 'ATLAS constellation' /tmp/public-identity.html
+          if grep -q 'position:fixed;right:14px;bottom:14px;z-index:999' /tmp/public-identity.html; then exit 1; fi
+
+      - name: Publish preview URL
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -d "{\"state\":\"success\",\"context\":\"atlas/identity-preview\",\"description\":\"Cinematic Identity preview live for about 55 minutes\",\"target_url\":\"${ATLAS_PREVIEW_URL}/identity\"}" >/dev/null
+
+      - name: Keep preview live for review
+        shell: bash
+        run: |
+          for i in {1..55}; do
+            curl -fsS "$ATLAS_PREVIEW_URL/_atlas/health" >/dev/null || exit 1
+            sleep 60
+          done
+
+      - name: Diagnostics
+        if: failure()
+        run: |
+          docker logs atlas-identity-preview 2>&1 || true
+          docker logs atlas-identity-tunnel 2>&1 || true
