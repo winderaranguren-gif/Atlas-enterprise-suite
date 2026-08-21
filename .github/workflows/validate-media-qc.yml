@@ -1,0 +1,30 @@
+name: Validate ATLAS Media QC
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'modules/studio-media-qc-worker.js'
+      - 'scripts/validate-media-qc.mjs'
+      - 'rideos-router.js'
+      - 'package.json'
+      - '.github/workflows/validate-media-qc.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-media-qc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: node --check modules/studio-media-qc-worker.js
+      - run: node --check scripts/validate-media-qc.mjs
+      - run: node --check rideos-router.js
+      - run: npm run check:media-qc
+      - run: npx wrangler deploy --dry-run
