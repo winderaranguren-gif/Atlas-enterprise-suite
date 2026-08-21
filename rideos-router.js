@@ -9,8 +9,9 @@ import {handleVenezuela} from './modules/venezuela-worker.js';
 import {ConnectStore,handleConnect} from './modules/connect-worker.js';
 import {handleBrowser} from './modules/browser-worker.js';
 import {handleWorkbench} from './modules/workbench-worker.js';
+import {CapabilityStateStore,handleCapabilityState} from './modules/capability-state-worker.js';
 export {VideoRoom} from './atlas-router.js';
-export {ConnectStore};
+export {ConnectStore,CapabilityStateStore};
 
 function isRideOSPath(path){
   return path==='/rideos'||path.startsWith('/rideos/')||
@@ -55,6 +56,10 @@ async function surfacePlatformLinks(response){
 export default {
   async fetch(request,env,ctx){
     const url=new URL(request.url);
+    if(url.pathname.startsWith('/api/capability-state/')){
+      const capabilityState=await handleCapabilityState(request,env,ctx);
+      if(capabilityState)return capabilityState;
+    }
     if(isWorkbenchPath(url.pathname)){
       const workbench=handleWorkbench(request,env,ctx);
       if(workbench)return workbench;
