@@ -11,12 +11,14 @@
   "durable_objects": {
     "bindings": [
       {"name": "VIDEO_ROOMS", "class_name": "VideoRoom"},
-      {"name": "CONNECT_STORE", "class_name": "ConnectStore"}
+      {"name": "CONNECT_STORE", "class_name": "ConnectStore"},
+      {"name": "WALLET_STORE", "class_name": "WalletStore"}
     ]
   },
   "migrations": [
     {"tag": "v1-video-room", "new_sqlite_classes": ["VideoRoom"]},
-    {"tag": "v2-connect-store", "new_sqlite_classes": ["ConnectStore"]}
+    {"tag": "v2-connect-store", "new_sqlite_classes": ["ConnectStore"]},
+    {"tag": "v3-wallet-store", "new_sqlite_classes": ["WalletStore"]}
   ],
   "routes": [
     {"pattern": "atlasenterprisesuite.com/*", "zone_id": "26a5b368f6a017801a4600b19748c3ab"},
