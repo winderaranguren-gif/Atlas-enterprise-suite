@@ -5,7 +5,7 @@ const times=Array.from({length:48},(_,i)=>new Date(Date.UTC(2026,7,21,i%24)).toI
 const days=Array.from({length:10},(_,i)=>`2026-08-${String(21+i).padStart(2,'0')}`);
 
 globalThis.fetch=async input=>{
-  const url=new URL(typeof input==='string'?input:input.url);
+  const url=input instanceof URL?input:new URL(typeof input==='string'?input:input.url);
   if(url.hostname==='api.open-meteo.com')return Response.json({
     latitude:28.5383,longitude:-81.3792,timezone:'America/New_York',
     current:{temperature_2m:91,relative_humidity_2m:58,apparent_temperature:101,is_day:1,precipitation:0,rain:0,weather_code:2,cloud_cover:35,wind_speed_10m:8,wind_direction_10m:120,wind_gusts_10m:15,surface_pressure:1014},
