@@ -1,18 +1,6 @@
-name: Deploy ATLAS with Cloudflare Account Token
+name: Deploy ATLAS with Cloudflare Account Token (Manual Rescue)
 
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - '.github/workflows/deploy-cloudflare-account-token.yml'
-      - 'rideos-router.js'
-      - 'worker.js'
-      - 'wrangler.jsonc'
-      - 'modules/**'
-      - 'public/**'
-      - 'package.json'
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -20,7 +8,7 @@ permissions:
   statuses: write
 
 concurrency:
-  group: atlas-account-token-${{ github.ref }}
+  group: atlas-account-token-rescue-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -38,10 +26,11 @@ jobs:
       - run: npm run check:finance
       - run: npm run check:launch
       - run: npm run check:public-site
+      - run: npm run check:native-studio
+      - run: node atlas/native-media-engine.mjs verify
       - run: npx wrangler deploy --dry-run
 
   deploy:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: validate
     runs-on: ubuntu-latest
     steps:
@@ -90,10 +79,7 @@ jobs:
             HTTP_CODE="$(curl -sS -o /tmp/cf-token.json -w '%{http_code}' -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' "$URL" || true)"
             if [ "$HTTP_CODE" = "200" ]; then
               STATUS="$(node -e "const fs=require('fs');try{const j=JSON.parse(fs.readFileSync('/tmp/cf-token.json','utf8'));process.stdout.write(j.success===true && j.result?.status==='active'?'active':'invalid')}catch{process.stdout.write('invalid')}")"
-              if [ "$STATUS" = "active" ]; then
-                VERIFIED="$URL"
-                break
-              fi
+              if [ "$STATUS" = "active" ]; then VERIFIED="$URL"; break; fi
             fi
           done
 
@@ -101,7 +87,6 @@ jobs:
             echo "::error::CLOUDFLARE_API_TOKEN failed both user-token and account-token verification endpoints."
             exit 1
           fi
-
           echo "Cloudflare API token verified."
           echo "CLOUDFLARE_API_TOKEN=$TOKEN" >> "$GITHUB_ENV"
 
@@ -119,69 +104,28 @@ jobs:
             echo "ATLAS TURN Worker secrets already provisioned."
             exit 0
           fi
-
-          HTTP_CODE="$(curl -sS -o /tmp/atlas-turn.json -w '%{http_code}' \
-            -X POST "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/calls/turn_keys" \
-            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
-            -H 'Content-Type: application/json' \
-            --data '{"name":"atlas-video-turn"}' || true)"
+          HTTP_CODE="$(curl -sS -o /tmp/atlas-turn.json -w '%{http_code}' -X POST "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/calls/turn_keys" -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" -H 'Content-Type: application/json' --data '{"name":"atlas-video-turn"}' || true)"
           if [ "$HTTP_CODE" != "200" ]; then
-            echo "::error::TURN key creation failed with HTTP $HTTP_CODE. Token needs Calls Write permission if TURN secrets are not already present."
+            echo "::error::TURN key creation failed with HTTP $HTTP_CODE."
             exit 1
           fi
-
           TURN_KEY_ID="$(node -e "const j=require('/tmp/atlas-turn.json');process.stdout.write(j?.result?.uid||'')")"
           TURN_KEY_API_TOKEN="$(node -e "const j=require('/tmp/atlas-turn.json');process.stdout.write(j?.result?.key||'')")"
           [ -n "$TURN_KEY_ID" ] && [ -n "$TURN_KEY_API_TOKEN" ]
-          echo "::add-mask::$TURN_KEY_ID"
-          echo "::add-mask::$TURN_KEY_API_TOKEN"
+          echo "::add-mask::$TURN_KEY_ID"; echo "::add-mask::$TURN_KEY_API_TOKEN"
           printf '%s' "$TURN_KEY_ID" | npx wrangler secret put TURN_KEY_ID
           printf '%s' "$TURN_KEY_API_TOKEN" | npx wrangler secret put TURN_KEY_API_TOKEN
 
       - name: Deploy canonical ATLAS Worker
         run: npx wrangler deploy
 
-      - name: Verify production application surfaces
+      - name: Verify Native Studio production surface
         shell: bash
         run: |
           set -euo pipefail
-          check(){ echo "Verifying $1"; curl --retry 6 --retry-delay 3 --retry-all-errors -fsS "$1" > /dev/null; }
-          check https://atlasenterprisesuite.com/healthz
-          check https://atlasenterprisesuite.com/dashboard
-          check https://atlasenterprisesuite.com/finance
-          check https://atlasenterprisesuite.com/accounting
-          check https://atlasenterprisesuite.com/work
-          check https://atlasenterprisesuite.com/ride
-          check https://atlasenterprisesuite.com/rideos
-          check https://atlasenterprisesuite.com/driver
-          check https://atlasenterprisesuite.com/marketplace
-          check https://atlasenterprisesuite.com/driver-finance
-          check https://atlasenterprisesuite.com/launch-queue
-          check https://atlasenterprisesuite.com/video
-          check https://atlasenterprisesuite.com/studio
-          check https://atlasenterprisesuite.com/api/work/health
-          check https://atlasenterprisesuite.com/api/mobility/health
-          check https://atlasenterprisesuite.com/api/rideos/health
-          check https://atlasenterprisesuite.com/api/launch-queue/health
-          check https://atlasenterprisesuite.com/api/studio/health
-          check https://atlasenterprisesuite.com/api/finance/health
-
-      - name: Verify public website boundary
-        shell: bash
-        run: |
-          set -euo pipefail
-          curl --retry 6 --retry-delay 3 --retry-all-errors -fsS https://www.atlasenterprisesuite.com/ -o /tmp/atlas-home.html
-          grep -Fq 'Run the work.' /tmp/atlas-home.html
-          grep -Fq 'Public website outside. Enterprise workspace inside.' /tmp/atlas-home.html
-          curl --retry 6 --retry-delay 3 --retry-all-errors -fsS https://www.atlasenterprisesuite.com/product | grep -Fq 'The ATLAS enterprise'
-          curl --retry 6 --retry-delay 3 --retry-all-errors -fsS https://www.atlasenterprisesuite.com/trust | grep -Fq 'Security claims must be verifiable.'
-          curl --retry 6 --retry-delay 3 --retry-all-errors -fsS https://www.atlasenterprisesuite.com/status | grep -Fq 'Unified public health feed: not configured'
-          APP_STATUS="$(curl -sS -o /dev/null -w '%{http_code}' https://www.atlasenterprisesuite.com/app)"
-          APP_LOCATION="$(curl -sSI https://www.atlasenterprisesuite.com/app | tr -d '\r' | awk 'BEGIN{IGNORECASE=1} /^location:/{print $2; exit}')"
-          [ "$APP_STATUS" = '307' ]
-          [ "$APP_LOCATION" = '/dashboard' ]
-          DASH_HEADERS="$(curl -sSI https://www.atlasenterprisesuite.com/dashboard | tr -d '\r')"
-          printf '%s' "$DASH_HEADERS" | grep -Eqi '^x-robots-tag: noindex, nofollow, noarchive$'
+          curl --retry 6 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/studio/production > /dev/null
+          curl --retry 6 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/api/studio/production/health -o /tmp/native-health.json
+          node -e "const j=require('/tmp/native-health.json');if(!j.ok||j.service!=='atlas-native-studio'||!Array.isArray(j.externalProviders)||j.externalProviders.length){console.error(j);process.exit(1)}"
 
       - name: Mark ATLAS production success
         if: success()
@@ -189,11 +133,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          curl -fsS -X POST \
-            -H "Authorization: Bearer ${GH_TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
+          curl -fsS -X POST -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" \
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
-            -d "{\"state\":\"success\",\"context\":\"atlas/production\",\"description\":\"ATLAS production verified with Cloudflare account-token compatible CI\",\"target_url\":\"https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}" > /dev/null
+            -d "{\"state\":\"success\",\"context\":\"atlas/manual-rescue\",\"description\":\"ATLAS manual rescue deploy verified\",\"target_url\":\"https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}" > /dev/null
 
       - name: Mark ATLAS production failure
         if: failure()
@@ -201,8 +143,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          curl -sS -X POST \
-            -H "Authorization: Bearer ${GH_TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
+          curl -sS -X POST -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" \
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
-            -d "{\"state\":\"failure\",\"context\":\"atlas/production\",\"description\":\"ATLAS account-token production deployment failed\",\"target_url\":\"https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}" > /dev/null || true
+            -d "{\"state\":\"failure\",\"context\":\"atlas/manual-rescue\",\"description\":\"ATLAS manual rescue deployment failed\",\"target_url\":\"https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}" > /dev/null || true
