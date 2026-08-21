@@ -25,10 +25,10 @@ for(const providerFeature of [
   if(!wallet.includes(providerFeature))throw new Error(`wallet provider adapter missing ${providerFeature}`);
 }
 
-for(const required of ['WALLET_STORE','WalletStore','v3-wallet-store']){
+for(const required of ['WALLET_STORE','WalletStore','v4-wallet-store']){
   if(!wrangler.includes(required))throw new Error(`wrangler missing ${required}`);
 }
-for(const required of ["import {WalletStore,handleWallet}","path==='/wallet'","path.startsWith('/api/wallet/')","export {ConnectStore,WalletStore}"]){
+for(const required of ["import {WalletStore,handleWallet}","path==='/wallet'","path.startsWith('/api/wallet/')",'WalletStore};']){
   if(!router.includes(required))throw new Error(`production router missing ${required}`);
 }
 if(!pkg.includes('check:wallet'))throw new Error('package.json missing check:wallet');
