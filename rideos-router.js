@@ -4,6 +4,7 @@ import {handleCreatorStudio} from './modules/creator-studio-worker.js';
 import {handleCreatorDirector} from './modules/creator-director-worker.js';
 import {handleCreatorRelease} from './modules/creator-release-worker.js';
 import {handleCreatorWebDirector} from './modules/creator-web-director-worker.js';
+import {handleStudioAutopilot} from './modules/studio-autopilot-worker.js';
 import {handleStudioProduction} from './modules/studio-production-worker.js';
 import {handleStudioNative} from './modules/studio-native-worker.js';
 import {handleProfessionalDashboard} from './modules/professional-dashboard-worker.js';
@@ -55,13 +56,14 @@ async function surfacePlatformLinks(response){
   if(!html.includes('href="/browser"'))links.push('<a class="nav" href="/browser"><span class="ico">◉</span>ATLAS Browser</a>');
   if(!html.includes('href="/studio"'))links.push('<a class="nav" href="/studio"><span class="ico">✦</span>ATLAS Studio</a>');
   if(!html.includes('href="/studio/director"'))links.push('<a class="nav" href="/studio/director"><span class="ico">◆</span>Creator Director</a>');
+  if(!html.includes('href="/studio/autopilot"'))links.push('<a class="nav" href="/studio/autopilot"><span class="ico">◎</span>Studio Autopilot</a>');
   if(!html.includes('href="/studio/creator/web"'))links.push('<a class="nav" href="/studio/creator/web"><span class="ico">▦</span>Creator Web Director</a>');
   if(!html.includes('href="/studio/production"'))links.push('<a class="nav" href="/studio/production"><span class="ico">◈</span>Studio Production</a>');
   if(!html.includes('href="/studio/release"'))links.push('<a class="nav" href="/studio/release"><span class="ico">⬢</span>Creator Release</a>');
   if(links.length){
     const injected=links.join('');
     if(html.includes('</aside>'))html=html.replace('</aside>',injected+'</aside>');
-    else if(html.includes('</body>'))html=html.replace('</body>','<div style="position:fixed;right:14px;bottom:14px;z-index:999;display:flex;gap:7px;flex-wrap:wrap"><a href="/wallet" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">ATLAS Wallet</a><a href="/workbench" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">ATLAS Workbench</a><a href="/browser" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">ATLAS Browser</a><a href="/studio" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">ATLAS Studio</a><a href="/studio/director" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">Creator Director</a><a href="/studio/creator/web" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">Web Director</a><a href="/studio/production" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">Production</a><a href="/studio/release" style="padding:9px 12px;border-radius:10px;background:#382b12;color:#ffe1a2;text-decoration:none;border:1px solid #826429;font:12px system-ui">Creator Release</a></div></body>');
+    else if(html.includes('</body>'))html=html.replace('</body>','<div style="position:fixed;right:14px;bottom:14px;z-index:999;display:flex;gap:7px;flex-wrap:wrap"><a href="/wallet" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">ATLAS Wallet</a><a href="/workbench" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">ATLAS Workbench</a><a href="/browser" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">ATLAS Browser</a><a href="/studio" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">ATLAS Studio</a><a href="/studio/director" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">Creator Director</a><a href="/studio/autopilot" style="padding:9px 12px;border-radius:10px;background:#133c5d;color:white;text-decoration:none;border:1px solid #44b7e5;font:12px system-ui">Autopilot</a><a href="/studio/creator/web" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">Web Director</a><a href="/studio/production" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">Production</a><a href="/studio/release" style="padding:9px 12px;border-radius:10px;background:#382b12;color:#ffe1a2;text-decoration:none;border:1px solid #826429;font:12px system-ui">Creator Release</a></div></body>');
   }
   const headers=new Headers(response.headers);
   headers.set('x-robots-tag','noindex, nofollow, noarchive');
@@ -108,6 +110,7 @@ export default {
       const release=await handleCreatorRelease(request,env,ctx);if(release)return applicationResponse(release);
       const director=await handleCreatorDirector(request,env,ctx);if(director)return applicationResponse(director);
       const webDirector=await handleCreatorWebDirector(request,env,ctx);if(webDirector)return applicationResponse(webDirector);
+      const autopilot=handleStudioAutopilot(request,env,ctx);if(autopilot)return applicationResponse(autopilot);
       const native=handleStudioNative(request,env,ctx);if(native)return applicationResponse(native);
       const production=handleStudioProduction(request,env,ctx);if(production)return applicationResponse(production);
       const response=handleCreatorStudio(request,env,ctx);if(response)return surfacePlatformLinks(response);
