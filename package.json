@@ -1,6 +1,6 @@
 {
   "name": "atlas-enterprise-suite",
-  "version": "1.9.0-sovereign-tools",
+  "version": "1.11.0-capability-state",
   "private": true,
   "type": "module",
   "devDependencies": { "wrangler": "4.118.0" },
@@ -22,6 +22,8 @@
     "atlas:providers": "node atlas/providers.mjs",
     "atlas:oauth": "node atlas/oauth.mjs",
     "atlas:sandbox": "node atlas/sandbox.mjs",
+    "atlas:git": "node atlas/git-gateway.mjs",
+    "atlas:orchestrate": "node atlas/deploy-orchestrator.mjs",
     "atlas:build": "node atlas/build.mjs",
     "atlas:deploy": "node atlas/deploy.mjs",
     "atlas:backup": "node atlas/backup.mjs",
@@ -38,6 +40,8 @@
     "check:workbench": "node scripts/validate-workbench.mjs",
     "check:studio-production": "node scripts/validate-studio-production.mjs",
     "check:sovereign-tools": "node scripts/validate-sovereign-tools.mjs",
+    "check:git-deploy": "node scripts/validate-git-deploy-tools.mjs",
+    "check:capability-state": "node scripts/validate-capability-state-mainline.mjs",
     "check:wallet": "node scripts/validate-wallet.mjs",
     "check:wallet-readiness": "node scripts/wallet-release-readiness.mjs",
     "deploy:provider": "wrangler deploy"
