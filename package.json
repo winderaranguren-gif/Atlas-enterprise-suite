@@ -47,6 +47,7 @@
     "check:native-studio": "node scripts/validate-native-studio.mjs",
     "check:studio-autopilot": "node scripts/validate-studio-autopilot.mjs",
     "check:media-qc": "node scripts/validate-media-qc.mjs",
+    "check:media-foundations": "node scripts/validate-media-foundations.mjs",
     "check:creator-director": "node scripts/validate-creator-director.mjs",
     "check:creator-release": "node scripts/validate-creator-release.mjs",
     "check:creator-web": "node scripts/validate-creator-web-director.mjs",
