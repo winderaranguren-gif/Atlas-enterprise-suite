@@ -1,6 +1,6 @@
 {
   "name": "atlas-enterprise-suite",
-  "version": "1.7.0-sovereign",
+  "version": "1.8.0-sovereign-workbench",
   "private": true,
   "type": "module",
   "devDependencies": { "wrangler": "4.118.0" },
@@ -16,6 +16,9 @@
     "atlas:status": "node atlas/control-plane.mjs status",
     "atlas:release": "node atlas/control-plane.mjs release",
     "atlas:forge": "node atlas/forge.mjs",
+    "atlas:workbench": "node atlas/workbench.mjs",
+    "atlas:model": "node atlas/model-engine.mjs",
+    "atlas:connectors": "node atlas/connectors.mjs",
     "atlas:build": "node atlas/build.mjs",
     "atlas:deploy": "node atlas/deploy.mjs",
     "atlas:backup": "node atlas/backup.mjs",
@@ -29,6 +32,7 @@
     "check:global": "node scripts/validate-global.mjs",
     "check:connect": "node scripts/validate-connect.mjs",
     "check:browser": "node scripts/validate-browser.mjs",
+    "check:workbench": "node scripts/validate-workbench.mjs",
     "deploy:provider": "wrangler deploy"
   }
 }
