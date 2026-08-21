@@ -37,6 +37,7 @@
     "check:browser": "node scripts/validate-browser.mjs",
     "check:workbench": "node scripts/validate-workbench.mjs",
     "check:studio-production": "node scripts/validate-studio-production.mjs",
+    "check:sovereign-tools": "node scripts/validate-sovereign-tools.mjs",
     "deploy:provider": "wrangler deploy"
   }
 }
