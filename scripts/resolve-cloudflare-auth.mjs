@@ -50,6 +50,17 @@ try {
 for (const match of cleaned.matchAll(/\b(?:cfat|cfut)_[A-Za-z0-9_-]{10,}\b/g)) add(match[0]);
 for (const match of cleaned.matchAll(/[A-Za-z0-9_-]{30,}/g)) add(match[0]);
 
+// Recover credentials that were accidentally saved as colon-delimited pairs
+// such as label:token, account-id:token, or Authorization:Bearer token.
+// Each segment is tested independently without ever printing its value.
+const colonSegments = cleaned
+  .split(':')
+  .map((segment) => segment.trim())
+  .filter(Boolean);
+if (colonSegments.length > 1 && colonSegments.length <= 4) {
+  for (const segment of colonSegments) add(segment);
+}
+
 const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 function wranglerWhoami(env) {
   const result = spawnSync(npx, ['wrangler', 'whoami'], {
@@ -95,5 +106,7 @@ fail('Stored Cloudflare credential does not authenticate the configured ATLAS ac
   prefixedCandidates: candidates.filter((v) => /^cf(?:at|ut)_/.test(v)).length,
   rawContainsWhitespace: /\s/.test(raw),
   rawContainsColon: /:/.test(raw),
+  colonSegments: colonSegments.length,
+  colonSegmentLengths: colonSegments.map((v) => [...v].length),
   legacyPairShapeDetected: Boolean(legacy),
 });
