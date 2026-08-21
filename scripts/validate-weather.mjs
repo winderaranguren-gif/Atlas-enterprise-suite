@@ -28,8 +28,7 @@ const html=await page.text();
 assert.match(html,/ATLAS WEATHER/i);
 assert.match(html,/10-day forecast/i);
 assert.match(html,/Dashboard sync active/i);
-assert.match(html,/Apple WeatherKit/i);
-assert.match(html,/The Weather Company/i);
+assert.match(html,/Apple and The Weather Company/i);
 assert.match(html,/Radar source not configured/i);
 assert.match(page.headers.get('content-security-policy')||'',/frame-ancestors 'none'/);
 
@@ -41,7 +40,9 @@ assert.equal(data.daily.time.length,10);
 assert.equal(data.atlas.airQuality.aqi,42);
 assert.equal(data.atlas.alerts[0].event,'Heat Advisory');
 assert.equal(data.atlas.providers.forecast.status,'connected');
+assert.equal(data.atlas.providers.weatherKit.name,'Apple WeatherKit');
 assert.equal(data.atlas.providers.weatherKit.status,'not_configured');
+assert.equal(data.atlas.providers.weatherCompany.name,'The Weather Company');
 assert.equal(data.atlas.providers.weatherCompany.status,'not_configured');
 assert.equal(data.atlas.radar.status,'not_configured');
 
