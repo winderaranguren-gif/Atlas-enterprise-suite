@@ -1,0 +1,33 @@
+name: ATLAS Wallet Validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'modules/wallet-worker.js'
+      - 'rideos-router.js'
+      - 'wrangler.jsonc'
+      - 'scripts/validate-wallet.mjs'
+      - 'package.json'
+      - '.github/workflows/validate-wallet.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'modules/wallet-worker.js'
+      - 'rideos-router.js'
+      - 'wrangler.jsonc'
+      - 'scripts/validate-wallet.mjs'
+      - 'package.json'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-wallet:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm run check:wallet
