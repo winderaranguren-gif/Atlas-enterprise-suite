@@ -1,0 +1,66 @@
+name: ATLAS Portable Runtime
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: atlas-portable-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - name: Validate portable ATLAS request adapter
+        run: npm run check:portable-runtime
+      - name: Validate ATLAS build graph
+        run: npm run atlas:build
+      - name: Build portable container
+        run: docker build -t atlas-enterprise-suite:portable-test .
+      - name: Smoke-test portable container
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run -d --rm --name atlas-portable-test -p 18080:8080 atlas-enterprise-suite:portable-test
+          trap 'docker stop atlas-portable-test >/dev/null 2>&1 || true' EXIT
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:18080/_atlas/health > /tmp/atlas-portable-health.json; then break; fi
+            sleep 1
+          done
+          node -e "const j=require('/tmp/atlas-portable-health.json');if(!j.ok||j.service!=='ATLAS Portable Runtime')process.exit(1)"
+          curl -fsS http://127.0.0.1:18080/browser | grep -q 'ATLAS Browser'
+          curl -fsS http://127.0.0.1:18080/workbench | grep -q 'ATLAS Workbench'
+
+  publish-image:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and publish portable ATLAS image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/atlas-enterprise-suite:latest
+            ghcr.io/${{ github.repository_owner }}/atlas-enterprise-suite:${{ github.sha }}

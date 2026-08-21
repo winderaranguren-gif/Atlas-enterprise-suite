@@ -1,6 +1,6 @@
 {
   "name": "atlas-enterprise-suite",
-  "version": "1.13.0-native-studio",
+  "version": "1.14.0-portable-runtime",
   "private": true,
   "type": "module",
   "devDependencies": { "wrangler": "4.118.0" },
@@ -13,6 +13,7 @@
     "atlas:self-heal": "node atlas/self-heal.mjs",
     "atlas:control": "node atlas/control-plane.mjs",
     "atlas:runtime": "node atlas/runtime.mjs",
+    "atlas:serve": "node atlas/server.mjs",
     "atlas:status": "node atlas/control-plane.mjs status",
     "atlas:release": "node atlas/control-plane.mjs release",
     "atlas:forge": "node atlas/forge.mjs",
@@ -39,6 +40,7 @@
     "check:connect": "node scripts/validate-connect.mjs",
     "check:browser": "node scripts/validate-browser.mjs",
     "check:workbench": "node scripts/validate-workbench.mjs",
+    "check:portable-runtime": "node scripts/validate-portable-runtime.mjs",
     "check:studio-production": "node scripts/validate-studio-production.mjs",
     "check:native-studio": "node scripts/validate-native-studio.mjs",
     "check:sovereign-tools": "node scripts/validate-sovereign-tools.mjs",
