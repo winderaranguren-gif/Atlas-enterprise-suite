@@ -58,18 +58,21 @@ jobs:
           curl -fsS http://127.0.0.1:8080/workbench | grep -q 'ATLAS Workbench'
           curl -fsS 'http://127.0.0.1:8080/api/video/signal?room=staging-preflight' | grep -q 'ATLAS Portable Video Signaling'
           node <<'NODE'
-          const { WebSocket } = require('ws');
           const ws = new WebSocket('ws://127.0.0.1:8080/api/video/signal?room=staging-preflight&channel=media&peer=github-staging');
           const timer = setTimeout(() => { console.error('WebSocket staging preflight timeout'); process.exit(1); }, 5000);
-          ws.on('message', raw => {
-            const m = JSON.parse(String(raw));
+          ws.addEventListener('message', event => {
+            const m = JSON.parse(String(event.data));
             if (m.type === 'welcome') {
               clearTimeout(timer);
               ws.close();
               process.exit(0);
             }
           });
-          ws.on('error', error => { clearTimeout(timer); console.error(error); process.exit(1); });
+          ws.addEventListener('error', event => {
+            clearTimeout(timer);
+            console.error('WebSocket staging preflight error', event?.message || 'unknown');
+            process.exit(1);
+          });
           NODE
 
       - name: Start temporary HTTPS tunnel
