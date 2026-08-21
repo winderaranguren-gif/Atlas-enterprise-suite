@@ -4,7 +4,9 @@ import {handleCreatorStudio} from './modules/creator-studio-worker.js';
 import {handleProfessionalDashboard} from './modules/professional-dashboard-worker.js';
 import {handleEnterpriseDashboard} from './modules/enterprise-dashboard-worker.js';
 import {handleGlobalCountry} from './modules/global-country-worker.js';
+import {ConnectStore,handleConnect} from './modules/connect-worker.js';
 export {VideoRoom} from './atlas-router.js';
+export {ConnectStore};
 
 function isRideOSPath(path){
   return path==='/rideos'||path.startsWith('/rideos/')||
@@ -39,6 +41,10 @@ export default {
     if(url.pathname==='/global'||url.pathname.startsWith('/global/')||url.pathname.startsWith('/api/global/')){
       const globalResponse=handleGlobalCountry(request,env,ctx);
       if(globalResponse)return globalResponse;
+    }
+    if(url.pathname==='/connect'||url.pathname.startsWith('/connect/')||url.pathname.startsWith('/api/connect/')){
+      const connect=await handleConnect(request,env,ctx);
+      if(connect)return connect;
     }
     const professionalDashboard=handleProfessionalDashboard(request,env,ctx);
     if(professionalDashboard)return professionalDashboard;
