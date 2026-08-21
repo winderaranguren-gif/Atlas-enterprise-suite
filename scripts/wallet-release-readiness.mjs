@@ -1,4 +1,6 @@
 const requiredServer=[
+  ['Wallet identity gateway token','ATLAS_WALLET_IDENTITY_TOKEN'],
+  ['Wallet session signing secret','ATLAS_WALLET_SESSION_SECRET'],
   ['Square server','SQUARE_ACCESS_TOKEN'],
   ['Square location','SQUARE_LOCATION_ID'],
   ['Square application','SQUARE_APPLICATION_ID'],
@@ -25,6 +27,7 @@ const report={
   policy:{
     secretsPrinted:false,
     providerVerificationCannotBeSimulated:true,
+    identitySessionMustBeSigned:true,
     productionReleaseRequiresAllChecks:true,
   },
 };
