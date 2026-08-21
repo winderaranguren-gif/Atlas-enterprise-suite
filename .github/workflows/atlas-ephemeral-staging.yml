@@ -1,0 +1,134 @@
+name: ATLAS Ephemeral OCI Staging
+
+on:
+  push:
+    branches:
+      - staging/atlas-oci-preview
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+  statuses: write
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull approved immutable ATLAS image
+        run: |
+          docker pull ghcr.io/winderaranguren-gif/atlas-enterprise-suite@sha256:9321b93427b2c315916af9a900c75d51d06215ad344978b177a5401fa807aa55
+
+      - name: Start ATLAS staging container
+        run: |
+          docker volume create atlas-staging-state >/dev/null
+          docker run -d --name atlas-staging \
+            --network host \
+            -v atlas-staging-state:/var/lib/atlas \
+            -e ATLAS_STATE_DIR=/var/lib/atlas \
+            -e ATLAS_RUNTIME_PROVIDER=github-actions-staging \
+            ghcr.io/winderaranguren-gif/atlas-enterprise-suite@sha256:9321b93427b2c315916af9a900c75d51d06215ad344978b177a5401fa807aa55
+          for i in {1..45}; do
+            if curl -fsS http://127.0.0.1:8080/_atlas/health >/tmp/atlas-health.json; then
+              cat /tmp/atlas-health.json
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs atlas-staging
+          exit 1
+
+      - name: Validate approved image before exposure
+        run: |
+          set -euo pipefail
+          curl -fsS http://127.0.0.1:8080/browser | grep -q 'ATLAS Browser'
+          curl -fsS http://127.0.0.1:8080/workbench | grep -q 'ATLAS Workbench'
+          curl -fsS 'http://127.0.0.1:8080/api/video/signal?room=staging-preflight' | grep -q 'ATLAS Portable Video Signaling'
+          node <<'NODE'
+          const { WebSocket } = require('ws');
+          const ws = new WebSocket('ws://127.0.0.1:8080/api/video/signal?room=staging-preflight&channel=media&peer=github-staging');
+          const timer = setTimeout(() => { console.error('WebSocket staging preflight timeout'); process.exit(1); }, 5000);
+          ws.on('message', raw => {
+            const m = JSON.parse(String(raw));
+            if (m.type === 'welcome') {
+              clearTimeout(timer);
+              ws.close();
+              process.exit(0);
+            }
+          });
+          ws.on('error', error => { clearTimeout(timer); console.error(error); process.exit(1); });
+          NODE
+
+      - name: Start temporary HTTPS tunnel
+        id: tunnel
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run -d --name atlas-staging-tunnel --network host \
+            cloudflare/cloudflared:latest \
+            tunnel --no-autoupdate --url http://127.0.0.1:8080 --loglevel info
+          PREVIEW_URL=''
+          for i in {1..60}; do
+            PREVIEW_URL="$(docker logs atlas-staging-tunnel 2>&1 | grep -Eo 'https://[-a-z0-9]+\.trycloudflare\.com' | tail -1 || true)"
+            if [ -n "$PREVIEW_URL" ]; then break; fi
+            sleep 1
+          done
+          if [ -z "$PREVIEW_URL" ]; then
+            docker logs atlas-staging-tunnel
+            exit 1
+          fi
+          echo "url=$PREVIEW_URL" >> "$GITHUB_OUTPUT"
+          echo "ATLAS_STAGING_URL=$PREVIEW_URL" >> "$GITHUB_ENV"
+          echo "### ATLAS live staging" >> "$GITHUB_STEP_SUMMARY"
+          echo "$PREVIEW_URL" >> "$GITHUB_STEP_SUMMARY"
+          echo "Approved image digest: sha256:9321b93427b2c315916af9a900c75d51d06215ad344978b177a5401fa807aa55" >> "$GITHUB_STEP_SUMMARY"
+          echo "This preview is ephemeral and will close when this job ends." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Verify public staging route
+        shell: bash
+        run: |
+          set -euo pipefail
+          for i in {1..30}; do
+            if curl -fsS --retry 2 --retry-delay 1 "$ATLAS_STAGING_URL/_atlas/health" >/tmp/public-health.json; then break; fi
+            sleep 2
+          done
+          node -e "const j=require('/tmp/public-health.json'); if(!j.ok || j.service!=='ATLAS Portable Runtime') process.exit(1)"
+          curl -fsS "$ATLAS_STAGING_URL/browser" | grep -q 'ATLAS Browser'
+
+      - name: Publish live staging URL on commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -d "{\"state\":\"success\",\"context\":\"atlas/staging-preview\",\"description\":\"ATLAS OCI staging live for about 60 minutes\",\"target_url\":\"${ATLAS_STAGING_URL}\"}" >/dev/null
+          echo "PUBLIC_URL=${ATLAS_STAGING_URL}"
+
+      - name: Keep approved staging online for review
+        shell: bash
+        run: |
+          echo "ATLAS staging is live at ${ATLAS_STAGING_URL}"
+          echo "Keeping the exact approved OCI image online for 60 minutes."
+          for i in {1..60}; do
+            curl -fsS "$ATLAS_STAGING_URL/_atlas/health" >/dev/null || exit 1
+            sleep 60
+          done
+
+      - name: Diagnostics on failure
+        if: failure()
+        run: |
+          docker logs atlas-staging 2>&1 || true
+          docker logs atlas-staging-tunnel 2>&1 || true
