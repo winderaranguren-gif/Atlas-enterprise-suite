@@ -1,0 +1,30 @@
+name: Validate ATLAS Studio Autopilot
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'modules/studio-autopilot-worker.js'
+      - 'scripts/validate-studio-autopilot.mjs'
+      - 'rideos-router.js'
+      - 'package.json'
+      - '.github/workflows/validate-studio-autopilot.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-studio-autopilot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: node --check modules/studio-autopilot-worker.js
+      - run: node --check scripts/validate-studio-autopilot.mjs
+      - run: node --check rideos-router.js
+      - run: npm run check:studio-autopilot
+      - run: npx wrangler deploy --dry-run
