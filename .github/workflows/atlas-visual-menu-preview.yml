@@ -1,0 +1,86 @@
+name: ATLAS Visual Menu Preview
+
+on:
+  push:
+    branches: [staging/visual-menu-preview]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  statuses: write
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build current ATLAS image
+        run: docker build -t atlas-visual-menu-preview .
+      - name: Start ATLAS runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker volume create atlas-menu-preview-state >/dev/null
+          docker run -d --name atlas-menu-preview --network host -v atlas-menu-preview-state:/var/lib/atlas atlas-visual-menu-preview
+          for i in {1..45}; do
+            if curl -fsS http://127.0.0.1:8080/_atlas/health >/tmp/health.json; then exit 0; fi
+            sleep 1
+          done
+          docker logs atlas-menu-preview
+          exit 1
+      - name: Validate live visual menu locally
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsS http://127.0.0.1:8080/menu >/tmp/menu.html
+          grep -q 'Visual Command Menu' /tmp/menu.html
+          grep -q '/assets/atlas-menu-board.jpg' /tmp/menu.html
+          curl -fsS http://127.0.0.1:8080/api/menu/modules >/tmp/modules.json
+          node -e "const j=require('/tmp/modules.json');if(!j.ok||j.modules.length<12)process.exit(1)"
+          curl -fsS http://127.0.0.1:8080/assets/atlas-menu-board.jpg >/tmp/board.jpg
+          test $(wc -c </tmp/board.jpg) -gt 10000
+      - name: Start temporary HTTPS tunnel
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run -d --name atlas-menu-tunnel --network host cloudflare/cloudflared:latest tunnel --no-autoupdate --url http://127.0.0.1:8080 --loglevel info
+          URL=''
+          for i in {1..60}; do
+            URL="$(docker logs atlas-menu-tunnel 2>&1 | grep -Eo 'https://[-a-z0-9]+\.trycloudflare\.com' | tail -1 || true)"
+            if [ -n "$URL" ]; then break; fi
+            sleep 1
+          done
+          test -n "$URL"
+          echo "ATLAS_MENU_PREVIEW=$URL" >> "$GITHUB_ENV"
+          echo "### ATLAS Visual Menu" >> "$GITHUB_STEP_SUMMARY"
+          echo "$URL/menu" >> "$GITHUB_STEP_SUMMARY"
+      - name: Verify public menu and artwork
+        shell: bash
+        run: |
+          set -euo pipefail
+          for i in {1..30}; do
+            if curl -fsS --retry 2 --retry-delay 1 "$ATLAS_MENU_PREVIEW/menu" >/tmp/public-menu.html; then break; fi
+            sleep 2
+          done
+          grep -q 'Visual Command Menu' /tmp/public-menu.html
+          curl -fsS "$ATLAS_MENU_PREVIEW/assets/atlas-menu-board.jpg" >/tmp/public-board.jpg
+          test $(wc -c </tmp/public-board.jpg) -gt 10000
+      - name: Publish preview URL
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -d "{\"state\":\"success\",\"context\":\"atlas/visual-menu-preview\",\"description\":\"Interactive visual menu live for about 60 minutes\",\"target_url\":\"${ATLAS_MENU_PREVIEW}/menu\"}" >/dev/null
+      - name: Keep preview online
+        shell: bash
+        run: |
+          echo "ATLAS visual menu: ${ATLAS_MENU_PREVIEW}/menu"
+          for i in {1..60}; do
+            curl -fsS "$ATLAS_MENU_PREVIEW/_atlas/health" >/dev/null || exit 1
+            sleep 60
+          done
