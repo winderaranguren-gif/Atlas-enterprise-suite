@@ -73,9 +73,7 @@ class LocalDurableNamespace{
       const storage=new JsonDurableStorage(this.name,name,{root:this.root});
       const state={storage};
       const object=new this.Class(state,{});
-      instance={
-        fetch:async(input,init)=>object.fetch(input instanceof Request?input:new Request(input,init))
-      };
+      instance={fetch:async(input,init)=>object.fetch(input instanceof Request?input:new Request(input,init))};
       this.instances.set(hashed,instance);
     }
     return instance;
@@ -97,10 +95,11 @@ export function localDurableStateEnabled(){
 }
 
 export function localDurableStateInfo(){
+  const enabled=localDurableStateEnabled();
   return {
-    enabled:localDurableStateEnabled(),
-    mode:localDurableStateEnabled()?'local-json-durable':'external-adapter-required',
-    root:localDurableStateEnabled()?resolve(process.env.ATLAS_STATE_DIR||DEFAULT_ROOT):null,
+    enabled,
+    mode:enabled?'local-json-durable':'external-adapter-required',
+    customStateDirectory:Boolean(process.env.ATLAS_STATE_DIR),
     namespaces:['CONNECT_STORE','CAPABILITY_STATE_STORE','WALLET_STORE'],
     videoSignaling:'external-websocket-adapter-required'
   };
