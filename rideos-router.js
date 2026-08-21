@@ -2,6 +2,7 @@ import atlasWorker from './atlas-router.js';
 import {handleRideOS} from './modules/rideos-worker.js';
 import {handleCreatorStudio} from './modules/creator-studio-worker.js';
 import {handleStudioProduction} from './modules/studio-production-worker.js';
+import {handleStudioNative} from './modules/studio-native-worker.js';
 import {handleProfessionalDashboard} from './modules/professional-dashboard-worker.js';
 import {handleEnterpriseDashboard} from './modules/enterprise-dashboard-worker.js';
 import {handleGlobalCountry} from './modules/global-country-worker.js';
@@ -95,6 +96,7 @@ export default {
     const professionalDashboard=handleProfessionalDashboard(request,env,ctx);if(professionalDashboard)return applicationResponse(professionalDashboard);
     const enterpriseDashboard=handleEnterpriseDashboard(request,env,ctx);if(enterpriseDashboard)return applicationResponse(enterpriseDashboard);
     if(isStudioPath(url.pathname)){
+      const native=handleStudioNative(request,env,ctx);if(native)return applicationResponse(native);
       const production=handleStudioProduction(request,env,ctx);if(production)return applicationResponse(production);
       const response=handleCreatorStudio(request,env,ctx);if(response)return surfacePlatformLinks(response);
     }
