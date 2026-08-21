@@ -1,0 +1,29 @@
+name: Validate ATLAS Creator Release Center
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'modules/creator-release-worker.js'
+      - 'scripts/validate-creator-release.mjs'
+      - 'rideos-router.js'
+      - 'package.json'
+      - '.github/workflows/validate-creator-release.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-creator-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check modules/creator-release-worker.js
+      - run: node --check scripts/validate-creator-release.mjs
+      - run: node --check rideos-router.js
+      - run: npm run check:creator-release
+      - run: npx wrangler deploy --dry-run
