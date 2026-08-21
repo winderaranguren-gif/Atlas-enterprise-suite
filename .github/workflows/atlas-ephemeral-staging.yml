@@ -54,9 +54,12 @@ jobs:
       - name: Validate approved image before exposure
         run: |
           set -euo pipefail
-          curl -fsS http://127.0.0.1:8080/browser | grep -q 'ATLAS Browser'
-          curl -fsS http://127.0.0.1:8080/workbench | grep -q 'ATLAS Workbench'
-          curl -fsS 'http://127.0.0.1:8080/api/video/signal?room=staging-preflight' | grep -q 'ATLAS Portable Video Signaling'
+          curl -fsS http://127.0.0.1:8080/browser >/tmp/atlas-browser.html
+          grep -q 'ATLAS Browser' /tmp/atlas-browser.html
+          curl -fsS http://127.0.0.1:8080/workbench >/tmp/atlas-workbench.html
+          grep -q 'ATLAS Workbench' /tmp/atlas-workbench.html
+          curl -fsS 'http://127.0.0.1:8080/api/video/signal?room=staging-preflight' >/tmp/atlas-video.json
+          grep -q 'ATLAS Portable Video Signaling' /tmp/atlas-video.json
           node <<'NODE'
           const ws = new WebSocket('ws://127.0.0.1:8080/api/video/signal?room=staging-preflight&channel=media&peer=github-staging');
           const timer = setTimeout(() => { console.error('WebSocket staging preflight timeout'); process.exit(1); }, 5000);
@@ -104,12 +107,36 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          rm -f /tmp/public-health.json
           for i in {1..30}; do
             if curl -fsS --retry 2 --retry-delay 1 "$ATLAS_STAGING_URL/_atlas/health" >/tmp/public-health.json; then break; fi
             sleep 2
           done
+          test -s /tmp/public-health.json
           node -e "const j=require('/tmp/public-health.json'); if(!j.ok || j.service!=='ATLAS Portable Runtime') process.exit(1)"
-          curl -fsS "$ATLAS_STAGING_URL/browser" | grep -q 'ATLAS Browser'
+          curl -fsS "$ATLAS_STAGING_URL/browser" >/tmp/public-browser.html
+          grep -q 'ATLAS Browser' /tmp/public-browser.html
+          node <<'NODE'
+          const url = new URL(process.env.ATLAS_STAGING_URL);
+          url.protocol = 'wss:';
+          url.pathname = '/api/video/signal';
+          url.search = '?room=public-staging-preflight&channel=media&peer=github-public-staging';
+          const ws = new WebSocket(url);
+          const timer = setTimeout(() => { console.error('Public WebSocket staging timeout'); process.exit(1); }, 8000);
+          ws.addEventListener('message', event => {
+            const m = JSON.parse(String(event.data));
+            if (m.type === 'welcome') {
+              clearTimeout(timer);
+              ws.close();
+              process.exit(0);
+            }
+          });
+          ws.addEventListener('error', event => {
+            clearTimeout(timer);
+            console.error('Public WebSocket staging error', event?.message || 'unknown');
+            process.exit(1);
+          });
+          NODE
 
       - name: Publish live staging URL on commit
         env:
