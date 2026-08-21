@@ -1,0 +1,118 @@
+{
+  "service": "atlas-universal-creator",
+  "runId": "weather-dashboard-current-2026-08-21",
+  "createdAt": "2026-08-21T18:45:00-04:00",
+  "status": "ready_for_release_after_cloudflare_auth",
+  "intake": {
+    "type": "visual-reference-plus-live-data",
+    "visualAsset": "/weather/current.webp",
+    "visualMeaning": "Current user-captured weather scene with double rainbow",
+    "instruction": "Use the current rainbow image as ATLAS Weather Now in the main Dashboard while keeping temperature, humidity, wind, precipitation, AQI and alerts sourced from live weather providers."
+  },
+  "classification": {
+    "type": "website-module-integration",
+    "owner": "Dashboard",
+    "secondaryIntegrations": [
+      "ATLAS Weather",
+      "Enterprise",
+      "Security",
+      "Analytics"
+    ]
+  },
+  "architecture": {
+    "canonicalRepository": "winderaranguren-gif/Atlas-enterprise-suite",
+    "reuseExisting": true,
+    "routes": [
+      "/dashboard",
+      "/weather",
+      "/api/weather",
+      "/weather/current.webp"
+    ],
+    "components": [
+      "Weather Now hero scene",
+      "live current conditions",
+      "hourly forecast",
+      "10-day forecast",
+      "air quality and pollen",
+      "official severe-weather alerts",
+      "location synchronization",
+      "provider readiness states"
+    ]
+  },
+  "data": {
+    "policy": "authorized-sources-only",
+    "currentSceneSource": "user-captured-now",
+    "forecastProvider": "Open-Meteo",
+    "airQualityProvider": "Open-Meteo Air Quality",
+    "alertProvider": "National Weather Service where available",
+    "appleWeatherKit": "not_configured",
+    "weatherCompany": "not_configured",
+    "radar": "not_configured",
+    "fabricatedMetrics": false
+  },
+  "permissions": {
+    "preserveExistingAuth": true,
+    "preserveRBAC": true,
+    "preserveTenantIsolation": true,
+    "exposeSecrets": false
+  },
+  "functions": {
+    "dashboardSync": true,
+    "deviceLocation": true,
+    "savedLocation": true,
+    "citySearch": true,
+    "weatherRefreshSeconds": 300,
+    "currentSceneCacheSeconds": 300
+  },
+  "tests": {
+    "weatherValidation": "passed",
+    "productionDryRun": "passed",
+    "mergeToMain": "completed",
+    "productionDeploy": "blocked",
+    "productionBlocker": "GitHub Actions CLOUDFLARE_API_TOKEN does not authenticate the configured Cloudflare account"
+  },
+  "pipeline": [
+    "INTAKE",
+    "ANALYSIS",
+    "CLASSIFICATION",
+    "ATLAS EXISTING",
+    "ARCHITECTURE",
+    "MODULE",
+    "ROUTE",
+    "NAVIGATION",
+    "COMPONENTS",
+    "DATA",
+    "PERMISSIONS",
+    "FUNCTIONS",
+    "TESTS",
+    "COMMIT",
+    "MERGE",
+    "DEPLOY",
+    "PRODUCTION VERIFIED"
+  ],
+  "pipelineState": {
+    "INTAKE": "complete",
+    "ANALYSIS": "complete",
+    "CLASSIFICATION": "complete",
+    "ATLAS EXISTING": "complete",
+    "ARCHITECTURE": "complete",
+    "MODULE": "complete",
+    "ROUTE": "complete",
+    "NAVIGATION": "complete",
+    "COMPONENTS": "complete",
+    "DATA": "complete",
+    "PERMISSIONS": "complete",
+    "FUNCTIONS": "complete",
+    "TESTS": "complete",
+    "COMMIT": "complete",
+    "MERGE": "complete",
+    "DEPLOY": "blocked_cloudflare_auth",
+    "PRODUCTION VERIFIED": "pending"
+  },
+  "handoff": {
+    "engine": "Creator Release Center",
+    "releaseTarget": "main",
+    "productionDomain": "https://www.atlasenterprisesuite.com",
+    "nextRequiredAction": "Replace or repair the GitHub Actions CLOUDFLARE_API_TOKEN, then rerun canonical production deployment and verify /dashboard, /weather, /api/weather and /weather/current.webp."
+  }
+}
