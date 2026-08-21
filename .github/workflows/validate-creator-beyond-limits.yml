@@ -1,0 +1,36 @@
+name: Validate ATLAS Creator Beyond Limits
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'modules/creator-visual-inspector-worker.js'
+      - 'modules/creator-mission-worker.js'
+      - 'scripts/validate-creator-visual-inspector.mjs'
+      - 'scripts/validate-creator-mission.mjs'
+      - 'rideos-router.js'
+      - 'package.json'
+      - '.github/workflows/validate-creator-beyond-limits.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-creator-beyond-limits:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: node --check modules/creator-visual-inspector-worker.js
+      - run: node --check modules/creator-mission-worker.js
+      - run: node --check scripts/validate-creator-visual-inspector.mjs
+      - run: node --check scripts/validate-creator-mission.mjs
+      - run: node --check rideos-router.js
+      - run: npm run check:creator-visual
+      - run: npm run check:creator-mission
+      - run: npm run check:universal-creator
+      - run: npx wrangler deploy --dry-run
