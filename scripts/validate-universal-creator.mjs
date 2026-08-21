@@ -19,11 +19,18 @@ for(const c of cases){
 const forced=buildUniversalCreatorPlan({prompt:'anything',mode:'module'});
 if(forced.classification.type!=='module'||forced.handoff.route!=='/workbench')throw new Error('Explicit module handoff failed');
 
+const neutral=buildUniversalCreatorPlan({prompt:'Create a responsive dashboard through identity with security navigation and project summaries'});
+if(neutral.classification.type!=='website')throw new Error('Neutral dashboard should classify as website');
+if(neutral.classification.owner!=='Security')throw new Error(`Expected explicit security owner, got ${neutral.classification.owner}`);
+const throughOnly=buildUniversalCreatorPlan({prompt:'Create a responsive dashboard through identity with navigation and project summaries'});
+if(throughOnly.classification.owner!=='Enterprise')throw new Error(`Substring false positive detected: ${throughOnly.classification.owner}`);
+
 if(!UNIVERSAL_CREATOR_PRESETS['main-dashboard'])throw new Error('Main Dashboard preset missing');
 const main=buildUniversalCreatorPlan({preset:'main-dashboard'});
 if(main.error)throw new Error(`Main Dashboard preset failed: ${main.error}`);
 if(main.preset?.id!=='main-dashboard')throw new Error('Main Dashboard preset id missing');
 if(main.classification.type!=='website')throw new Error('Main Dashboard must classify as website');
+if(main.classification.owner!=='Enterprise')throw new Error(`Main Dashboard owner must be Enterprise, got ${main.classification.owner}`);
 if(main.architecture.route!=='/')throw new Error('Main Dashboard canonical route must be /');
 if(main.handoff.route!=='/studio/creator/web')throw new Error('Main Dashboard must hand off to Creator Web Director');
 if(main.handoff.releaseRoute!=='/studio/release/main-dashboard')throw new Error('Main Dashboard release handoff missing');
