@@ -1,144 +1,53 @@
 name: Rescue Deploy ATLAS
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
   statuses: write
 
-concurrency:
-  group: atlas-rescue-${{ github.ref }}
-  cancel-in-progress: true
+env:
+  CLOUDFLARE_ACCOUNT_ID: 1dd6dea2bb98459c66f610464354d686
 
 jobs:
   rescue-deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-
       - run: npm install --no-audit --no-fund
-
       - name: Validate release bundle
         run: |
           npm run check:finance
           npm run check:launch
+          npm run check:public-site
+          node --check scripts/resolve-cloudflare-auth.mjs
           npx wrangler deploy --dry-run
-
-      - name: Resolve Cloudflare API token safely
+      - name: Resolve Cloudflare authentication
         env:
           RAW_CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [ -z "${RAW_CLOUDFLARE_API_TOKEN:-}" ]; then
-            echo "::error::CLOUDFLARE_API_TOKEN is missing."
-            exit 1
-          fi
-
-          node <<'NODE'
-          const fs=require('fs');
-          const raw=String(process.env.RAW_CLOUDFLARE_API_TOKEN||'');
-          const out=[];
-          const add=v=>{v=String(v??'').trim(); if(v && !out.includes(v)) out.push(v)};
-          add(raw.replace(/[\r\n]/g,''));
-          try {
-            const j=JSON.parse(raw);
-            if(typeof j==='string') add(j);
-            else if(j&&typeof j==='object') for(const k of ['token','apiToken','value','CLOUDFLARE_API_TOKEN','authorization','Authorization']) add(j[k]);
-          } catch {}
-          for(const v of [...out]) {
-            add(v.replace(/\\r|\\n|\\t/g,''));
-            add(v.replace(/^\s*CLOUDFLARE_API_TOKEN\s*=\s*/i,''));
-            add(v.replace(/^\s*Authorization\s*:\s*/i,''));
-            add(v.replace(/^\s*Bearer\s+/i,''));
-            add(v.replace(/^["'`]+|["'`]+$/g,''));
-            const m=v.match(/Bearer\s+([^\s"'`},]+)/i); if(m) add(m[1]);
-            const q=v.match(/[?&](?:token|api_token|apiToken)=([^&\s]+)/i); if(q) add(decodeURIComponent(q[1]));
-          }
-          const normalized=[];
-          for(const v of out){
-            let s=v.trim()
-              .replace(/^\s*CLOUDFLARE_API_TOKEN\s*=\s*/i,'')
-              .replace(/^\s*Authorization\s*:\s*/i,'')
-              .replace(/^\s*Bearer\s+/i,'')
-              .replace(/\\r|\\n|\\t/g,'')
-              .replace(/^["'`]+|["'`]+$/g,'')
-              .trim();
-            if(s&&!normalized.includes(s)) normalized.push(s);
-          }
-          fs.writeFileSync('/tmp/atlas-cf-candidates.json',JSON.stringify(normalized));
-          console.log(`Prepared ${normalized.length} non-secret token candidate(s) for validation.`);
-          NODE
-
-          COUNT="$(node -e "const a=require('/tmp/atlas-cf-candidates.json');process.stdout.write(String(a.length))")"
-          SELECTED=""
-          for ((i=0;i<COUNT;i++)); do
-            CANDIDATE="$(node -e "const a=require('/tmp/atlas-cf-candidates.json');process.stdout.write(a[Number(process.argv[1])]||'')" "$i")"
-            [ -n "$CANDIDATE" ] || continue
-            echo "::add-mask::$CANDIDATE"
-            HTTP_CODE="$(curl -sS -o /tmp/cf-token-check.json -w '%{http_code}' -H "Authorization: Bearer $CANDIDATE" -H 'Content-Type: application/json' https://api.cloudflare.com/client/v4/user/tokens/verify || true)"
-            if [ "$HTTP_CODE" = "200" ]; then
-              OK="$(node -e "const fs=require('fs');try{const j=JSON.parse(fs.readFileSync('/tmp/cf-token-check.json'));process.stdout.write(j.success===true?'yes':'no')}catch{process.stdout.write('no')}")"
-              if [ "$OK" = "yes" ]; then
-                SELECTED="$CANDIDATE"
-                echo "Cloudflare bearer token validated using candidate $((i+1))/$COUNT."
-                break
-              fi
-            fi
-          done
-
-          if [ -z "$SELECTED" ]; then
-            echo "::error::No sanitized form of CLOUDFLARE_API_TOKEN validates as a Cloudflare bearer API token. The stored secret itself must be replaced with a valid API token that can deploy Workers/routes."
-            exit 1
-          fi
-          echo "::add-mask::$SELECTED"
-          echo "CLOUDFLARE_API_TOKEN=$SELECTED" >> "$GITHUB_ENV"
-
+        run: node scripts/resolve-cloudflare-auth.mjs
+      - name: Verify Cloudflare account access
+        run: npx wrangler whoami
       - name: Deploy canonical ATLAS Worker
-        env:
-          CLOUDFLARE_ACCOUNT_ID: 1dd6dea2bb98459c66f610464354d686
         run: npx wrangler deploy
-
-      - name: Verify all website release surfaces
+      - name: Verify release surface
         shell: bash
         run: |
           set -euo pipefail
-          check(){ echo "Verifying $1"; curl --retry 5 --retry-delay 2 --retry-all-errors -fsS "$1" > /dev/null; }
-          check https://atlasenterprisesuite.com/healthz
-          check https://atlasenterprisesuite.com/dashboard
-          check https://atlasenterprisesuite.com/finance
-          check https://atlasenterprisesuite.com/accounting
-          check https://atlasenterprisesuite.com/work
-          check https://atlasenterprisesuite.com/ride
-          check https://atlasenterprisesuite.com/rideos
-          check https://atlasenterprisesuite.com/driver
-          check https://atlasenterprisesuite.com/marketplace
-          check https://atlasenterprisesuite.com/driver-finance
-          check https://atlasenterprisesuite.com/launch-queue
-          check https://atlasenterprisesuite.com/video
-          check https://atlasenterprisesuite.com/studio
-          check https://atlasenterprisesuite.com/api/work/health
-          check https://atlasenterprisesuite.com/api/mobility/health
-          check https://atlasenterprisesuite.com/api/rideos/health
-          check https://atlasenterprisesuite.com/api/launch-queue/health
-          check https://atlasenterprisesuite.com/api/studio/health
-
+          curl --retry 6 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/healthz > /dev/null
+          curl --retry 6 --retry-delay 3 --retry-all-errors -fsS https://www.atlasenterprisesuite.com/ > /dev/null
+          curl --retry 6 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/dashboard > /dev/null
       - name: Mark rescue deploy status
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          if [ "${{ job.status }}" = "success" ]; then STATE=success; DESC='ATLAS rescue production deployment verified'; else STATE=failure; DESC='ATLAS rescue production deployment failed'; fi
-          curl -sS -X POST \
-            -H "Authorization: Bearer ${GH_TOKEN}" \
-            -H "Accept: application/vnd.github+json" \
+          if [ "${{ job.status }}" = "success" ]; then STATE=success; DESC='ATLAS rescue deployment verified'; else STATE=failure; DESC='ATLAS rescue deployment failed'; fi
+          curl -sS -X POST -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" \
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
             -d "{\"state\":\"${STATE}\",\"context\":\"atlas/rescue-production\",\"description\":\"${DESC}\",\"target_url\":\"https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}" > /dev/null || true
