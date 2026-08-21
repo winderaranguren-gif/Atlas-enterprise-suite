@@ -2,9 +2,11 @@ import { readFile, stat } from 'node:fs/promises';
 import { extname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import atlasApplication from '../rideos-router.js';
+import { createLocalDurableBindings, localDurableStateEnabled, localDurableStateInfo } from './local-durable.mjs';
 
 const ROOT=resolve(fileURLToPath(new URL('..',import.meta.url)));
 const PUBLIC=resolve(ROOT,'public');
+const DURABLE_BINDINGS=new Map();
 const MIME=new Map([
   ['.html','text/html; charset=utf-8'],['.htm','text/html; charset=utf-8'],['.js','text/javascript; charset=utf-8'],['.mjs','text/javascript; charset=utf-8'],
   ['.css','text/css; charset=utf-8'],['.json','application/json; charset=utf-8'],['.svg','image/svg+xml'],['.png','image/png'],['.jpg','image/jpeg'],
@@ -13,7 +15,13 @@ const MIME=new Map([
 ]);
 
 function contentType(path){return MIME.get(extname(path).toLowerCase())||'application/octet-stream';}
-function runtimeJson(extra={}){return Response.json({ok:true,service:'ATLAS Portable Runtime',runtime:'node-web-standard',version:1,provider:process.env.ATLAS_RUNTIME_PROVIDER||'portable',durableObjects:'provider-adapter-required',assets:'local-public-directory',...extra},{headers:{'cache-control':'no-store'}});}
+function stateBindings(){
+  if(!localDurableStateEnabled())return {};
+  const key=process.env.ATLAS_STATE_DIR||'__atlas_default_state__';
+  if(!DURABLE_BINDINGS.has(key))DURABLE_BINDINGS.set(key,createLocalDurableBindings({root:process.env.ATLAS_STATE_DIR}));
+  return DURABLE_BINDINGS.get(key);
+}
+function runtimeJson(extra={}){return Response.json({ok:true,service:'ATLAS Portable Runtime',runtime:'node-web-standard',version:2,provider:process.env.ATLAS_RUNTIME_PROVIDER||'portable',state:localDurableStateInfo(),assets:'local-public-directory',...extra},{headers:{'cache-control':'no-store'}});}
 function requestOrigin(req,explicit){
   if(explicit)return explicit.replace(/\/$/,'');
   const proto=String(req.headers?.['x-forwarded-proto']||'http').split(',')[0].trim()||'http';
@@ -35,10 +43,7 @@ function copyHeaders(input){
   }
   return headers;
 }
-function normalizePath(value){
-  const raw=String(value||'/');
-  return raw.startsWith('/')?raw:`/${raw}`;
-}
+function normalizePath(value){const raw=String(value||'/');return raw.startsWith('/')?raw:`/${raw}`;}
 export async function nodeRequestToWeb(req,{origin,urlPath}={}){
   const base=requestOrigin(req,origin);
   const target=new URL(normalizePath(urlPath||req.url||'/'),`${base}/`);
@@ -65,7 +70,7 @@ async function localAssetFetch(request){
 }
 
 export function createPortableEnv(overrides={}){
-  return {...process.env,ASSETS:{fetch:localAssetFetch},ATLAS_RUNTIME_PROVIDER:process.env.ATLAS_RUNTIME_PROVIDER||'portable',...overrides};
+  return {...process.env,ASSETS:{fetch:localAssetFetch},...stateBindings(),ATLAS_RUNTIME_PROVIDER:process.env.ATLAS_RUNTIME_PROVIDER||'portable',...overrides};
 }
 export function createExecutionContext(){
   const pending=[];

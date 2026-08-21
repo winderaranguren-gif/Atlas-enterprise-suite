@@ -8,7 +8,7 @@ const required=[
   'package.json','worker.js','atlas-router.js','rideos-router.js',
   'atlas/control-plane.mjs','atlas/guardian.mjs','atlas/vault.mjs','atlas/store.mjs','atlas/forge.mjs',
   'atlas/workbench.mjs','atlas/model-engine.mjs','atlas/connectors.mjs','modules/workbench-worker.js',
-  'atlas/portable-runtime.mjs','atlas/server.mjs','api/index.mjs','vercel.json','Dockerfile','scripts/validate-portable-runtime.mjs'
+  'atlas/portable-runtime.mjs','atlas/local-durable.mjs','atlas/server.mjs','api/index.mjs','vercel.json','Dockerfile','scripts/validate-portable-runtime.mjs'
 ];
 for(const f of required){const ok=await exists(f);checks.push({name:`exists:${f}`,ok});}
 const syntax=required.filter((f)=>/\.(?:m?js)$/.test(f));

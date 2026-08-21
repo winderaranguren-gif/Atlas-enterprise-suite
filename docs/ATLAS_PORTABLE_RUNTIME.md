@@ -15,22 +15,40 @@ ATLAS is no longer required to execute only as a Cloudflare Worker. The portable
 - `/_atlas/health`
 - `/_atlas/runtime`
 
-Responses identify the portable runtime and do not expose credentials.
+Responses identify the runtime and storage mode without exposing credentials or filesystem paths.
 
-## State boundary
+## ATLAS-owned durable state
 
-The portable adapter supplies local public assets directly from `public/`. Cloudflare Durable Objects are not silently emulated. Routes that require `VIDEO_ROOMS`, `CONNECT_STORE`, `CAPABILITY_STATE_STORE`, or `WALLET_STORE` need an explicit persistence adapter on non-Cloudflare hosts. This prevents a fallback deployment from pretending to provide durable semantics that it does not have.
+On a standard Node process or OCI container, the portable runtime now provides an ATLAS-owned Durable Object compatibility layer for:
 
-Stateless surfaces such as ATLAS Browser and ATLAS Workbench run through the portable adapter immediately. Stateful modules can be migrated behind provider-neutral storage contracts separately.
+- `CONNECT_STORE`
+- `CAPABILITY_STATE_STORE`
+- `WALLET_STORE`
+
+The compatibility layer stores JSON documents under an ATLAS state directory, hashes object identifiers before using them as filenames, uses restrictive directory/file permissions, serializes writes per object, and commits changes with temporary-file + rename semantics. The default location is private runtime state under `.atlas`; operators can set `ATLAS_STATE_DIR` to a mounted persistent volume.
+
+This is a **single-node durable adapter**, not a distributed consensus database. Multiple ATLAS replicas must use a future shared database/state adapter instead of mounting the same files concurrently.
+
+On ephemeral serverless runtimes such as Vercel Functions or AWS Lambda, local durable state is disabled by default. It can only be forced with `ATLAS_PORTABLE_STATE=local`, which is appropriate for experiments rather than durable production data. A remote persistence adapter should be used for production serverless deployments.
+
+Set `ATLAS_PORTABLE_STATE=off` to disable the local adapter explicitly.
+
+## Video signaling boundary
+
+`VIDEO_ROOMS` is intentionally not faked. ATLAS Video signaling uses distributed WebSocket semantics that require a WebSocket-capable service or an explicit signaling adapter. A portable Node/WebSocket implementation can be added separately without weakening the durability claims of the other modules.
+
+## Assets
+
+The portable adapter supplies repository public assets directly from `public/`. The application code continues to receive an `ASSETS.fetch(...)` capability, keeping individual modules independent of the hosting provider.
 
 ## Container artifact
 
-`.github/workflows/portable-runtime.yml` validates the Web adapter, builds the OCI image, boots it, exercises health/Browser/Workbench, and on pushes to `main` publishes:
+`.github/workflows/portable-runtime.yml` validates the Web adapter, durable-state round trips, ATLAS build graph, OCI build and a live container smoke test. On pushes to `main` it is designed to publish:
 
 - `ghcr.io/winderaranguren-gif/atlas-enterprise-suite:latest`
 - `ghcr.io/winderaranguren-gif/atlas-enterprise-suite:<commit-sha>`
 
-The image contains no repository secrets. Runtime credentials must be injected by the host at execution time.
+The image contains no repository secrets. Runtime credentials must be injected by the host at execution time. For durable portable state, mount a persistent volume and point `ATLAS_STATE_DIR` at it.
 
 ## Local execution
 
@@ -44,11 +62,11 @@ Or:
 
 ```bash
 docker build -t atlas-enterprise-suite .
-docker run --rm -p 8080:8080 atlas-enterprise-suite
+docker run --rm -p 8080:8080 -v atlas-state:/var/lib/atlas -e ATLAS_STATE_DIR=/var/lib/atlas atlas-enterprise-suite
 ```
 
 Then verify `http://127.0.0.1:8080/_atlas/health`.
 
 ## Engineering rule
 
-Cloud providers are deployment adapters, not the ATLAS architecture. New modules should prefer Web-standard APIs and receive state/capabilities through `env` so the same business logic can run on Worker, Node, container, or serverless targets.
+Cloud providers are deployment adapters, not the ATLAS architecture. New modules should prefer Web-standard APIs and receive state/capabilities through `env` so the same business logic can run on Worker, Node, container or serverless targets. Provider-specific durable services must be represented by explicit adapters rather than leaked into business modules.
