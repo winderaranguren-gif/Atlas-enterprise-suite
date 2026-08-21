@@ -15,6 +15,7 @@ on:
       - 'scripts/validate-studio-autopilot.mjs'
       - 'scripts/validate-media-qc.mjs'
       - 'scripts/validate-media-foundations.mjs'
+      - 'scripts/validate-voice-lipsync-resolution.mjs'
       - 'scripts/validate-universal-creator.mjs'
       - 'public/**'
       - 'package.json'
@@ -51,6 +52,7 @@ jobs:
       - run: npm run check:studio-autopilot
       - run: npm run check:media-qc
       - run: npm run check:media-foundations
+      - run: npm run check:voice-lipsync-resolution
       - run: node atlas/native-media-engine.mjs verify
       - run: node --check scripts/resolve-cloudflare-auth.mjs
       - run: npx wrangler deploy --dry-run
@@ -109,6 +111,9 @@ jobs:
           check https://atlasenterprisesuite.com/studio/look
           check https://atlasenterprisesuite.com/studio/subject
           check https://atlasenterprisesuite.com/studio/speech
+          check https://atlasenterprisesuite.com/studio/voice
+          check https://atlasenterprisesuite.com/studio/lipsync
+          check https://atlasenterprisesuite.com/studio/resolution
           check https://atlasenterprisesuite.com/studio/qc
           check https://atlasenterprisesuite.com/studio/production
           check https://atlasenterprisesuite.com/api/studio/creator/universal/capabilities
@@ -119,6 +124,9 @@ jobs:
           check https://atlasenterprisesuite.com/api/studio/look/capabilities
           check https://atlasenterprisesuite.com/api/studio/subject/capabilities
           check https://atlasenterprisesuite.com/api/studio/speech/capabilities
+          check https://atlasenterprisesuite.com/api/studio/voice/capabilities
+          check https://atlasenterprisesuite.com/api/studio/lipsync/capabilities
+          check https://atlasenterprisesuite.com/api/studio/resolution/capabilities
           check https://atlasenterprisesuite.com/api/studio/qc/health
           check https://atlasenterprisesuite.com/api/studio/qc/capabilities
           check https://atlasenterprisesuite.com/api/work/health
@@ -206,6 +214,36 @@ jobs:
           console.log('ATLAS Look, Subject and Speech foundations verified.');
           NODE
 
+      - name: Verify ATLAS voice lip sync resolution independence
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --retry 6 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/api/studio/voice/capabilities -o /tmp/voice.json
+          curl --retry 6 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/api/studio/lipsync/capabilities -o /tmp/lipsync.json
+          curl --retry 6 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/api/studio/resolution/capabilities -o /tmp/resolution.json
+          node - <<'NODE'
+          const fs=require('fs');
+          const services=[
+            ['voice',JSON.parse(fs.readFileSync('/tmp/voice.json','utf8')),'atlas-voice-engine',['decode','metering','noise-gate','filters','eq','compressor','normalization','offline-render','wav-export']],
+            ['lipsync',JSON.parse(fs.readFileSync('/tmp/lipsync.json','utf8')),'atlas-lipsync-engine',['speech-map-handoff','script-tokenization','orthography-viseme','segment-alignment','coalescing','timeline-export']],
+            ['resolution',JSON.parse(fs.readFileSync('/tmp/resolution.json','utf8')),'atlas-resolution-engine',['image-ingest','video-frame','multipass-resample','unsharp-mask','edge-metric','png-export','recipe']]
+          ];
+          for(const [name,j,service,required] of services){
+            if(j.service!==service) throw new Error(`${name} service mismatch`);
+            if(!Array.isArray(j.externalProviders)||j.externalProviders.length!==0) throw new Error(`${name} external provider detected`);
+            if(j.externalProviderRequired!==false||j.mediaLeavesDeviceByDefault!==false||j.localProcessing!==true) throw new Error(`${name} local-first policy mismatch`);
+            const ready=(j.capabilities||[]).filter(x=>x.state==='ready').map(x=>x.id);
+            for(const id of required) if(!ready.includes(id)) throw new Error(`Missing ${name} capability: ${id}`);
+          }
+          if(services[0][1].policy?.voiceIdentitySynthesisRequiresConsent!==true) throw new Error('Voice consent policy missing');
+          if(services[1][1].policy?.approximateTimingIsNotPhonemeRecognition!==true) throw new Error('Lip Sync honesty policy missing');
+          if(services[2][1].policy?.deterministicResampleIsNotNeuralDetailRecovery!==true) throw new Error('Resolution honesty policy missing');
+          for(const id of ['voice-synthesis-model','voice-clone-model']) if(services[0][1].capabilities.find(x=>x.id===id)?.state!=='model-not-trained') throw new Error(`${id} falsely ready`);
+          for(const id of ['neural-phoneme-model','facial-animation-model']) if(services[1][1].capabilities.find(x=>x.id===id)?.state!=='model-not-trained') throw new Error(`${id} falsely ready`);
+          for(const id of ['neural-super-resolution','temporal-detail-recovery']) if(services[2][1].capabilities.find(x=>x.id===id)?.state!=='model-not-trained') throw new Error(`${id} falsely ready`);
+          console.log('ATLAS Voice, Lip Sync and Resolution foundations verified.');
+          NODE
+
       - name: Verify ATLAS Media QC independence
         shell: bash
         run: |
@@ -270,7 +308,7 @@ jobs:
         run: |
           curl -fsS -X POST -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" \
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
-            -d "{\"state\":\"success\",\"context\":\"atlas/production\",\"description\":\"ATLAS Creator, media foundations, QC and Native Studio verified\",\"target_url\":\"https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}" > /dev/null
+            -d "{\"state\":\"success\",\"context\":\"atlas/production\",\"description\":\"ATLAS Creator and first-party media stack verified\",\"target_url\":\"https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}" > /dev/null
 
       - name: Mark production failure
         if: failure()
