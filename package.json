@@ -1,8 +1,9 @@
 {
   "name": "atlas-enterprise-suite",
-  "version": "1.14.0-portable-runtime",
+  "version": "1.16.0-portable-video",
   "private": true,
   "type": "module",
+  "dependencies": { "ws": "8.18.3" },
   "devDependencies": { "wrangler": "4.118.0" },
   "scripts": {
     "atlas:install": "node atlas/install-node.mjs",
@@ -41,6 +42,7 @@
     "check:browser": "node scripts/validate-browser.mjs",
     "check:workbench": "node scripts/validate-workbench.mjs",
     "check:portable-runtime": "node scripts/validate-portable-runtime.mjs",
+    "check:portable-video": "node scripts/validate-portable-video.mjs",
     "check:studio-production": "node scripts/validate-studio-production.mjs",
     "check:native-studio": "node scripts/validate-native-studio.mjs",
     "check:sovereign-tools": "node scripts/validate-sovereign-tools.mjs",
