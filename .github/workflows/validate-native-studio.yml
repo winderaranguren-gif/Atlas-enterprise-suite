@@ -1,0 +1,31 @@
+name: Validate ATLAS Native Studio
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'modules/studio-native-worker.js'
+      - 'atlas/native-media-engine.mjs'
+      - 'scripts/validate-native-studio.mjs'
+      - 'rideos-router.js'
+      - 'package.json'
+      - '.github/workflows/validate-native-studio.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-native-studio:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check modules/studio-native-worker.js
+      - run: node --check atlas/native-media-engine.mjs
+      - run: node --check rideos-router.js
+      - run: node scripts/validate-native-studio.mjs
+      - run: node atlas/native-media-engine.mjs verify
+      - run: npx wrangler deploy --dry-run
