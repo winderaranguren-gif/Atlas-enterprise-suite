@@ -28,6 +28,7 @@
     "check:launch": "node scripts/validate-launch-queue.mjs",
     "check:global": "node scripts/validate-global.mjs",
     "check:connect": "node scripts/validate-connect.mjs",
+    "check:browser": "node scripts/validate-browser.mjs",
     "deploy:provider": "wrangler deploy"
   }
 }
