@@ -1,0 +1,29 @@
+name: Validate ATLAS Creator Director
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'modules/creator-director-worker.js'
+      - 'scripts/validate-creator-director.mjs'
+      - 'rideos-router.js'
+      - 'package.json'
+      - '.github/workflows/validate-creator-director.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-creator-director:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check modules/creator-director-worker.js
+      - run: node --check scripts/validate-creator-director.mjs
+      - run: node --check rideos-router.js
+      - run: node scripts/validate-creator-director.mjs
+      - run: npx wrangler deploy --dry-run
