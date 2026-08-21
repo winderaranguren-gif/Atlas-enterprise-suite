@@ -14,6 +14,7 @@ on:
       - 'scripts/validate-native-studio.mjs'
       - 'scripts/validate-studio-autopilot.mjs'
       - 'scripts/validate-media-qc.mjs'
+      - 'scripts/validate-media-foundations.mjs'
       - 'scripts/validate-universal-creator.mjs'
       - 'public/**'
       - 'package.json'
@@ -49,6 +50,7 @@ jobs:
       - run: npm run check:native-studio
       - run: npm run check:studio-autopilot
       - run: npm run check:media-qc
+      - run: npm run check:media-foundations
       - run: node atlas/native-media-engine.mjs verify
       - run: node --check scripts/resolve-cloudflare-auth.mjs
       - run: npx wrangler deploy --dry-run
@@ -104,6 +106,9 @@ jobs:
           check https://atlasenterprisesuite.com/studio/create-anything
           check https://atlasenterprisesuite.com/studio/creator/web
           check https://atlasenterprisesuite.com/studio/autopilot
+          check https://atlasenterprisesuite.com/studio/look
+          check https://atlasenterprisesuite.com/studio/subject
+          check https://atlasenterprisesuite.com/studio/speech
           check https://atlasenterprisesuite.com/studio/qc
           check https://atlasenterprisesuite.com/studio/production
           check https://atlasenterprisesuite.com/api/studio/creator/universal/capabilities
@@ -111,6 +116,9 @@ jobs:
           check https://atlasenterprisesuite.com/api/studio/creator/web/capabilities
           check https://atlasenterprisesuite.com/api/studio/autopilot/health
           check https://atlasenterprisesuite.com/api/studio/autopilot/capabilities
+          check https://atlasenterprisesuite.com/api/studio/look/capabilities
+          check https://atlasenterprisesuite.com/api/studio/subject/capabilities
+          check https://atlasenterprisesuite.com/api/studio/speech/capabilities
           check https://atlasenterprisesuite.com/api/studio/qc/health
           check https://atlasenterprisesuite.com/api/studio/qc/capabilities
           check https://atlasenterprisesuite.com/api/work/health
@@ -169,6 +177,33 @@ jobs:
           const ready=(j.capabilities||[]).filter(x=>x.state==='ready').map(x=>x.id);
           for(const id of ['recipe-handoff','audio-energy','motion-energy','variant-selection','hook-cta','script-captions','audio-cleanup','batch-render']) if(!ready.includes(id)) throw new Error(`Missing Autopilot capability: ${id}`);
           console.log('ATLAS Studio Autopilot production contract verified.');
+          NODE
+
+      - name: Verify ATLAS media foundations independence
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --retry 6 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/api/studio/look/capabilities -o /tmp/look.json
+          curl --retry 6 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/api/studio/subject/capabilities -o /tmp/subject.json
+          curl --retry 6 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/api/studio/speech/capabilities -o /tmp/speech.json
+          node - <<'NODE'
+          const fs=require('fs');
+          const services=[
+            ['look',JSON.parse(fs.readFileSync('/tmp/look.json','utf8')),'atlas-look-engine',['histogram','auto-exposure','gray-world','tone-curve','color','vignette','presets','identity-safe']],
+            ['subject',JSON.parse(fs.readFileSync('/tmp/subject.json','utf8')),'atlas-subject-engine',['motion-centroid','subject-lock','crop-keyframes','portrait-reframe','safe-margins']],
+            ['speech',JSON.parse(fs.readFileSync('/tmp/speech.json','utf8')),'atlas-speech-engine',['decode','vad','silence-map','rms','script-timing','srt-export']]
+          ];
+          for(const [name,j,service,required] of services){
+            if(j.service!==service) throw new Error(`${name} service mismatch`);
+            if(!Array.isArray(j.externalProviders)||j.externalProviders.length!==0) throw new Error(`${name} external provider detected`);
+            if(j.externalProviderRequired!==false||j.mediaLeavesDeviceByDefault!==false||j.localProcessing!==true) throw new Error(`${name} local-first policy mismatch`);
+            const ready=(j.capabilities||[]).filter(x=>x.state==='ready').map(x=>x.id);
+            for(const id of required) if(!ready.includes(id)) throw new Error(`Missing ${name} capability: ${id}`);
+          }
+          const restyle=services[0][1].capabilities.find(x=>x.id==='neural-restyle');
+          const stt=services[2][1].capabilities.find(x=>x.id==='transcription');
+          if(restyle?.state!=='model-not-trained'||stt?.state!=='model-not-trained') throw new Error('Untrained neural capability falsely marked ready');
+          console.log('ATLAS Look, Subject and Speech foundations verified.');
           NODE
 
       - name: Verify ATLAS Media QC independence
@@ -235,7 +270,7 @@ jobs:
         run: |
           curl -fsS -X POST -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" \
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
-            -d "{\"state\":\"success\",\"context\":\"atlas/production\",\"description\":\"ATLAS Universal Creator, Creator Web, Autopilot, Media QC and Native Studio verified\",\"target_url\":\"https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}" > /dev/null
+            -d "{\"state\":\"success\",\"context\":\"atlas/production\",\"description\":\"ATLAS Creator, media foundations, QC and Native Studio verified\",\"target_url\":\"https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}" > /dev/null
 
       - name: Mark production failure
         if: failure()
