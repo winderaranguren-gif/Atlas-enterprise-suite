@@ -1,6 +1,6 @@
 {
   "name": "atlas-enterprise-suite",
-  "version": "1.11.0-capability-state",
+  "version": "1.12.0-public-web",
   "private": true,
   "type": "module",
   "devDependencies": { "wrangler": "4.118.0" },
@@ -44,6 +44,7 @@
     "check:capability-state": "node scripts/validate-capability-state-mainline.mjs",
     "check:wallet": "node scripts/validate-wallet.mjs",
     "check:wallet-readiness": "node scripts/wallet-release-readiness.mjs",
+    "check:public-site": "node scripts/validate-public-site.mjs",
     "deploy:provider": "wrangler deploy"
   }
 }
