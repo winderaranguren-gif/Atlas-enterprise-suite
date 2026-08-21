@@ -1,0 +1,46 @@
+name: Verify ATLAS Creator Beyond Limits Production
+
+on:
+  workflow_run:
+    workflows: ['Deploy ATLAS Production']
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify Creator visual and mission surfaces
+        shell: bash
+        run: |
+          set -euo pipefail
+          check(){ echo "Verifying $1"; curl --retry 6 --retry-delay 3 --retry-all-errors -fsS "$1" > /dev/null; }
+          check https://atlasenterprisesuite.com/studio/creator/visual
+          check https://atlasenterprisesuite.com/studio/mission
+          check https://atlasenterprisesuite.com/api/studio/creator/visual/health
+          check https://atlasenterprisesuite.com/api/studio/creator/visual/capabilities
+          check https://atlasenterprisesuite.com/api/studio/mission/health
+          check https://atlasenterprisesuite.com/api/studio/mission/capabilities
+          check https://atlasenterprisesuite.com/api/studio/mission/status
+      - name: Verify capability contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsS https://atlasenterprisesuite.com/api/studio/creator/visual/capabilities -o /tmp/visual.json
+          curl -fsS https://atlasenterprisesuite.com/api/studio/mission/capabilities -o /tmp/mission.json
+          node - <<'NODE'
+          const fs=require('fs');
+          const v=JSON.parse(fs.readFileSync('/tmp/visual.json','utf8'));
+          const m=JSON.parse(fs.readFileSync('/tmp/mission.json','utf8'));
+          if(v.service!=='atlas-visual-inspector'||v.localOnly!==true) throw new Error('Visual Inspector production contract mismatch');
+          if(!Array.isArray(v.externalProviders)||v.externalProviders.length) throw new Error('Visual Inspector provider boundary mismatch');
+          if((v.capabilities||[]).find(x=>x.id==='semantic-vision')?.state!=='explicitly-unavailable') throw new Error('Visual semantic boundary mismatch');
+          if(m.service!=='atlas-creator-mission') throw new Error('Mission service mismatch');
+          if(!Array.isArray(m.externalProviders)||m.externalProviders.length) throw new Error('Mission provider boundary mismatch');
+          if((m.capabilities||[]).find(x=>x.id==='background-autonomy')?.state!=='not-claimed') throw new Error('Mission background autonomy boundary mismatch');
+          console.log('ATLAS Creator Beyond Limits production contracts verified.');
+          NODE
