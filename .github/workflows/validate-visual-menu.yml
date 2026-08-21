@@ -1,0 +1,40 @@
+name: Validate ATLAS Visual Menu
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-visual-menu:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - name: Verify visual launcher, API and artwork asset
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import {dispatchAtlasRequest} from './atlas/portable-runtime.mjs';
+          const menu=await dispatchAtlasRequest(new Request('http://atlas.local/menu'));
+          if(!menu.ok) throw new Error(`menu returned ${menu.status}`);
+          const html=await menu.text();
+          for(const token of ['Visual Command Menu','/assets/atlas-menu-board.jpg','href="/health"','href="/erp"','href="/education"','href="/global"']){
+            if(!html.includes(token)) throw new Error(`menu missing ${token}`);
+          }
+          const api=await dispatchAtlasRequest(new Request('http://atlas.local/api/menu/modules'));
+          const data=await api.json();
+          if(!data.ok||!Array.isArray(data.modules)||data.modules.length<12) throw new Error('menu API did not expose live destinations');
+          const image=await dispatchAtlasRequest(new Request('http://atlas.local/assets/atlas-menu-board.jpg'));
+          if(!image.ok) throw new Error(`artwork returned ${image.status}`);
+          if(!(image.headers.get('content-type')||'').includes('image/jpeg')) throw new Error('artwork MIME type is not JPEG');
+          if((await image.arrayBuffer()).byteLength<10000) throw new Error('artwork asset is unexpectedly small');
+          console.log('ATLAS visual menu validation passed');
+          NODE
