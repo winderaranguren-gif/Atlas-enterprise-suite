@@ -12,6 +12,7 @@ import {handleWorkbench} from './modules/workbench-worker.js';
 import {CapabilityStateStore,handleCapabilityState} from './modules/capability-state-worker.js';
 import {WalletStore,handleWallet} from './modules/wallet-worker.js';
 import {handleWalletIdentityGate} from './modules/wallet-identity-gate.js';
+import {handleWalletRequestSecurity} from './modules/wallet-request-security.js';
 import {handlePublicSite} from './modules/public-site-worker.js';
 export {VideoRoom} from './atlas-router.js';
 export {ConnectStore,CapabilityStateStore,WalletStore};
@@ -74,6 +75,8 @@ export default {
     if(isWalletPath(url.pathname)){
       const gate=await handleWalletIdentityGate(request,env,ctx);
       if(gate)return gate;
+      const security=await handleWalletRequestSecurity(request,env,ctx);
+      if(security)return security;
       const wallet=await handleWallet(request,env,ctx);
       if(wallet)return applicationResponse(wallet);
     }
