@@ -24,25 +24,48 @@ jobs:
         with:
           node-version: '22'
       - run: npm install --no-audit --no-fund
-      - name: Validate portable ATLAS request adapter
+      - name: Validate portable ATLAS request and durable-state adapter
         run: npm run check:portable-runtime
+      - name: Validate portable ATLAS WebSocket signaling
+        run: npm run check:portable-video
       - name: Validate ATLAS build graph
         run: npm run atlas:build
       - name: Build portable container
         run: docker build -t atlas-enterprise-suite:portable-test .
-      - name: Smoke-test portable container
+      - name: Smoke-test portable container, WebSocket upgrade and durable restart
         shell: bash
         run: |
           set -euo pipefail
-          docker run -d --rm --name atlas-portable-test -p 18080:8080 atlas-enterprise-suite:portable-test
-          trap 'docker stop atlas-portable-test >/dev/null 2>&1 || true' EXIT
-          for i in {1..30}; do
-            if curl -fsS http://127.0.0.1:18080/_atlas/health > /tmp/atlas-portable-health.json; then break; fi
-            sleep 1
-          done
-          node -e "const j=require('/tmp/atlas-portable-health.json');if(!j.ok||j.service!=='ATLAS Portable Runtime')process.exit(1)"
+          docker volume create atlas-portable-test-state >/dev/null
+          cleanup(){ docker stop atlas-portable-test >/dev/null 2>&1 || true; docker volume rm atlas-portable-test-state >/dev/null 2>&1 || true; }
+          trap cleanup EXIT
+          start_container(){
+            docker run -d --rm --name atlas-portable-test -p 18080:8080 -v atlas-portable-test-state:/var/lib/atlas atlas-enterprise-suite:portable-test >/dev/null
+            for i in {1..30}; do
+              if curl -fsS http://127.0.0.1:18080/_atlas/health > /tmp/atlas-portable-health.json; then return 0; fi
+              sleep 1
+            done
+            return 1
+          }
+          start_container
+          node -e "const j=require('/tmp/atlas-portable-health.json');if(!j.ok||j.service!=='ATLAS Portable Runtime'||j.state?.videoSignaling!=='portable-node-websocket')process.exit(1)"
           curl -fsS http://127.0.0.1:18080/browser | grep -q 'ATLAS Browser'
           curl -fsS http://127.0.0.1:18080/workbench | grep -q 'ATLAS Workbench'
+          curl -fsS 'http://127.0.0.1:18080/api/video/signal?room=container-smoke' | grep -q 'ATLAS Portable Video Signaling'
+          curl -fsS -X POST -H 'content-type: application/json' -d '{"name":"Portable Container Durable Contact","company":"ATLAS"}' http://127.0.0.1:18080/api/connect/contacts > /tmp/atlas-contact.json
+          node -e "const j=require('/tmp/atlas-contact.json');if(!j.ok||!j.item?.id)process.exit(1)"
+          node <<'NODE'
+          const {WebSocket}=require('ws');
+          const ws=new WebSocket('ws://127.0.0.1:18080/api/video/signal?room=container-smoke&channel=media&peer=ci-peer');
+          const timer=setTimeout(()=>{console.error('WebSocket smoke timeout');process.exit(1)},3000);
+          ws.on('message',raw=>{const m=JSON.parse(String(raw));if(m.type==='welcome'){clearTimeout(timer);ws.close();process.exit(0)}});
+          ws.on('error',error=>{clearTimeout(timer);console.error(error);process.exit(1)});
+          NODE
+          docker stop atlas-portable-test >/dev/null
+          for i in {1..20}; do if ! docker ps -a --format '{{.Names}}' | grep -qx atlas-portable-test; then break; fi; sleep .25; done
+          start_container
+          curl -fsS http://127.0.0.1:18080/api/connect/snapshot > /tmp/atlas-snapshot.json
+          node -e "const j=require('/tmp/atlas-snapshot.json');if(!j.contacts?.some(x=>x.name==='Portable Container Durable Contact'))process.exit(1)"
 
   publish-image:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
