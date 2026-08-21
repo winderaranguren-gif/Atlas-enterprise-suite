@@ -1,0 +1,27 @@
+name: Validate ATLAS Sovereign Tools
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-sovereign-tools:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - name: Validate provider, OAuth and sandbox contracts
+        run: npm run check:sovereign-tools
+      - name: Validate ATLAS build graph
+        run: npm run atlas:build
+      - name: Validate Worker bundle
+        run: npx wrangler deploy --dry-run
