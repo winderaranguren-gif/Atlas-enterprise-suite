@@ -39,6 +39,7 @@
     "check:studio-production": "node scripts/validate-studio-production.mjs",
     "check:sovereign-tools": "node scripts/validate-sovereign-tools.mjs",
     "check:wallet": "node scripts/validate-wallet.mjs",
+    "check:wallet-readiness": "node scripts/wallet-release-readiness.mjs",
     "deploy:provider": "wrangler deploy"
   }
 }
