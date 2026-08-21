@@ -4,6 +4,7 @@ import {handleCreatorStudio} from './modules/creator-studio-worker.js';
 import {handleProfessionalDashboard} from './modules/professional-dashboard-worker.js';
 import {handleEnterpriseDashboard} from './modules/enterprise-dashboard-worker.js';
 import {handleGlobalCountry} from './modules/global-country-worker.js';
+import {handleVenezuela} from './modules/venezuela-worker.js';
 import {ConnectStore,handleConnect} from './modules/connect-worker.js';
 export {VideoRoom} from './atlas-router.js';
 export {ConnectStore};
@@ -38,6 +39,8 @@ async function surfaceStudio(response){
 export default {
   async fetch(request,env,ctx){
     const url=new URL(request.url);
+    const venezuela=handleVenezuela(request,env,ctx);
+    if(venezuela)return venezuela;
     if(url.pathname==='/global'||url.pathname.startsWith('/global/')||url.pathname.startsWith('/api/global/')){
       const globalResponse=handleGlobalCountry(request,env,ctx);
       if(globalResponse)return globalResponse;
