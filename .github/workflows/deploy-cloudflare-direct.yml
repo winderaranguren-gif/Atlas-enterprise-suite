@@ -1,0 +1,140 @@
+name: Deploy ATLAS Direct with Wrangler
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/deploy-cloudflare-direct.yml'
+      - 'rideos-router.js'
+      - 'worker.js'
+      - 'wrangler.jsonc'
+      - 'modules/**'
+      - 'public/**'
+      - 'package.json'
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  statuses: write
+
+concurrency:
+  group: atlas-wrangler-direct-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CLOUDFLARE_ACCOUNT_ID: 1dd6dea2bb98459c66f610464354d686
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm run check:finance
+      - run: npm run check:launch
+      - run: npm run check:public-site
+      - run: npx wrangler deploy --dry-run
+
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: validate
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+
+      - name: Validate secret presence without transforming it
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${CLOUDFLARE_API_TOKEN:-}" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN is missing."
+            exit 1
+          fi
+          echo "Cloudflare secret is present; Wrangler will authenticate it directly."
+
+      - name: Deploy canonical ATLAS Worker with Wrangler
+        run: npx wrangler deploy
+
+      - name: Verify application health
+        shell: bash
+        run: |
+          set -euo pipefail
+          check(){ echo "Verifying $1"; curl --retry 6 --retry-delay 3 --retry-all-errors -fsS "$1" > /dev/null; }
+          check https://atlasenterprisesuite.com/healthz
+          check https://atlasenterprisesuite.com/dashboard
+          check https://atlasenterprisesuite.com/finance
+          check https://atlasenterprisesuite.com/accounting
+          check https://atlasenterprisesuite.com/work
+          check https://atlasenterprisesuite.com/ride
+          check https://atlasenterprisesuite.com/rideos
+          check https://atlasenterprisesuite.com/driver
+          check https://atlasenterprisesuite.com/marketplace
+          check https://atlasenterprisesuite.com/driver-finance
+          check https://atlasenterprisesuite.com/launch-queue
+          check https://atlasenterprisesuite.com/video
+          check https://atlasenterprisesuite.com/studio
+          check https://atlasenterprisesuite.com/api/work/health
+          check https://atlasenterprisesuite.com/api/mobility/health
+          check https://atlasenterprisesuite.com/api/rideos/health
+          check https://atlasenterprisesuite.com/api/launch-queue/health
+          check https://atlasenterprisesuite.com/api/studio/health
+          check https://atlasenterprisesuite.com/api/finance/health
+
+      - name: Verify TURN production readiness
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --retry 6 --retry-delay 3 --retry-all-errors -fsS "https://atlasenterprisesuite.com/api/video/ice?room=deploycheck" -o /tmp/atlas-ice.json
+          node -e "const j=require('/tmp/atlas-ice.json');if(!j.ok||!Array.isArray(j.iceServers)||!j.iceServers.some(s=>(Array.isArray(s.urls)?s.urls:[s.urls]).some(u=>/^turns?:/.test(String(u))))){console.error(j);process.exit(1)};console.log('ATLAS TURN production verification passed.')"
+
+      - name: Verify public website boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --retry 6 --retry-delay 3 --retry-all-errors -fsS https://www.atlasenterprisesuite.com/ -o /tmp/atlas-home.html
+          grep -Fq 'Run the work.' /tmp/atlas-home.html
+          grep -Fq 'Public website outside. Enterprise workspace inside.' /tmp/atlas-home.html
+          curl --retry 6 --retry-delay 3 --retry-all-errors -fsS https://www.atlasenterprisesuite.com/product | grep -Fq 'The ATLAS enterprise'
+          curl --retry 6 --retry-delay 3 --retry-all-errors -fsS https://www.atlasenterprisesuite.com/trust | grep -Fq 'Security claims must be verifiable.'
+          curl --retry 6 --retry-delay 3 --retry-all-errors -fsS https://www.atlasenterprisesuite.com/status | grep -Fq 'Unified public health feed: not configured'
+          APP_STATUS="$(curl -sS -o /dev/null -w '%{http_code}' https://www.atlasenterprisesuite.com/app)"
+          APP_LOCATION="$(curl -sSI https://www.atlasenterprisesuite.com/app | tr -d '\r' | awk 'BEGIN{IGNORECASE=1} /^location:/{print $2; exit}')"
+          [ "$APP_STATUS" = '307' ]
+          [ "$APP_LOCATION" = '/dashboard' ]
+          DASH_HEADERS="$(curl -sSI https://www.atlasenterprisesuite.com/dashboard | tr -d '\r')"
+          printf '%s' "$DASH_HEADERS" | grep -Eqi '^x-robots-tag: noindex, nofollow, noarchive$'
+
+      - name: Mark ATLAS production success
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -d "{\"state\":\"success\",\"context\":\"atlas/production\",\"description\":\"ATLAS production + TURN + public website verified\",\"target_url\":\"https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}" > /dev/null
+
+      - name: Mark ATLAS production failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          curl -sS -X POST \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -d "{\"state\":\"failure\",\"context\":\"atlas/production\",\"description\":\"Direct Wrangler production deployment failed\",\"target_url\":\"https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}" > /dev/null || true
