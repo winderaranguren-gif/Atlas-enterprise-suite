@@ -1,0 +1,32 @@
+name: Verify ATLAS Field Observation Production
+
+on:
+  workflow_run:
+    workflows: ['Deploy ATLAS Production']
+    types: [completed]
+
+jobs:
+  verify-field-observation-production:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify field observation routes
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --retry 6 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/studio/field -o /tmp/field.html
+          curl --retry 6 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/api/studio/field/health -o /tmp/field-health.json
+          curl --retry 6 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/api/studio/field/capabilities -o /tmp/field-caps.json
+          grep -Fq 'FIELD OBSERVATION' /tmp/field.html
+          node - <<'NODE'
+          const fs=require('fs');
+          const h=JSON.parse(fs.readFileSync('/tmp/field-health.json','utf8'));
+          const c=JSON.parse(fs.readFileSync('/tmp/field-caps.json','utf8'));
+          if(!h.ok||h.service!=='atlas-field-observation') throw new Error('Field Observation health mismatch');
+          if(c.service!=='atlas-field-observation') throw new Error('Field Observation capability mismatch');
+          const ready=(c.capabilities||[]).filter(x=>x.state==='ready').map(x=>x.id);
+          for(const id of ['field-intake','visual-contract','evidence-boundary','parks-routing','opportunity-map','universal-handoff','mission-handoff']) if(!ready.includes(id)) throw new Error(`Missing field capability: ${id}`);
+          const recognition=(c.capabilities||[]).find(x=>x.id==='automatic-object-recognition');
+          if(recognition?.state!=='not-claimed') throw new Error('Recognition boundary not preserved');
+          console.log('ATLAS Field Observation production contract verified.');
+          NODE
