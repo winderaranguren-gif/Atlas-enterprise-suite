@@ -1,0 +1,38 @@
+name: Validate ATLAS Public Website
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'modules/public-site-worker.js'
+      - 'rideos-router.js'
+      - 'scripts/validate-public-site.mjs'
+      - 'package.json'
+      - '.github/workflows/validate-public-site.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'modules/public-site-worker.js'
+      - 'rideos-router.js'
+      - 'scripts/validate-public-site.mjs'
+      - 'package.json'
+      - '.github/workflows/validate-public-site.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  public-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax check public site
+        run: |
+          node --check modules/public-site-worker.js
+          node --check rideos-router.js
+          node --check scripts/validate-public-site.mjs
+      - name: Validate architecture, SEO, trust and state claims
+        run: npm run check:public-site
