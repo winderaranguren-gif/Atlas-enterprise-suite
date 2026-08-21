@@ -9,8 +9,9 @@ import {handleVenezuela} from './modules/venezuela-worker.js';
 import {ConnectStore,handleConnect} from './modules/connect-worker.js';
 import {handleBrowser} from './modules/browser-worker.js';
 import {handleWorkbench} from './modules/workbench-worker.js';
+import {WalletStore,handleWallet} from './modules/wallet-worker.js';
 export {VideoRoom} from './atlas-router.js';
-export {ConnectStore};
+export {ConnectStore,WalletStore};
 
 function isRideOSPath(path){
   return path==='/rideos'||path.startsWith('/rideos/')||
@@ -33,11 +34,16 @@ function isWorkbenchPath(path){
   return path==='/workbench'||path.startsWith('/workbench/')||path==='/forge'||path==='/developer'||path.startsWith('/api/workbench/');
 }
 
+function isWalletPath(path){
+  return path==='/wallet'||path.startsWith('/wallet/')||path.startsWith('/api/wallet/');
+}
+
 async function surfacePlatformLinks(response){
   const type=response.headers.get('content-type')||'';
   if(!type.includes('text/html'))return response;
   let html=await response.text();
   const links=[];
+  if(!html.includes('href="/wallet"'))links.push('<a class="nav" href="/wallet"><span class="ico">▱</span>ATLAS Wallet</a>');
   if(!html.includes('href="/workbench"'))links.push('<a class="nav" href="/workbench"><span class="ico">⌘</span>ATLAS Workbench</a>');
   if(!html.includes('href="/browser"'))links.push('<a class="nav" href="/browser"><span class="ico">◉</span>ATLAS Browser</a>');
   if(!html.includes('href="/studio"'))links.push('<a class="nav" href="/studio"><span class="ico">✦</span>ATLAS Studio</a>');
@@ -45,7 +51,7 @@ async function surfacePlatformLinks(response){
   if(links.length){
     const injected=links.join('');
     if(html.includes('</aside>'))html=html.replace('</aside>',injected+'</aside>');
-    else if(html.includes('</body>'))html=html.replace('</body>',`<div style="position:fixed;right:14px;bottom:14px;z-index:999;display:flex;gap:7px;flex-wrap:wrap"><a href="/workbench" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">ATLAS Workbench</a><a href="/browser" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">ATLAS Browser</a><a href="/studio" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">ATLAS Studio</a><a href="/studio/production" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">Production</a></div></body>`);
+    else if(html.includes('</body>'))html=html.replace('</body>',`<div style="position:fixed;right:14px;bottom:14px;z-index:999;display:flex;gap:7px;flex-wrap:wrap"><a href="/wallet" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">ATLAS Wallet</a><a href="/workbench" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">ATLAS Workbench</a><a href="/browser" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">ATLAS Browser</a><a href="/studio" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">ATLAS Studio</a><a href="/studio/production" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">Production</a></div></body>`);
   }
   const headers=new Headers(response.headers);
   headers.delete('content-length');
@@ -55,6 +61,10 @@ async function surfacePlatformLinks(response){
 export default {
   async fetch(request,env,ctx){
     const url=new URL(request.url);
+    if(isWalletPath(url.pathname)){
+      const wallet=await handleWallet(request,env,ctx);
+      if(wallet)return wallet;
+    }
     if(isWorkbenchPath(url.pathname)){
       const workbench=handleWorkbench(request,env,ctx);
       if(workbench)return workbench;
