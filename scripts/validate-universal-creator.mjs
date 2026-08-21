@@ -1,0 +1,23 @@
+import {buildUniversalCreatorPlan} from '../modules/creator-universal-worker.js';
+
+const cases=[
+  {prompt:'Create the ATLAS Venezuela website with accounting, POS and payments',want:'website',owner:'Accounting'},
+  {prompt:'Build a mobile app for drivers and ride operations',want:'app',owner:'Ride'},
+  {prompt:'Create a launch video for ATLAS Venezuela',want:'video'},
+  {prompt:'Prepare the production release for /ve',want:'release'}
+];
+for(const c of cases){
+  const plan=buildUniversalCreatorPlan({prompt:c.prompt});
+  if(plan.error)throw new Error(`Unexpected error: ${plan.error}`);
+  if(plan.classification.type!==c.want)throw new Error(`Expected ${c.want}, got ${plan.classification.type}`);
+  if(c.owner&&plan.classification.owner!==c.owner)throw new Error(`Expected owner ${c.owner}, got ${plan.classification.owner}`);
+  if(plan.data.fabricatedMetrics!==false)throw new Error('Fabricated metrics policy failed');
+  if(!plan.permissions.authentication||!plan.permissions.rbac||!plan.permissions.tenantIsolation)throw new Error('Permission contract incomplete');
+  if(plan.quality.passed<7)throw new Error('Universal Creator quality gates below threshold');
+  if(!plan.pipeline.includes('PRODUCTION VERIFIED'))throw new Error('Production verification gate missing');
+}
+const forced=buildUniversalCreatorPlan({prompt:'anything',mode:'module'});
+if(forced.classification.type!=='module'||forced.handoff.route!=='/workbench')throw new Error('Explicit module handoff failed');
+const empty=buildUniversalCreatorPlan({prompt:''});
+if(!empty.error)throw new Error('Empty brief must fail');
+console.log('ATLAS Universal Creator validation passed.');

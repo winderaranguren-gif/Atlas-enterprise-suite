@@ -50,6 +50,7 @@
     "check:creator-director": "node scripts/validate-creator-director.mjs",
     "check:creator-release": "node scripts/validate-creator-release.mjs",
     "check:creator-web": "node scripts/validate-creator-web-director.mjs",
+    "check:universal-creator": "node scripts/validate-universal-creator.mjs",
     "check:sovereign-tools": "node scripts/validate-sovereign-tools.mjs",
     "check:git-deploy": "node scripts/validate-git-deploy-tools.mjs",
     "check:capability-state": "node scripts/validate-capability-state-mainline.mjs",
