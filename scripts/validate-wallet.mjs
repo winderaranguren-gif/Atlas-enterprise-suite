@@ -11,7 +11,8 @@ for(const required of [
   '/api/wallet/snapshot','/api/wallet/payment-methods','/api/wallet/checkout/square',
   '/api/wallet/checkout/paypal/order','/capture','raw_card_data_prohibited_use_provider_tokenization',
   'Apple Pay Compatibility','Show History','Allow Notifications','Latest Transactions','Buy with ATLAS Pay',
-  'private-device-possession-v1'
+  'private-device-http-only-cookie-v1','HttpOnly; Secure; SameSite=Lax','sanitizeSnapshot','sanitizeMethod',
+  'cross_origin_write_rejected','verifyBuyer','customerInitiated:true','sellerKeyedIn:false'
 ]){
   if(!wallet.includes(required))throw new Error(`wallet-worker missing ${required}`);
 }
@@ -35,7 +36,8 @@ if(!pkg.includes('check:wallet'))throw new Error('package.json missing check:wal
 for(const forbidden of [
   /SQUARE_ACCESS_TOKEN\s*[:=]\s*['"][^'"]+/,
   /PAYPAL_CLIENT_SECRET\s*[:=]\s*['"][^'"]+/,
-  /<input[^>]+(?:card.?number|cvv|cvc|security.?code)/i
+  /<input[^>]+(?:card.?number|cvv|cvc|security.?code)/i,
+  /localStorage\.(?:getItem|setItem)\(['"]atlas\.wallet\.owner/
 ]){
   if(forbidden.test(wallet))throw new Error(`wallet contains forbidden credential/card collection pattern: ${forbidden}`);
 }
