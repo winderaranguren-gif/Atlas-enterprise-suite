@@ -23,6 +23,12 @@ function rejectUpgrade(socket,status,message){
   try{socket.write(`HTTP/1.1 ${status} ${body}\r\nConnection: close\r\nContent-Type: text/plain; charset=utf-8\r\nContent-Length: ${Buffer.byteLength(body)}\r\n\r\n${body}`);}catch{}
   try{socket.destroy();}catch{}
 }
+function allowedOrigin(request){
+  const origin=request.headers.origin;
+  if(!origin)return true;
+  const expected=String(request.headers['x-forwarded-host']||request.headers.host||'').split(',')[0].trim().toLowerCase();
+  try{return Boolean(expected)&&new URL(origin).host.toLowerCase()===expected;}catch{return false;}
+}
 
 export function createVideoSignalServer({server,path='/api/video/signal',maxPeers=DEFAULT_MAX_PEERS,maxMessageBytes=DEFAULT_MAX_MESSAGE_BYTES}={}){
   if(!server)throw new Error('server is required');
@@ -72,6 +78,7 @@ export function createVideoSignalServer({server,path='/api/video/signal',maxPeer
   const onUpgrade=(request,socket,head)=>{
     let url;try{url=new URL(request.url||'/',`http://${request.headers.host||'localhost'}`);}catch{rejected++;return rejectUpgrade(socket,400,'Bad Request');}
     if(url.pathname!==path)return;
+    if(!allowedOrigin(request)){rejected++;return rejectUpgrade(socket,403,'Origin Rejected');}
     const room=cleanRoom(url.searchParams.get('room'));
     if(!room){rejected++;return rejectUpgrade(socket,400,'Room Required');}
     const peer=cleanPeer(url.searchParams.get('peer'));
@@ -83,7 +90,7 @@ export function createVideoSignalServer({server,path='/api/video/signal',maxPeer
 
   function handleHttpRequest(req,res){
     let url;try{url=new URL(req.url||'/',`http://${req.headers.host||'localhost'}`);}catch{return false;}
-    if(url.pathname!==path)return false;
+    if(url.pathname!==path||!['GET','HEAD'].includes(req.method||'GET'))return false;
     const room=cleanRoom(url.searchParams.get('room'));
     const roomPeers=room?(rooms.get(room)?.size||0):[...rooms.values()].reduce((n,set)=>n+set.size,0);
     json(res,200,{ok:true,service:'ATLAS Portable Video Signaling',transport:'websocket',scope:'single-node',room:room||null,peers:roomPeers,rooms:rooms.size,accepted,rejected,maxPeers,maxMessageBytes});
