@@ -101,6 +101,6 @@ export function localDurableStateInfo(){
     mode:enabled?'local-json-durable':'external-adapter-required',
     customStateDirectory:Boolean(process.env.ATLAS_STATE_DIR),
     namespaces:['CONNECT_STORE','CAPABILITY_STATE_STORE','WALLET_STORE'],
-    videoSignaling:'external-websocket-adapter-required'
+    videoSignaling:process.env.ATLAS_VIDEO_SIGNALING||'external-websocket-adapter-required'
   };
 }
