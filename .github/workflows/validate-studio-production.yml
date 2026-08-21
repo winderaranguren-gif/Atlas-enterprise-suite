@@ -1,0 +1,31 @@
+name: Validate ATLAS Studio Production
+
+on:
+  pull_request:
+    paths:
+      - 'modules/studio-production-worker.js'
+      - 'rideos-router.js'
+      - 'scripts/validate-studio-production.mjs'
+      - 'package.json'
+      - '.github/workflows/validate-studio-production.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-studio-production:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax check Studio Production module
+        run: node --check modules/studio-production-worker.js
+      - name: Syntax check shared router
+        run: node --check rideos-router.js
+      - name: Run Studio Production contract validation
+        run: node scripts/validate-studio-production.mjs

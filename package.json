@@ -33,6 +33,7 @@
     "check:connect": "node scripts/validate-connect.mjs",
     "check:browser": "node scripts/validate-browser.mjs",
     "check:workbench": "node scripts/validate-workbench.mjs",
+    "check:studio-production": "node scripts/validate-studio-production.mjs",
     "deploy:provider": "wrangler deploy"
   }
 }
