@@ -1,0 +1,39 @@
+name: Validate ATLAS Neural Foundry
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'atlas/neural-foundry.mjs'
+      - 'modules/studio-model-lab-worker.js'
+      - 'scripts/validate-neural-foundry.mjs'
+      - 'rideos-router.js'
+      - 'package.json'
+      - '.github/workflows/validate-neural-foundry.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'atlas/neural-foundry.mjs'
+      - 'modules/studio-model-lab-worker.js'
+      - 'scripts/validate-neural-foundry.mjs'
+      - 'rideos-router.js'
+      - 'package.json'
+      - '.github/workflows/validate-neural-foundry.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate-neural-foundry:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: node --check atlas/neural-foundry.mjs
+      - run: node --check modules/studio-model-lab-worker.js
+      - run: node --check scripts/validate-neural-foundry.mjs
+      - run: node --check rideos-router.js
+      - run: npm run check:neural-foundry
+      - run: npx wrangler deploy --dry-run
