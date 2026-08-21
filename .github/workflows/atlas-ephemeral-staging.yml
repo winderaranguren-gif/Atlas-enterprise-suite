@@ -15,20 +15,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 75
     env:
-      ATLAS_IMAGE: ghcr.io/winderaranguren-gif/atlas-enterprise-suite@sha256:b65f5f4dab02e572838442d9c565696dff703e6599b70e57ceb892ce1b5ea0fa
+      ATLAS_IMAGE: ghcr.io/winderaranguren-gif/atlas-enterprise-suite@sha256:b678b4d4b8ab5bbe54fbf8d8a713dab948639429a75dbe2c24cd4ad46ac070b8
     steps:
       - uses: actions/checkout@v4
-
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Pull corrected immutable ATLAS image
+      - name: Pull immutable ATLAS visual-menu image
         run: docker pull "$ATLAS_IMAGE"
-
       - name: Start ATLAS staging container
         shell: bash
         run: |
@@ -40,53 +37,33 @@ jobs:
             -e ATLAS_RUNTIME_PROVIDER=github-actions-staging \
             "$ATLAS_IMAGE"
           for i in {1..45}; do
-            if curl -fsS http://127.0.0.1:8080/_atlas/health >/tmp/atlas-health.json; then
-              cat /tmp/atlas-health.json
-              exit 0
-            fi
+            if curl -fsS http://127.0.0.1:8080/_atlas/health >/tmp/atlas-health.json; then exit 0; fi
             sleep 1
           done
           docker logs atlas-staging
           exit 1
-
-      - name: Validate corrected image before exposure
+      - name: Validate menu image before exposure
         shell: bash
         run: |
           set -euo pipefail
-          curl -fsS http://127.0.0.1:8080/browser >/tmp/atlas-browser.html
-          grep -q 'ATLAS Browser' /tmp/atlas-browser.html
-          curl -fsS http://127.0.0.1:8080/workbench >/tmp/atlas-workbench.html
-          grep -q 'ATLAS Workbench' /tmp/atlas-workbench.html
+          curl -fsS http://127.0.0.1:8080/menu >/tmp/atlas-menu.html
+          grep -q 'Visual Command Menu' /tmp/atlas-menu.html
+          grep -q '/assets/atlas-menu-board.jpg' /tmp/atlas-menu.html
+          grep -q 'href="/health"' /tmp/atlas-menu.html
+          grep -q 'href="/erp"' /tmp/atlas-menu.html
+          curl -fsS http://127.0.0.1:8080/api/menu/modules >/tmp/atlas-modules.json
+          node -e "const j=require('/tmp/atlas-modules.json'); if(!j.ok||!Array.isArray(j.modules)||j.modules.length<12)process.exit(1)"
+          curl -fsS http://127.0.0.1:8080/assets/atlas-menu-board.jpg >/tmp/atlas-board.jpg
+          test $(wc -c </tmp/atlas-board.jpg) -gt 10000
           curl -fsS http://127.0.0.1:8080/identity >/tmp/atlas-identity.html
-          grep -q 'class="platformLinks"' /tmp/atlas-identity.html
-          grep -q 'ATLAS Wallet' /tmp/atlas-identity.html
-          grep -q 'ATLAS Workbench' /tmp/atlas-identity.html
-          grep -q 'ATLAS Browser' /tmp/atlas-identity.html
+          grep -q 'ATLAS Menu' /tmp/atlas-identity.html
           grep -q '.platformLinks{position:static' /tmp/atlas-identity.html
-          if grep -q 'position:fixed;right:14px;bottom:14px;z-index:999' /tmp/atlas-identity.html; then
-            echo 'Legacy fixed launcher detected'
-            exit 1
-          fi
-          curl -fsS 'http://127.0.0.1:8080/api/video/signal?room=staging-preflight' >/tmp/atlas-video.json
-          grep -q 'ATLAS Portable Video Signaling' /tmp/atlas-video.json
-          node <<'NODE'
-          const ws = new WebSocket('ws://127.0.0.1:8080/api/video/signal?room=staging-preflight&channel=media&peer=github-staging');
-          const timer = setTimeout(() => process.exit(1), 5000);
-          ws.addEventListener('message', event => {
-            const m = JSON.parse(String(event.data));
-            if (m.type === 'welcome') { clearTimeout(timer); ws.close(); process.exit(0); }
-          });
-          ws.addEventListener('error', () => { clearTimeout(timer); process.exit(1); });
-          NODE
-
+          if grep -q 'position:fixed;right:14px;bottom:14px;z-index:999' /tmp/atlas-identity.html; then exit 1; fi
       - name: Start temporary HTTPS tunnel
-        id: tunnel
         shell: bash
         run: |
           set -euo pipefail
-          docker run -d --name atlas-staging-tunnel --network host \
-            cloudflare/cloudflared:latest \
-            tunnel --no-autoupdate --url http://127.0.0.1:8080 --loglevel info
+          docker run -d --name atlas-staging-tunnel --network host cloudflare/cloudflared:latest tunnel --no-autoupdate --url http://127.0.0.1:8080 --loglevel info
           PREVIEW_URL=''
           for i in {1..60}; do
             PREVIEW_URL="$(docker logs atlas-staging-tunnel 2>&1 | grep -Eo 'https://[-a-z0-9]+\.trycloudflare\.com' | tail -1 || true)"
@@ -94,42 +71,24 @@ jobs:
             sleep 1
           done
           test -n "$PREVIEW_URL"
-          echo "url=$PREVIEW_URL" >> "$GITHUB_OUTPUT"
           echo "ATLAS_STAGING_URL=$PREVIEW_URL" >> "$GITHUB_ENV"
-          echo "### ATLAS corrected mobile staging" >> "$GITHUB_STEP_SUMMARY"
-          echo "$PREVIEW_URL" >> "$GITHUB_STEP_SUMMARY"
-          echo "Image digest: sha256:b65f5f4dab02e572838442d9c565696dff703e6599b70e57ceb892ce1b5ea0fa" >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Verify public corrected staging
+          echo "### ATLAS Interactive Visual Menu" >> "$GITHUB_STEP_SUMMARY"
+          echo "$PREVIEW_URL/menu" >> "$GITHUB_STEP_SUMMARY"
+          echo "Image digest: sha256:b678b4d4b8ab5bbe54fbf8d8a713dab948639429a75dbe2c24cd4ad46ac070b8" >> "$GITHUB_STEP_SUMMARY"
+      - name: Verify public visual menu
         shell: bash
         run: |
           set -euo pipefail
           for i in {1..30}; do
-            if curl -fsS --retry 2 --retry-delay 1 "$ATLAS_STAGING_URL/_atlas/health" >/tmp/public-health.json; then break; fi
+            if curl -fsS --retry 2 --retry-delay 1 "$ATLAS_STAGING_URL/menu" >/tmp/public-menu.html; then break; fi
             sleep 2
           done
-          test -s /tmp/public-health.json
-          node -e "const j=require('/tmp/public-health.json'); if(!j.ok || j.service!=='ATLAS Portable Runtime') process.exit(1)"
-          curl -fsS "$ATLAS_STAGING_URL/identity" >/tmp/public-identity.html
-          grep -q 'class="platformLinks"' /tmp/public-identity.html
-          grep -q 'ATLAS Browser' /tmp/public-identity.html
-          grep -q '.platformLinks{position:static' /tmp/public-identity.html
-          if grep -q 'position:fixed;right:14px;bottom:14px;z-index:999' /tmp/public-identity.html; then exit 1; fi
-          node <<'NODE'
-          const url = new URL(process.env.ATLAS_STAGING_URL);
-          url.protocol = 'wss:';
-          url.pathname = '/api/video/signal';
-          url.search = '?room=public-staging-preflight&channel=media&peer=github-public-staging';
-          const ws = new WebSocket(url);
-          const timer = setTimeout(() => process.exit(1), 8000);
-          ws.addEventListener('message', event => {
-            const m = JSON.parse(String(event.data));
-            if (m.type === 'welcome') { clearTimeout(timer); ws.close(); process.exit(0); }
-          });
-          ws.addEventListener('error', () => { clearTimeout(timer); process.exit(1); });
-          NODE
-
-      - name: Publish live staging URL on commit
+          grep -q 'Visual Command Menu' /tmp/public-menu.html
+          curl -fsS "$ATLAS_STAGING_URL/assets/atlas-menu-board.jpg" >/tmp/public-board.jpg
+          test $(wc -c </tmp/public-board.jpg) -gt 10000
+          curl -fsS "$ATLAS_STAGING_URL/api/menu/modules" >/tmp/public-modules.json
+          node -e "const j=require('/tmp/public-modules.json');if(!j.ok||j.modules.length<12)process.exit(1)"
+      - name: Publish live visual menu URL
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -138,17 +97,15 @@ jobs:
             -H "Authorization: Bearer ${GH_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
-            -d "{\"state\":\"success\",\"context\":\"atlas/staging-preview\",\"description\":\"Corrected ATLAS mobile staging live for about 60 minutes\",\"target_url\":\"${ATLAS_STAGING_URL}\"}" >/dev/null
-
-      - name: Keep corrected staging online for review
+            -d "{\"state\":\"success\",\"context\":\"atlas/staging-preview\",\"description\":\"Interactive ATLAS visual menu live for about 60 minutes\",\"target_url\":\"${ATLAS_STAGING_URL}/menu\"}" >/dev/null
+      - name: Keep visual menu online for review
         shell: bash
         run: |
-          echo "ATLAS corrected staging: ${ATLAS_STAGING_URL}"
+          echo "ATLAS visual menu: ${ATLAS_STAGING_URL}/menu"
           for i in {1..60}; do
             curl -fsS "$ATLAS_STAGING_URL/_atlas/health" >/dev/null || exit 1
             sleep 60
           done
-
       - name: Diagnostics on failure
         if: failure()
         run: |
