@@ -10,8 +10,9 @@ import {ConnectStore,handleConnect} from './modules/connect-worker.js';
 import {handleBrowser} from './modules/browser-worker.js';
 import {handleWorkbench} from './modules/workbench-worker.js';
 import {CapabilityStateStore,handleCapabilityState} from './modules/capability-state-worker.js';
+import {WalletStore,handleWallet} from './modules/wallet-worker.js';
 export {VideoRoom} from './atlas-router.js';
-export {ConnectStore,CapabilityStateStore};
+export {ConnectStore,CapabilityStateStore,WalletStore};
 
 function isRideOSPath(path){
   return path==='/rideos'||path.startsWith('/rideos/')||
@@ -21,24 +22,17 @@ function isRideOSPath(path){
     path==='/driver-finance'||path.startsWith('/driver-finance/')||
     path.startsWith('/api/rideos/')||path.startsWith('/api/mobility/');
 }
-
-function isStudioPath(path){
-  return path==='/studio'||path.startsWith('/studio/')||path.startsWith('/api/studio/');
-}
-
-function isBrowserPath(path){
-  return path==='/browser'||path.startsWith('/browser/')||path.startsWith('/api/browser/');
-}
-
-function isWorkbenchPath(path){
-  return path==='/workbench'||path.startsWith('/workbench/')||path==='/forge'||path==='/developer'||path.startsWith('/api/workbench/');
-}
+function isStudioPath(path){return path==='/studio'||path.startsWith('/studio/')||path.startsWith('/api/studio/');}
+function isBrowserPath(path){return path==='/browser'||path.startsWith('/browser/')||path.startsWith('/api/browser/');}
+function isWorkbenchPath(path){return path==='/workbench'||path.startsWith('/workbench/')||path==='/forge'||path==='/developer'||path.startsWith('/api/workbench/');}
+function isWalletPath(path){return path==='/wallet'||path.startsWith('/wallet/')||path.startsWith('/api/wallet/');}
 
 async function surfacePlatformLinks(response){
   const type=response.headers.get('content-type')||'';
   if(!type.includes('text/html'))return response;
   let html=await response.text();
   const links=[];
+  if(!html.includes('href="/wallet"'))links.push('<a class="nav" href="/wallet"><span class="ico">▱</span>ATLAS Wallet</a>');
   if(!html.includes('href="/workbench"'))links.push('<a class="nav" href="/workbench"><span class="ico">⌘</span>ATLAS Workbench</a>');
   if(!html.includes('href="/browser"'))links.push('<a class="nav" href="/browser"><span class="ico">◉</span>ATLAS Browser</a>');
   if(!html.includes('href="/studio"'))links.push('<a class="nav" href="/studio"><span class="ico">✦</span>ATLAS Studio</a>');
@@ -46,10 +40,9 @@ async function surfacePlatformLinks(response){
   if(links.length){
     const injected=links.join('');
     if(html.includes('</aside>'))html=html.replace('</aside>',injected+'</aside>');
-    else if(html.includes('</body>'))html=html.replace('</body>',`<div style="position:fixed;right:14px;bottom:14px;z-index:999;display:flex;gap:7px;flex-wrap:wrap"><a href="/workbench" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">ATLAS Workbench</a><a href="/browser" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">ATLAS Browser</a><a href="/studio" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">ATLAS Studio</a><a href="/studio/production" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">Production</a></div></body>`);
+    else if(html.includes('</body>'))html=html.replace('</body>',`<div style="position:fixed;right:14px;bottom:14px;z-index:999;display:flex;gap:7px;flex-wrap:wrap"><a href="/wallet" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">ATLAS Wallet</a><a href="/workbench" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">ATLAS Workbench</a><a href="/browser" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">ATLAS Browser</a><a href="/studio" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">ATLAS Studio</a><a href="/studio/production" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">Production</a></div></body>`);
   }
-  const headers=new Headers(response.headers);
-  headers.delete('content-length');
+  const headers=new Headers(response.headers);headers.delete('content-length');
   return new Response(html,{status:response.status,statusText:response.statusText,headers});
 }
 
@@ -60,6 +53,10 @@ export default {
       const capabilityState=await handleCapabilityState(request,env,ctx);
       if(capabilityState)return capabilityState;
     }
+    if(isWalletPath(url.pathname)){
+      const wallet=await handleWallet(request,env,ctx);
+      if(wallet)return wallet;
+    }
     if(isWorkbenchPath(url.pathname)){
       const workbench=handleWorkbench(request,env,ctx);
       if(workbench)return workbench;
@@ -68,29 +65,21 @@ export default {
       const browser=handleBrowser(request,env,ctx);
       if(browser)return browser;
     }
-    const venezuela=handleVenezuela(request,env,ctx);
-    if(venezuela)return venezuela;
+    const venezuela=handleVenezuela(request,env,ctx);if(venezuela)return venezuela;
     if(url.pathname==='/global'||url.pathname.startsWith('/global/')||url.pathname.startsWith('/api/global/')){
-      const globalResponse=handleGlobalCountry(request,env,ctx);
-      if(globalResponse)return globalResponse;
+      const globalResponse=handleGlobalCountry(request,env,ctx);if(globalResponse)return globalResponse;
     }
     if(url.pathname==='/connect'||url.pathname.startsWith('/connect/')||url.pathname.startsWith('/api/connect/')){
-      const connect=await handleConnect(request,env,ctx);
-      if(connect)return connect;
+      const connect=await handleConnect(request,env,ctx);if(connect)return connect;
     }
-    const professionalDashboard=handleProfessionalDashboard(request,env,ctx);
-    if(professionalDashboard)return professionalDashboard;
-    const enterpriseDashboard=handleEnterpriseDashboard(request,env,ctx);
-    if(enterpriseDashboard)return enterpriseDashboard;
+    const professionalDashboard=handleProfessionalDashboard(request,env,ctx);if(professionalDashboard)return professionalDashboard;
+    const enterpriseDashboard=handleEnterpriseDashboard(request,env,ctx);if(enterpriseDashboard)return enterpriseDashboard;
     if(isStudioPath(url.pathname)){
-      const production=handleStudioProduction(request,env,ctx);
-      if(production)return production;
-      const response=handleCreatorStudio(request,env,ctx);
-      if(response)return surfacePlatformLinks(response);
+      const production=handleStudioProduction(request,env,ctx);if(production)return production;
+      const response=handleCreatorStudio(request,env,ctx);if(response)return surfacePlatformLinks(response);
     }
     if(isRideOSPath(url.pathname)){
-      const response=await handleRideOS(request,env,ctx);
-      if(response)return response;
+      const response=await handleRideOS(request,env,ctx);if(response)return response;
     }
     return surfacePlatformLinks(await atlasWorker.fetch(request,env,ctx));
   },

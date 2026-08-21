@@ -42,6 +42,8 @@
     "check:sovereign-tools": "node scripts/validate-sovereign-tools.mjs",
     "check:git-deploy": "node scripts/validate-git-deploy-tools.mjs",
     "check:capability-state": "node scripts/validate-capability-state-mainline.mjs",
+    "check:wallet": "node scripts/validate-wallet.mjs",
+    "check:wallet-readiness": "node scripts/wallet-release-readiness.mjs",
     "deploy:provider": "wrangler deploy"
   }
 }
