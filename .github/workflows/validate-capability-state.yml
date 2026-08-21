@@ -1,0 +1,25 @@
+name: Validate ATLAS Capability State
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-capability-state:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - name: Validate Capability State contract
+        run: npm run check:capability-state
+      - name: Validate Worker bundle
+        run: npx wrangler deploy --dry-run
