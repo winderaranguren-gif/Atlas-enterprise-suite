@@ -1,0 +1,44 @@
+name: Validate ATLAS Voice LipSync Resolution
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'modules/studio-voice-worker.js'
+      - 'modules/studio-lipsync-worker.js'
+      - 'modules/studio-resolution-worker.js'
+      - 'scripts/validate-voice-lipsync-resolution.mjs'
+      - 'rideos-router.js'
+      - 'package.json'
+      - '.github/workflows/validate-voice-lipsync-resolution.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'modules/studio-voice-worker.js'
+      - 'modules/studio-lipsync-worker.js'
+      - 'modules/studio-resolution-worker.js'
+      - 'scripts/validate-voice-lipsync-resolution.mjs'
+      - 'rideos-router.js'
+      - 'package.json'
+      - '.github/workflows/validate-voice-lipsync-resolution.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-voice-lipsync-resolution:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: node --check modules/studio-voice-worker.js
+      - run: node --check modules/studio-lipsync-worker.js
+      - run: node --check modules/studio-resolution-worker.js
+      - run: node --check scripts/validate-voice-lipsync-resolution.mjs
+      - run: node --check rideos-router.js
+      - run: npm run check:voice-lipsync-resolution
+      - run: npx wrangler deploy --dry-run
