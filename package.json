@@ -46,6 +46,7 @@
     "check:studio-production": "node scripts/validate-studio-production.mjs",
     "check:native-studio": "node scripts/validate-native-studio.mjs",
     "check:creator-director": "node scripts/validate-creator-director.mjs",
+    "check:creator-release": "node scripts/validate-creator-release.mjs",
     "check:sovereign-tools": "node scripts/validate-sovereign-tools.mjs",
     "check:git-deploy": "node scripts/validate-git-deploy-tools.mjs",
     "check:capability-state": "node scripts/validate-capability-state-mainline.mjs",
