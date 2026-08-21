@@ -131,8 +131,13 @@ jobs:
         run: |
           set -euo pipefail
           curl --retry 6 --retry-delay 3 --retry-all-errors -fsS https://www.atlasenterprisesuite.com/ -o /tmp/atlas-home.html
-          grep -Fq 'Run the work.' /tmp/atlas-home.html
-          grep -Fq 'Public website outside. Enterprise workspace inside.' /tmp/atlas-home.html
+          grep -Fq 'One platform.' /tmp/atlas-home.html
+          grep -Fq 'Public preview outside. Authorized modules inside.' /tmp/atlas-home.html
+          grep -Fq 'Preview only. Module access begins after sign-in and authorization.' /tmp/atlas-home.html
+          if grep -Eq 'href="/(finance|hr|operations|ride|wallet|studio|workbench|browser)"' /tmp/atlas-home.html; then
+            echo 'Public home exposes application module links' >&2
+            exit 1
+          fi
           curl --retry 6 --retry-delay 3 --retry-all-errors -fsS https://www.atlasenterprisesuite.com/product | grep -Fq 'The ATLAS enterprise'
           curl --retry 6 --retry-delay 3 --retry-all-errors -fsS https://www.atlasenterprisesuite.com/trust | grep -Fq 'Security claims must be verifiable.'
           APP_STATUS="$(curl -sS -o /dev/null -w '%{http_code}' https://www.atlasenterprisesuite.com/app)"
