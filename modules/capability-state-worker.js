@@ -39,9 +39,7 @@ async function parseBody(request){
 
 function routeCapability(path){
   if(!path.startsWith('/api/capability-state/'))return null;
-  let value='';
-  try{value=decodeURIComponent(path.slice('/api/capability-state/'.length)).replace(/\/$/,'')}catch{return ''}
-  return value;
+  try{return decodeURIComponent(path.slice('/api/capability-state/'.length)).replace(/\/$/,'')}catch{return ''}
 }
 
 export class CapabilityStateStore{
@@ -87,40 +85,40 @@ export async function handleCapabilityState(request,env){
   if(capability===null)return null;
   if(!CAPABILITY_SET.has(capability))return json({ok:false,error:'capability_not_found'},404);
   if(!env.CAPABILITY_STATE_STORE)return json({ok:false,error:'capability_state_store_not_bound'},503);
+  if(!['GET','PUT','DELETE'].includes(request.method))return json({ok:false,error:'method_not_allowed'},405);
+
   const authz=authorize(request,env);
   if(!authz.ok)return json({ok:false,error:authz.error},authz.status);
   const mode=url.searchParams.get('mode')||'user';
   if(!validMode(mode))return json({ok:false,error:'mode_must_be_user_or_scope'},400);
   if(mode==='user'&&!authz.userId)return json({ok:false,error:'valid_user_header_required_for_user_mode'},400);
-  const key=url.searchParams.get('key');
-  if(key!==null&&!validKey(key))return json({ok:false,error:'valid_record_key_required'},400);
-  let payload;
+
+  let key=url.searchParams.get('key');
+  let putPayload=null;
   if(request.method==='PUT'){
     const parsed=await parseBody(request);
     if(!parsed.ok)return json({ok:false,error:parsed.error},parsed.status);
-    if(!validKey(String(parsed.body?.key||key||'')))return json({ok:false,error:'valid_record_key_required'},400);
+    key=String(parsed.body?.key||key||'');
+    if(!validKey(key))return json({ok:false,error:'valid_record_key_required'},400);
     if(parsed.body?.payload===undefined)return json({ok:false,error:'payload_required'},400);
     let payloadJson;
     try{payloadJson=JSON.stringify(parsed.body.payload)}catch{return json({ok:false,error:'payload_must_be_json_serializable'},400)}
     if(new TextEncoder().encode(payloadJson).byteLength>MAX_PAYLOAD_BYTES)return json({ok:false,error:'payload_too_large',maxBytes:MAX_PAYLOAD_BYTES},413);
-    payload={payload:parsed.body.payload,updatedBy:authz.userId};
+    putPayload={payload:parsed.body.payload,updatedBy:authz.userId};
+  }else if(key!==null&&!validKey(key)){
+    return json({ok:false,error:'valid_record_key_required'},400);
   }
+  if(request.method==='DELETE'&&key===null)return json({ok:false,error:'valid_record_key_required'},400);
+
   const subject=mode==='scope'?'scope':`user:${authz.userId}`;
   const id=env.CAPABILITY_STATE_STORE.idFromName(`${authz.organizationId}:${authz.dbaId}:${capability}`);
   const stub=env.CAPABILITY_STATE_STORE.get(id);
   const target=new URL('https://capability-state.internal/state');
   target.searchParams.set('subject',subject);
-  const effectiveKey=request.method==='PUT'?String((await Promise.resolve(payload))&&((()=>{try{return JSON.parse(JSON.stringify(payload))&&undefined}catch{return undefined}})()))||''):key;
-  const putKey=request.method==='PUT'?String((()=>{try{return JSON.parse(JSON.stringify(payload))&&''}catch{return ''}})()):null;
-  const bodyKey=request.method==='PUT'?String(url.searchParams.get('key')||''):null;
-  if(request.method==='PUT'){
-    const parsedAgain=await request.clone().json().catch(()=>null);
-    const finalKey=String(parsedAgain?.key||bodyKey||'');
-    target.searchParams.set('key',finalKey);
-    return stub.fetch(new Request(target,{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify(payload)}));
-  }
   if(key!==null)target.searchParams.set('key',key);
-  const response=await stub.fetch(new Request(target,{method:request.method}));
+  const init={method:request.method};
+  if(putPayload){init.headers={'content-type':'application/json'};init.body=JSON.stringify(putPayload);}
+  const response=await stub.fetch(new Request(target,init));
   const data=await response.json();
-  return json({ok:response.ok,capability,mode,...data},response.status);
+  return json({capability,mode,...data},response.status);
 }
