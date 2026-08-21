@@ -13,6 +13,7 @@ on:
       - 'atlas/native-media-engine.mjs'
       - 'scripts/validate-native-studio.mjs'
       - 'scripts/validate-studio-autopilot.mjs'
+      - 'scripts/validate-media-qc.mjs'
       - 'public/**'
       - 'package.json'
   push:
@@ -45,6 +46,7 @@ jobs:
       - run: npm run check:creator-web
       - run: npm run check:native-studio
       - run: npm run check:studio-autopilot
+      - run: npm run check:media-qc
       - run: node atlas/native-media-engine.mjs verify
       - run: node --check scripts/resolve-cloudflare-auth.mjs
       - run: npx wrangler deploy --dry-run
@@ -99,10 +101,13 @@ jobs:
           check https://atlasenterprisesuite.com/studio
           check https://atlasenterprisesuite.com/studio/creator/web
           check https://atlasenterprisesuite.com/studio/autopilot
+          check https://atlasenterprisesuite.com/studio/qc
           check https://atlasenterprisesuite.com/studio/production
           check https://atlasenterprisesuite.com/api/studio/creator/web/capabilities
           check https://atlasenterprisesuite.com/api/studio/autopilot/health
           check https://atlasenterprisesuite.com/api/studio/autopilot/capabilities
+          check https://atlasenterprisesuite.com/api/studio/qc/health
+          check https://atlasenterprisesuite.com/api/studio/qc/capabilities
           check https://atlasenterprisesuite.com/api/work/health
           check https://atlasenterprisesuite.com/api/mobility/health
           check https://atlasenterprisesuite.com/api/rideos/health
@@ -140,6 +145,22 @@ jobs:
           const ready=(j.capabilities||[]).filter(x=>x.state==='ready').map(x=>x.id);
           for(const id of ['recipe-handoff','audio-energy','motion-energy','variant-selection','hook-cta','script-captions','audio-cleanup','batch-render']) if(!ready.includes(id)) throw new Error(`Missing Autopilot capability: ${id}`);
           console.log('ATLAS Studio Autopilot production contract verified.');
+          NODE
+
+      - name: Verify ATLAS Media QC independence
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --retry 6 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/api/studio/qc/capabilities -o /tmp/media-qc.json
+          node - <<'NODE'
+          const fs=require('fs');
+          const j=JSON.parse(fs.readFileSync('/tmp/media-qc.json','utf8'));
+          if(j.service!=='atlas-media-qc') throw new Error('Media QC service mismatch');
+          if(!Array.isArray(j.externalProviders) || j.externalProviders.length!==0) throw new Error('External QC provider detected');
+          if(j.mediaLeavesDeviceByDefault!==false) throw new Error('Media QC local-first policy mismatch');
+          const ready=(j.capabilities||[]).filter(x=>x.state==='ready').map(x=>x.id);
+          for(const id of ['frame-sampling','exposure','contrast','sharpness','black-frames','audio-rms','audio-clipping','silence','release-report']) if(!ready.includes(id)) throw new Error(`Missing Media QC capability: ${id}`);
+          console.log('ATLAS Media QC production contract verified.');
           NODE
 
       - name: Verify ATLAS Native Studio independence
@@ -190,7 +211,7 @@ jobs:
         run: |
           curl -fsS -X POST -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" \
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
-            -d "{\"state\":\"success\",\"context\":\"atlas/production\",\"description\":\"ATLAS production, Creator Web, Autopilot and Native Studio verified\",\"target_url\":\"https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}" > /dev/null
+            -d "{\"state\":\"success\",\"context\":\"atlas/production\",\"description\":\"ATLAS Creator, Autopilot, Media QC and Native Studio verified\",\"target_url\":\"https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}" > /dev/null
 
       - name: Mark production failure
         if: failure()
