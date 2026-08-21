@@ -1,0 +1,53 @@
+name: Rescue Deploy ATLAS
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  statuses: write
+
+env:
+  CLOUDFLARE_ACCOUNT_ID: 1dd6dea2bb98459c66f610464354d686
+
+jobs:
+  rescue-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - name: Validate release bundle
+        run: |
+          npm run check:finance
+          npm run check:launch
+          npm run check:public-site
+          node --check scripts/resolve-cloudflare-auth.mjs
+          npx wrangler deploy --dry-run
+      - name: Resolve Cloudflare authentication
+        env:
+          RAW_CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: node scripts/resolve-cloudflare-auth.mjs
+      - name: Verify Cloudflare account access
+        run: npx wrangler whoami
+      - name: Deploy canonical ATLAS Worker
+        run: npx wrangler deploy
+      - name: Verify release surface
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --retry 6 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/healthz > /dev/null
+          curl --retry 6 --retry-delay 3 --retry-all-errors -fsS https://www.atlasenterprisesuite.com/ > /dev/null
+          curl --retry 6 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/dashboard > /dev/null
+      - name: Mark rescue deploy status
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then STATE=success; DESC='ATLAS rescue deployment verified'; else STATE=failure; DESC='ATLAS rescue deployment failed'; fi
+          curl -sS -X POST -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -d "{\"state\":\"${STATE}\",\"context\":\"atlas/rescue-production\",\"description\":\"${DESC}\",\"target_url\":\"https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}" > /dev/null || true
