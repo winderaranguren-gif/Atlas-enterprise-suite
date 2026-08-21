@@ -1,6 +1,7 @@
 import atlasWorker from './atlas-router.js';
 import {handleRideOS} from './modules/rideos-worker.js';
 import {handleCreatorStudio} from './modules/creator-studio-worker.js';
+import {handleStudioProduction} from './modules/studio-production-worker.js';
 import {handleProfessionalDashboard} from './modules/professional-dashboard-worker.js';
 import {handleEnterpriseDashboard} from './modules/enterprise-dashboard-worker.js';
 import {handleGlobalCountry} from './modules/global-country-worker.js';
@@ -40,10 +41,11 @@ async function surfacePlatformLinks(response){
   if(!html.includes('href="/workbench"'))links.push('<a class="nav" href="/workbench"><span class="ico">⌘</span>ATLAS Workbench</a>');
   if(!html.includes('href="/browser"'))links.push('<a class="nav" href="/browser"><span class="ico">◉</span>ATLAS Browser</a>');
   if(!html.includes('href="/studio"'))links.push('<a class="nav" href="/studio"><span class="ico">✦</span>ATLAS Studio</a>');
+  if(!html.includes('href="/studio/production"'))links.push('<a class="nav" href="/studio/production"><span class="ico">◈</span>Studio Production</a>');
   if(links.length){
     const injected=links.join('');
     if(html.includes('</aside>'))html=html.replace('</aside>',injected+'</aside>');
-    else if(html.includes('</body>'))html=html.replace('</body>',`<div style="position:fixed;right:14px;bottom:14px;z-index:999;display:flex;gap:7px;flex-wrap:wrap"><a href="/workbench" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">ATLAS Workbench</a><a href="/browser" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">ATLAS Browser</a><a href="/studio" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">ATLAS Studio</a></div></body>`);
+    else if(html.includes('</body>'))html=html.replace('</body>',`<div style="position:fixed;right:14px;bottom:14px;z-index:999;display:flex;gap:7px;flex-wrap:wrap"><a href="/workbench" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">ATLAS Workbench</a><a href="/browser" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">ATLAS Browser</a><a href="/studio" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">ATLAS Studio</a><a href="/studio/production" style="padding:9px 12px;border-radius:10px;background:#0d365c;color:white;text-decoration:none;border:1px solid #2d78a8;font:12px system-ui">Production</a></div></body>`);
   }
   const headers=new Headers(response.headers);
   headers.delete('content-length');
@@ -76,8 +78,10 @@ export default {
     const enterpriseDashboard=handleEnterpriseDashboard(request,env,ctx);
     if(enterpriseDashboard)return enterpriseDashboard;
     if(isStudioPath(url.pathname)){
+      const production=handleStudioProduction(request,env,ctx);
+      if(production)return production;
       const response=handleCreatorStudio(request,env,ctx);
-      if(response)return response;
+      if(response)return surfacePlatformLinks(response);
     }
     if(isRideOSPath(url.pathname)){
       const response=await handleRideOS(request,env,ctx);
