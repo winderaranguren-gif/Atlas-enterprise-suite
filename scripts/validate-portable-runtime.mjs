@@ -9,6 +9,7 @@ process.env.ATLAS_PORTABLE_STATE='local';
 process.env.ATLAS_CAPABILITY_STATE_TOKEN='atlas-portable-test-token';
 
 const { dispatchAtlasRequest }=await import('../atlas/portable-runtime.mjs');
+const { createLocalDurableBindings }=await import('../atlas/local-durable.mjs');
 const origin='http://portable.atlas.local';
 
 async function request(path,{method='GET',body,headers={}}={}){
@@ -65,6 +66,22 @@ try{
   assert.equal(readState.status,200,'Capability state read must succeed');
   const state=await readState.json();
   assert.deepEqual(state.record?.payload,{mode:'dark'},'Capability state must round-trip through portable durable storage');
+
+  const walletA=createLocalDurableBindings({root:stateDir}).WALLET_STORE;
+  const owner=walletA.idFromName('portable-wallet-owner-test');
+  const walletStubA=walletA.get(owner);
+  const addMethod=await walletStubA.fetch(new Request('https://wallet.internal/method',{
+    method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({provider:'square',paymentMethodRef:'cnon:portable-tokenized-reference',brand:'VISA',last4:'4242'})
+  }));
+  assert.equal(addMethod.status,201,'WalletStore write must succeed');
+  const addedMethod=await addMethod.json();
+
+  const walletB=createLocalDurableBindings({root:stateDir}).WALLET_STORE;
+  const walletStubB=walletB.get(walletB.idFromName('portable-wallet-owner-test'));
+  const walletSnapshotResponse=await walletStubB.fetch('https://wallet.internal/snapshot');
+  assert.equal(walletSnapshotResponse.status,200);
+  const walletSnapshot=await walletSnapshotResponse.json();
+  assert.ok(walletSnapshot.methods.some(row=>row.id===addedMethod.item.id&&row.last4==='4242'),'Wallet state must reload from disk in a fresh namespace instance');
 
   console.log('ATLAS portable runtime + durable state validation passed.');
 }finally{
