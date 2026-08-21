@@ -13,6 +13,7 @@ import {handleWorkbench} from './modules/workbench-worker.js';
 import {CapabilityStateStore,handleCapabilityState} from './modules/capability-state-worker.js';
 import {WalletStore,handleWallet} from './modules/wallet-worker.js';
 import {handleWalletIdentityGate} from './modules/wallet-identity-gate.js';
+import {handlePublicDashboardHome} from './modules/public-dashboard-home.js';
 import {handlePublicSite} from './modules/public-site-worker.js';
 export {VideoRoom} from './atlas-router.js';
 export {ConnectStore,CapabilityStateStore,WalletStore};
@@ -66,6 +67,8 @@ async function surfacePlatformLinks(response){
 export default {
   async fetch(request,env,ctx){
     const url=new URL(request.url);
+    const publicDashboard=handlePublicDashboardHome(request,env,ctx);
+    if(publicDashboard)return publicDashboard;
     const publicSite=handlePublicSite(request,env,ctx);
     if(publicSite)return publicSite;
     if(url.pathname.startsWith('/api/capability-state/')){
