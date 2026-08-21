@@ -11,7 +11,7 @@ async function check(path,{type,status=200,contains}={}){
 }
 await check('/_atlas/health',{type:/application\/json/,contains:/ATLAS Portable Runtime/});
 await check('/browser',{type:/text\/html/,contains:/ATLAS Browser/});
-await check('/api/browser/status',{type:/application\/json/,contains:/ATLAS Browser/});
+await check('/api/browser/status',{type:/application\/json/,contains:/atlas-browser/});
 await check('/workbench',{type:/text\/html/,contains:/ATLAS Workbench/});
 await check('/api/workbench/status',{type:/application\/json/,contains:/ATLAS Sovereign Workbench/});
 console.log('ATLAS portable runtime validation passed.');
