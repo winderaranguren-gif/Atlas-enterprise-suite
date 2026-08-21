@@ -14,6 +14,7 @@ on:
       - 'scripts/validate-native-studio.mjs'
       - 'scripts/validate-studio-autopilot.mjs'
       - 'scripts/validate-media-qc.mjs'
+      - 'scripts/validate-universal-creator.mjs'
       - 'public/**'
       - 'package.json'
   push:
@@ -44,6 +45,7 @@ jobs:
       - run: npm run check:launch
       - run: npm run check:public-site
       - run: npm run check:creator-web
+      - run: npm run check:universal-creator
       - run: npm run check:native-studio
       - run: npm run check:studio-autopilot
       - run: npm run check:media-qc
@@ -99,10 +101,13 @@ jobs:
           check https://atlasenterprisesuite.com/launch-queue
           check https://atlasenterprisesuite.com/video
           check https://atlasenterprisesuite.com/studio
+          check https://atlasenterprisesuite.com/studio/create-anything
           check https://atlasenterprisesuite.com/studio/creator/web
           check https://atlasenterprisesuite.com/studio/autopilot
           check https://atlasenterprisesuite.com/studio/qc
           check https://atlasenterprisesuite.com/studio/production
+          check https://atlasenterprisesuite.com/api/studio/creator/universal/capabilities
+          check https://atlasenterprisesuite.com/api/studio/creator/universal/presets
           check https://atlasenterprisesuite.com/api/studio/creator/web/capabilities
           check https://atlasenterprisesuite.com/api/studio/autopilot/health
           check https://atlasenterprisesuite.com/api/studio/autopilot/capabilities
@@ -115,6 +120,25 @@ jobs:
           check https://atlasenterprisesuite.com/api/studio/health
           check https://atlasenterprisesuite.com/api/studio/production/health
           check https://atlasenterprisesuite.com/api/finance/health
+
+      - name: Verify ATLAS Universal Creator independence
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --retry 6 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/api/studio/creator/universal/capabilities -o /tmp/universal-creator.json
+          curl --retry 6 --retry-delay 3 --retry-all-errors -fsS https://atlasenterprisesuite.com/api/studio/creator/universal/presets -o /tmp/universal-presets.json
+          node - <<'NODE'
+          const fs=require('fs');
+          const c=JSON.parse(fs.readFileSync('/tmp/universal-creator.json','utf8'));
+          const p=JSON.parse(fs.readFileSync('/tmp/universal-presets.json','utf8'));
+          if(c.service!=='atlas-universal-creator') throw new Error('Universal Creator service mismatch');
+          if(!Array.isArray(c.externalProviders) || c.externalProviders.length!==0) throw new Error('External builder detected in Universal Creator');
+          const ready=(c.capabilities||[]).filter(x=>x.state==='ready').map(x=>x.id);
+          for(const id of ['intake','classification','module-owner','architecture','permissions','handoff','quality','preset-main-dashboard']) if(!ready.includes(id)) throw new Error(`Missing Universal Creator capability: ${id}`);
+          const main=(p.presets||[]).find(x=>x.id==='main-dashboard');
+          if(!main || main.route!=='/' || main.releaseRoute!=='/studio/release/main-dashboard') throw new Error('Main Dashboard preset contract mismatch');
+          console.log('ATLAS Universal Creator Main Dashboard preset verified.');
+          NODE
 
       - name: Verify ATLAS Creator Web Director independence
         shell: bash
@@ -211,7 +235,7 @@ jobs:
         run: |
           curl -fsS -X POST -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" \
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
-            -d "{\"state\":\"success\",\"context\":\"atlas/production\",\"description\":\"ATLAS Creator, Autopilot, Media QC and Native Studio verified\",\"target_url\":\"https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}" > /dev/null
+            -d "{\"state\":\"success\",\"context\":\"atlas/production\",\"description\":\"ATLAS Universal Creator, Creator Web, Autopilot, Media QC and Native Studio verified\",\"target_url\":\"https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}" > /dev/null
 
       - name: Mark production failure
         if: failure()

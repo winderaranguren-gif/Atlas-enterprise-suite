@@ -1,4 +1,4 @@
-import {buildUniversalCreatorPlan} from '../modules/creator-universal-worker.js';
+import {buildUniversalCreatorPlan,UNIVERSAL_CREATOR_PRESETS} from '../modules/creator-universal-worker.js';
 
 const cases=[
   {prompt:'Create the ATLAS Venezuela website with accounting, POS and payments',want:'website',owner:'Accounting'},
@@ -18,6 +18,20 @@ for(const c of cases){
 }
 const forced=buildUniversalCreatorPlan({prompt:'anything',mode:'module'});
 if(forced.classification.type!=='module'||forced.handoff.route!=='/workbench')throw new Error('Explicit module handoff failed');
+
+if(!UNIVERSAL_CREATOR_PRESETS['main-dashboard'])throw new Error('Main Dashboard preset missing');
+const main=buildUniversalCreatorPlan({preset:'main-dashboard'});
+if(main.error)throw new Error(`Main Dashboard preset failed: ${main.error}`);
+if(main.preset?.id!=='main-dashboard')throw new Error('Main Dashboard preset id missing');
+if(main.classification.type!=='website')throw new Error('Main Dashboard must classify as website');
+if(main.architecture.route!=='/')throw new Error('Main Dashboard canonical route must be /');
+if(main.handoff.route!=='/studio/creator/web')throw new Error('Main Dashboard must hand off to Creator Web Director');
+if(main.handoff.releaseRoute!=='/studio/release/main-dashboard')throw new Error('Main Dashboard release handoff missing');
+if(!main.intake.prompt.includes('/identity'))throw new Error('Main Dashboard Identity boundary missing');
+if(!main.intake.visualReference.includes('Orlando'))throw new Error('Main Dashboard visual contract missing Orlando reference');
+if(main.data.policy!=='authorized-sources-only'||main.data.fabricatedMetrics!==false)throw new Error('Main Dashboard data integrity policy failed');
+if(main.quality.passed!==main.quality.total)throw new Error('Main Dashboard preset quality gates must pass');
+
 const empty=buildUniversalCreatorPlan({prompt:''});
 if(!empty.error)throw new Error('Empty brief must fail');
 console.log('ATLAS Universal Creator validation passed.');
