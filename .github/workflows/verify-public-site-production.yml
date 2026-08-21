@@ -1,0 +1,56 @@
+name: Verify ATLAS Public Website Production
+
+on:
+  workflow_run:
+    workflows: ['Validate and Deploy ATLAS']
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  verify-public-production:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify corporate home is production entry
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --retry 6 --retry-delay 4 --retry-all-errors -fsS https://www.atlasenterprisesuite.com/ -o /tmp/atlas-home.html
+          grep -Fq 'Run the work.' /tmp/atlas-home.html
+          grep -Fq 'Public website outside. Enterprise workspace inside.' /tmp/atlas-home.html
+          if grep -Eqi 'System Administrator|99\.98%|1,248|LIVE WEATHER|● LIVE' /tmp/atlas-home.html; then
+            echo '::error::Public homepage contains internal persona, decorative metric, or unverified live-state text.'
+            exit 1
+          fi
+
+      - name: Verify public product and trust pages
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --retry 6 --retry-delay 4 --retry-all-errors -fsS https://www.atlasenterprisesuite.com/product | grep -Fq 'The ATLAS enterprise'
+          curl --retry 6 --retry-delay 4 --retry-all-errors -fsS https://www.atlasenterprisesuite.com/trust | grep -Fq 'Security claims must be verifiable.'
+          curl --retry 6 --retry-delay 4 --retry-all-errors -fsS https://www.atlasenterprisesuite.com/status | grep -Fq 'Unified public health feed: not configured'
+
+      - name: Verify application boundary and indexing policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP_STATUS="$(curl -sS -o /dev/null -w '%{http_code}' https://www.atlasenterprisesuite.com/app)"
+          APP_LOCATION="$(curl -sSI https://www.atlasenterprisesuite.com/app | tr -d '\r' | awk 'BEGIN{IGNORECASE=1} /^location:/{print $2; exit}')"
+          [ "$APP_STATUS" = '307' ]
+          [ "$APP_LOCATION" = '/dashboard' ]
+          ROBOTS="$(curl --retry 6 --retry-delay 4 --retry-all-errors -fsS https://www.atlasenterprisesuite.com/robots.txt)"
+          printf '%s' "$ROBOTS" | grep -Fq 'Disallow: /dashboard'
+          DASH_HEADERS="$(curl -sSI https://www.atlasenterprisesuite.com/dashboard | tr -d '\r')"
+          printf '%s' "$DASH_HEADERS" | grep -Eqi '^x-robots-tag: noindex, nofollow, noarchive$'
+
+      - name: Verify responsive and accessibility markers are served
+        shell: bash
+        run: |
+          set -euo pipefail
+          HOME="$(cat /tmp/atlas-home.html)"
+          printf '%s' "$HOME" | grep -Fq 'Skip to content'
+          printf '%s' "$HOME" | grep -Fq 'aria-label="Primary"'
+          printf '%s' "$HOME" | grep -Fq '@media(max-width:620px)'
