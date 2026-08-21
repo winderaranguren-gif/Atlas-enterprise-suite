@@ -57,6 +57,7 @@
     "check:wallet": "node scripts/validate-wallet.mjs",
     "check:wallet-readiness": "node scripts/wallet-release-readiness.mjs",
     "check:public-site": "node scripts/validate-public-site.mjs",
+    "check:weather": "node scripts/validate-weather.mjs",
     "deploy:provider": "wrangler deploy"
   }
 }
