@@ -58,7 +58,7 @@ function readiness(id){
 }
 function contract(id,input={}){
   const ready=readiness(id);
-  return {service:'ATLAS Deploy Orchestrator',version:2,provider:id,input,readiness:ready,apply:false,tenantScoped:true,auditRequired:true,secretValuesLogged:false,productionAuthority:id==='sovereign'||id==='vps'};
+  return {service:'ATLAS Deploy Orchestrator',version:2,mutationDefault:'dry-run',provider:id,input,readiness:ready,apply:false,tenantScoped:true,auditRequired:true,secretValuesLogged:false,productionAuthority:id==='sovereign'||id==='vps'};
 }
 function runScript(script,args=[]){
   if(!script)return false;
@@ -72,7 +72,7 @@ function runScript(script,args=[]){
 const [cmd,...raw]=process.argv.slice(2);const {positional,flags}=parse(raw);
 try{
   if(cmd==='status'){
-    out({service:'ATLAS Deploy Orchestrator',version:2,defaultProvider:DEFAULT_PROVIDER,providers:Object.keys(PROVIDERS).map(readiness),policy:{providerNeutral:true,canonicalRelease:'sovereign',canonicalProductionHost:'vps',optionalAdaptersNeverAutoSelected:true,credentialsFromEnvironmentOnly:true,auditRequired:true}});
+    out({service:'ATLAS Deploy Orchestrator',version:2,mutationDefault:'dry-run',defaultProvider:DEFAULT_PROVIDER,providers:Object.keys(PROVIDERS).map(readiness),policy:{providerNeutral:true,canonicalRelease:'sovereign',canonicalProductionHost:'vps',optionalAdaptersNeverAutoSelected:true,credentialsFromEnvironmentOnly:true,auditRequired:true}});
   }else if(cmd==='plan'){
     const id=String(positional[0]||DEFAULT_PROVIDER);let input={};
     if(flags.json){try{input=JSON.parse(String(flags.json));}catch{throw new Error('--json must be valid JSON');}}
@@ -97,7 +97,7 @@ try{
     const rows=order.map(readiness);
     const vps=rows.find(x=>x.id==='vps'&&x.configured)||null;
     const optional=flags['allow-optional']?rows.find(x=>x.optional&&x.configured&&x.applySupported)||null:null;
-    out({service:'ATLAS Deploy Orchestrator',operation:'fallback-plan',order,providers:rows,canonicalRelease:'sovereign',selectedProductionTarget:vps?.id||null,optionalAdapterCandidate:optional?.id||null,automaticFailoverToThirdParty:false,reason:vps?'Configured ATLAS VPS is the production target.':optional?'No ATLAS VPS is configured; an optional adapter is available only because --allow-optional was explicit.':'No configured ATLAS VPS production target. Sovereign OCI release remains valid without silently selecting a third party.'});
+    out({service:'ATLAS Deploy Orchestrator',version:2,mutationDefault:'dry-run',operation:'fallback-plan',order,providers:rows,canonicalRelease:'sovereign',selectedProductionTarget:vps?.id||null,optionalAdapterCandidate:optional?.id||null,automaticFailoverToThirdParty:false,reason:vps?'Configured ATLAS VPS is the production target.':optional?'No ATLAS VPS is configured; an optional adapter is available only because --allow-optional was explicit.':'No configured ATLAS VPS production target. Sovereign OCI release remains valid without silently selecting a third party.'});
   }else{
     console.error('ATLAS Deploy Orchestrator\n\nUsage:\n  node atlas/deploy-orchestrator.mjs status\n  node atlas/deploy-orchestrator.mjs plan [sovereign|vps|cloudflare|vercel] [--json PAYLOAD]\n  node atlas/deploy-orchestrator.mjs run [sovereign|vps|cloudflare|vercel] [--apply]\n  node atlas/deploy-orchestrator.mjs fallback-plan [--providers sovereign,vps,cloudflare,vercel] [--allow-optional]');
     process.exitCode=2;
