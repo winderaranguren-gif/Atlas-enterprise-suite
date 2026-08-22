@@ -49,6 +49,7 @@
     "check:portable-video": "node scripts/validate-portable-video.mjs",
     "check:studio-production": "node scripts/validate-studio-production.mjs",
     "check:native-studio": "node scripts/validate-native-studio.mjs",
+    "check:music-studio": "node scripts/validate-music-studio.mjs",
     "check:studio-autopilot": "node scripts/validate-studio-autopilot.mjs",
     "check:media-qc": "node scripts/validate-media-qc.mjs",
     "check:media-foundations": "node scripts/validate-media-foundations.mjs",

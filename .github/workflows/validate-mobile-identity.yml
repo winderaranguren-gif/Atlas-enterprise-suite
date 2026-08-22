@@ -27,12 +27,16 @@ jobs:
           if (!response.ok) throw new Error(`Identity returned ${response.status}`);
           const html = await response.text();
           const aside = html.match(/<aside class="platformLinks"[^>]*>([\s\S]*?)<\/aside>/)?.[1] || '';
-          for (const label of ['ATLAS Wallet','ATLAS Workbench','ATLAS Browser','ATLAS Studio']) {
-            if (!aside.includes(label)) throw new Error(`Missing ${label} in normal-flow platform links`);
+          for (const label of ['ATLAS Menu','ATLAS Studio','Workbench','More']) {
+            if (!aside.includes(label)) throw new Error(`Missing ${label} in compact normal-flow navigation`);
           }
+          for (const destination of ['Browser','Music Studio','Production','Voice Engine']) {
+            if (!html.includes(destination)) throw new Error(`Adaptive navigation missing ${destination}`);
+          }
+          if (!html.includes('Adaptive navigation')) throw new Error('Adaptive navigation surface is missing');
           if (!/@media\(max-width:\d+px\)/.test(html)) throw new Error('Identity mobile breakpoint is missing');
           if (!html.includes('.platformLinks{position:static')) throw new Error('Mobile platform links are not explicitly static');
           if (html.includes('position:fixed;right:14px;bottom:14px;z-index:999')) throw new Error('Legacy fixed launcher was injected');
           if (!html.includes('viewport-fit=cover')) throw new Error('Identity is not safe-area aware for iPhone');
-          console.log('ATLAS Identity responsive navigation regression check passed');
+          console.log('ATLAS Identity compact responsive navigation regression check passed');
           NODE
