@@ -16,7 +16,14 @@ const required=[
   '- ALL',
 ];
 for(const marker of required){if(!compose.includes(marker))throw new Error(`compose missing ${marker}`);}
-for(const forbidden of ['0.0.0.0:8080:8080','80:80','443:443']){if(compose.includes(forbidden))throw new Error(`laptop profile must not expose ${forbidden}`);}
+
+const portLines=compose.split(/\r?\n/).map(line=>line.trim()).filter(line=>line.startsWith('- "')||line.startsWith("- '"));
+for(const line of portLines){
+  if(/^-[ ]*["'](?:0\.0\.0\.0:)?(?:80|443):/.test(line))throw new Error(`laptop profile must not expose public web port: ${line}`);
+  if(/^-[ ]*["']8080:8080/.test(line))throw new Error(`laptop profile must bind application port to localhost: ${line}`);
+}
+if(!portLines.some(line=>line.includes('127.0.0.1:8080:8080')))throw new Error('localhost-only application binding missing');
+
 for(const [name,text] of [['bash',sh],['powershell',ps]]){
   if(!text.includes('atlas-laptop-01'))throw new Error(`${name} launcher missing node id`);
   if(!text.includes('127.0.0.1:8080/_atlas/health'))throw new Error(`${name} launcher missing local health gate`);
