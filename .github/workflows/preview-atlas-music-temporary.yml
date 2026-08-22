@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - preview/atlas-music-live-20260822
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/preview-atlas-music-temporary.yml'
   workflow_dispatch:
 
 permissions:
