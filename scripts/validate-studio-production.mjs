@@ -22,7 +22,7 @@ const checks=[
   ['gates model-backed features by env',/ATLAS_AVATAR_ENDPOINT/.test(moduleSource)&&/ATLAS_LIPSYNC_ENDPOINT/.test(moduleSource)&&/ATLAS_ENHANCE_ENDPOINT/.test(moduleSource)&&/ATLAS_VIDEO_EDIT_ENDPOINT/.test(moduleSource)],
   ['router imports production handler',/handleStudioProduction/.test(routerSource)],
   ['router prioritizes production route',/const production=handleStudioProduction\(request,env,ctx\)/.test(routerSource)],
-  ['studio navigation surfaces production',/href=\"\/studio\/production\"/.test(routerSource)]
+  ['studio navigation surfaces production',/href=\"\/studio\/production\"/.test(routerSource)||/\['production','Production','\/studio\/production'/.test(routerSource)]
 ];
 
 const failures=checks.filter(([,ok])=>!ok);
