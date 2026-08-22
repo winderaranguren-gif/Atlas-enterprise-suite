@@ -1,0 +1,40 @@
+name: Preview ATLAS Music Temporary
+
+on:
+  push:
+    branches:
+      - preview/atlas-music-live-20260822
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - name: Validate ATLAS Music
+        run: |
+          node --check modules/music-studio-worker.js
+          node --check rideos-router.js
+          node scripts/validate-music-studio.mjs
+          npx wrangler deploy --dry-run
+      - name: Deploy temporary Cloudflare preview without account credentials
+        id: preview
+        env:
+          CI: '1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx wrangler deploy --temporary 2>&1 | tee /tmp/atlas-music-preview.log
+          URL="$(grep -Eo 'https://[^[:space:]]+' /tmp/atlas-music-preview.log | grep -E 'workers\.dev|pages\.dev|cloudflare' | tail -n 1 | sed 's/[),.;]*$//' || true)"
+          echo "preview_url=$URL" >> "$GITHUB_OUTPUT"
+          {
+            echo '## ATLAS Music temporary preview'
+            if [ -n "$URL" ]; then echo "$URL"; else echo 'Preview deployed; inspect the deployment log for the Cloudflare claim/deployment URL.'; fi
+          } >> "$GITHUB_STEP_SUMMARY"
