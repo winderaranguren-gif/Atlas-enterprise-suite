@@ -1,0 +1,38 @@
+name: Validate ATLAS Neural Creator
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'atlas/neural-creator.mjs'
+      - 'atlas/gpu-executor.mjs'
+      - 'atlas/trainers/creator_train.py'
+      - 'scripts/validate-neural-creator.mjs'
+      - '.github/workflows/validate-neural-creator.yml'
+      - 'package.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-neural-creator:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm install --no-audit --no-fund
+      - run: node --check atlas/neural-creator.mjs
+      - run: node --check atlas/gpu-executor.mjs
+      - run: python3 -m py_compile atlas/trainers/creator_train.py
+      - run: npm run check:neural-creator
+      - name: Verify plans remain honest without trained artifacts
+        run: |
+          node atlas/neural-creator.mjs plan creator-video > /tmp/creator-plan.json
+          node -e "const j=require('/tmp/creator-plan.json'); if(j.service!=='ATLAS Neural Creator'||!Array.isArray(j.externalProviders)||j.externalProviders.length) process.exit(1); if(j.stages.some(x=>x.next==='use-validated-artifact')) throw new Error('empty CI falsely reported a validated artifact');"
+      - run: npx wrangler deploy --dry-run

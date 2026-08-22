@@ -10,6 +10,16 @@ const JOBS=resolve(FOUNDRY,'jobs.json');
 const RECIPES=resolve(FOUNDRY,'recipes.json');
 const DATASETS=resolve(FOUNDRY,'datasets.json');
 const RUNS=resolve(FOUNDRY,'runs');
+const EXECUTOR='atlas-gpu-executor/local-nvidia-v2';
+const TRAINERS={
+  'speech-to-text':['python3','atlas/trainers/stt_train.py'],
+  'phoneme-recognition':['python3','atlas/trainers/creator_train.py'],
+  'voice-synthesis':['python3','atlas/trainers/creator_train.py'],
+  'voice-clone':['python3','atlas/trainers/creator_train.py'],
+  'facial-lipsync':['python3','atlas/trainers/creator_train.py'],
+  'super-resolution':['python3','atlas/trainers/creator_train.py'],
+  'video-restyle':['python3','atlas/trainers/creator_train.py']
+};
 await mkdir(RUNS,{recursive:true});
 
 function output(v,code=0){console.log(JSON.stringify(v,null,2));process.exitCode=code}
@@ -31,23 +41,23 @@ async function detectPython(){
 }
 async function hardwareStatus(){
   const [nvidia,python]=await Promise.all([detectNvidia(),detectPython()]);
-  return{service:'ATLAS GPU Executor',version:1,ownership:'ATLAS first-party',externalProviders:[],executionMode:'local-nvidia-node',nvidia,python,ready:nvidia.available&&python.available,policy:{shellExecution:false,foundryJobRequired:true,speechToTextOnlyInV1:true,trainingStateRequiresRealProcess:true}};
+  return{service:'ATLAS GPU Executor',version:2,ownership:'ATLAS first-party',externalProviders:[],executionMode:'local-nvidia-node',supportedTasks:Object.keys(TRAINERS),nvidia,python,ready:nvidia.available&&python.available,policy:{shellExecution:false,foundryJobRequired:true,trainingStateRequiresRealProcess:true,dryRunByDefault:true}};
 }
 function find(rows,id,label){const row=rows.find(x=>x.id===id);if(!row)throw new Error(`${label} not found: ${id}`);return row}
 async function loadJob(id){
   const [jobs,recipes,datasets]=await Promise.all([readJson(JOBS,[]),readJson(RECIPES,[]),readJson(DATASETS,[])]);
   const job=find(jobs,id,'job'),recipe=find(recipes,job.recipeId,'recipe'),dataset=find(datasets,job.datasetId,'dataset');
-  if(job.task!=='speech-to-text')throw new Error('GPU Executor v1 executes only speech-to-text jobs');
+  if(!TRAINERS[job.task])throw new Error(`GPU Executor does not support task ${job.task}`);
   if(recipe.task!==job.task||dataset.task!==job.task)throw new Error('Foundry job, recipe and dataset task mismatch');
   return{jobs,job,recipe,dataset};
 }
 async function planJob(id){
-  const {job,recipe,dataset}=await loadJob(id);
-  return{service:'ATLAS GPU Executor',jobId:id,task:job.task,executor:'atlas-gpu-executor/local-nvidia-v1',command:['python3','atlas/trainers/stt_train.py','--job',id],recipe:{id:recipe.id,config:recipe.config},dataset:{id:dataset.id,manifestPath:dataset.manifestPath,itemCount:dataset.itemCount},writes:false,externalProviders:[]};
+  const {job,recipe,dataset}=await loadJob(id),base=TRAINERS[job.task],command=[...base,'--job',id];
+  return{service:'ATLAS GPU Executor',jobId:id,task:job.task,executor:EXECUTOR,command,recipe:{id:recipe.id,config:recipe.config},dataset:{id:dataset.id,manifestPath:dataset.manifestPath,itemCount:dataset.itemCount},writes:false,externalProviders:[]};
 }
 async function transition(id,state,reason,extra={}){
   const rows=await readJson(JOBS,[]),i=rows.findIndex(x=>x.id===id);if(i<0)throw new Error(`job not found: ${id}`);
-  const next={...rows[i],...extra,state,executor:'atlas-gpu-executor/local-nvidia-v1',updatedAt:now(),history:[...(rows[i].history||[]),{state,at:now(),reason}]};rows[i]=next;await saveJson(JOBS,rows);return next;
+  const next={...rows[i],...extra,state,executor:EXECUTOR,updatedAt:now(),history:[...(rows[i].history||[]),{state,at:now(),reason}]};rows[i]=next;await saveJson(JOBS,rows);return next;
 }
 async function runJob(id,flags){
   const hw=await hardwareStatus();if(!hw.ready)throw new Error(`GPU runtime is not ready: NVIDIA=${hw.nvidia.available}, Python=${hw.python.available}`);
@@ -58,8 +68,8 @@ async function runJob(id,flags){
   const child=spawn(plan.command[0],plan.command.slice(1),{cwd:ROOT,stdio:'inherit',env:{...process.env,ATLAS_FOUNDRY_ROOT:FOUNDRY,ATLAS_JOB_ID:id}});
   const code=await new Promise((resolveCode,reject)=>{child.once('error',reject);child.once('exit',(c,signal)=>resolveCode(c??(signal?128:1)))});
   const resultPath=resolve(runDir,'result.json');
-  if(code===0){await transition(id,'succeeded','trainer-exit-0',{resultPath});return{ok:true,jobId:id,state:'succeeded',resultPath,exitCode:0}}
-  await transition(id,'failed',`trainer-exit-${code}`,{resultPath});throw new Error(`STT trainer exited with code ${code}`);
+  if(code===0){await transition(id,'succeeded','trainer-exit-0',{resultPath});return{ok:true,jobId:id,task:job.task,state:'succeeded',resultPath,exitCode:0}}
+  await transition(id,'failed',`trainer-exit-${code}`,{resultPath});throw new Error(`ATLAS neural trainer exited with code ${code}`);
 }
 
 const [domain,action,...raw]=process.argv.slice(2),{positional,flags}=args(raw);
