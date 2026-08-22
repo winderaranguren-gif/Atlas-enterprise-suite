@@ -1,7 +1,9 @@
 const PROVIDERS=[
   {id:'github',name:'GitHub',kind:'development',env:['GITHUB_TOKEN'],capabilities:['repositories','branches','pull_requests','issues','actions']},
-  {id:'cloudflare',name:'Cloudflare',kind:'deployment',env:['CLOUDFLARE_API_TOKEN','CLOUDFLARE_ACCOUNT_ID'],capabilities:['workers','routes','durable_objects','realtime_turn']},
-  {id:'vercel',name:'Vercel',kind:'deployment',env:['VERCEL_TOKEN'],capabilities:['deployments','projects','domains']},
+  {id:'atlas-oci',name:'ATLAS OCI Runtime',kind:'deployment',role:'canonical-release',env:[],capabilities:['node22','oci','portable-runtime','immutable-release','local-durable-state','websocket-signaling']},
+  {id:'atlas-vps',name:'ATLAS VPS',kind:'deployment',role:'canonical-production',env:['ATLAS_VPS_HOST','ATLAS_VPS_USER','ATLAS_VPS_SSH_PRIVATE_KEY','ATLAS_VPS_KNOWN_HOST','ATLAS_VPS_PRODUCTION_URL'],capabilities:['linux','docker-compose','persistent-state','https','health-gated-deploy','rollback']},
+  {id:'cloudflare',name:'Cloudflare',kind:'deployment',role:'optional-adapter',env:['CLOUDFLARE_API_TOKEN','CLOUDFLARE_ACCOUNT_ID'],capabilities:['workers','routes','durable_objects','realtime_turn']},
+  {id:'vercel',name:'Vercel',kind:'deployment',role:'optional-adapter',env:['VERCEL_TOKEN'],capabilities:['deployments','projects','domains']},
   {id:'supabase',name:'Supabase',kind:'data',env:['SUPABASE_URL','SUPABASE_SERVICE_ROLE_KEY'],capabilities:['postgres','auth','storage','edge_functions']},
   {id:'openai',name:'OpenAI',kind:'ai',env:['OPENAI_API_KEY'],capabilities:['generation','responses','embeddings','agents']},
   {id:'anthropic',name:'Anthropic',kind:'ai',env:['ANTHROPIC_API_KEY'],capabilities:['generation','tool_use']},
@@ -51,8 +53,9 @@ try{
   if(cmd==='catalog'){
     out({
       service:'ATLAS Provider Adapters',
-      version:1,
+      version:2,
       providers:PROVIDERS,
+      productionPolicy:{canonicalRelease:'atlas-oci',canonicalProduction:'atlas-vps',thirdPartyDeploymentAdaptersOptional:true,cloudflareRequired:false},
       policy:{
         secretValuesStored:false,
         readinessChecksPresenceOnly:true,
@@ -64,14 +67,14 @@ try{
   }else if(cmd==='status'){
     const id=positional[0];
     if(id)out(readiness(providerById(id)));
-    else out({service:'ATLAS Provider Adapters',providers:PROVIDERS.map(readiness)});
+    else out({service:'ATLAS Provider Adapters',version:2,productionPolicy:{canonicalRelease:'atlas-oci',canonicalProduction:'atlas-vps'},providers:PROVIDERS.map(readiness)});
   }else if(cmd==='plan'){
     const id=positional[0];const operation=positional[1];
     if(!id||!operation)throw new Error('Usage: plan <provider> <operation> [--json PAYLOAD]');
     const provider=providerById(id);const ready=readiness(provider);const payload=safeJson(flags.json,{});
     out({
       service:'ATLAS Provider Adapters',
-      provider:{id:provider.id,name:provider.name,kind:provider.kind},
+      provider:{id:provider.id,name:provider.name,kind:provider.kind,role:provider.role||null},
       operation,
       payload,
       readiness:ready.readiness,
