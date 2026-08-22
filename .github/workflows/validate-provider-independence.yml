@@ -1,0 +1,51 @@
+name: Validate ATLAS Provider Independence
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/deploy-cloudflare-direct.yml'
+      - '.github/workflows/deploy-atlas-vps.yml'
+      - '.github/workflows/portable-runtime.yml'
+      - '.github/workflows/validate-provider-independence.yml'
+      - 'atlas/deploy-orchestrator.mjs'
+      - 'atlas/providers.mjs'
+      - 'scripts/validate-provider-independence.mjs'
+      - 'docs/ATLAS_PORTABLE_RUNTIME.md'
+      - 'package.json'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/deploy-cloudflare-direct.yml'
+      - '.github/workflows/deploy-atlas-vps.yml'
+      - '.github/workflows/portable-runtime.yml'
+      - '.github/workflows/validate-provider-independence.yml'
+      - 'atlas/deploy-orchestrator.mjs'
+      - 'atlas/providers.mjs'
+      - 'scripts/validate-provider-independence.mjs'
+      - 'docs/ATLAS_PORTABLE_RUNTIME.md'
+      - 'package.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate provider independence contract
+        run: node scripts/validate-provider-independence.mjs
+      - name: Validate deployment orchestrator syntax
+        run: node --check atlas/deploy-orchestrator.mjs
+      - name: Validate provider catalog syntax
+        run: node --check atlas/providers.mjs
+      - name: Verify sovereign default plan
+        run: |
+          node atlas/deploy-orchestrator.mjs status
+          node atlas/deploy-orchestrator.mjs plan
+          node atlas/providers.mjs catalog
