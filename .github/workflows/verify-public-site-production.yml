@@ -47,10 +47,41 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          curl --retry 6 --retry-delay 4 --retry-all-errors -fsS https://www.atlasenterprisesuite.com/product | grep -Fq 'The ATLAS enterprise'
+          curl --retry 6 --retry-delay 4 --retry-all-errors -fsS https://www.atlasenterprisesuite.com/product | grep -Fq 'One suite. Specialized modules. Shared context.'
           curl --retry 6 --retry-delay 4 --retry-all-errors -fsS https://www.atlasenterprisesuite.com/trust | grep -Fq 'Security claims must be verifiable.'
           curl --retry 6 --retry-delay 4 --retry-all-errors -fsS https://www.atlasenterprisesuite.com/status | grep -Fq 'Unified public health feed: not configured'
           curl --retry 6 --retry-delay 4 --retry-all-errors -fsS https://www.atlasenterprisesuite.com/identity -o /dev/null
+
+      - name: Verify search landing pages and sitemap
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --retry 6 --retry-delay 4 --retry-all-errors -fsS https://www.atlasenterprisesuite.com/product/connect -o /tmp/atlas-connect.html
+          grep -Fq 'ATLAS Connect' /tmp/atlas-connect.html
+          grep -Fq 'Network Fabric' /tmp/atlas-connect.html
+          grep -Fq 'Device Registry' /tmp/atlas-connect.html
+          grep -Fq '<link rel="canonical" href="https://www.atlasenterprisesuite.com/product/connect">' /tmp/atlas-connect.html
+          grep -Fq 'meta property="og:title"' /tmp/atlas-connect.html
+          grep -Fq 'twitter:card' /tmp/atlas-connect.html
+          if grep -Eqi 'Verizon[[:space:]]+(is[[:space:]]+)?connected|Verizon[[:space:]]+online' /tmp/atlas-connect.html; then
+            echo '::error::Public Connect page falsely reports Verizon as connected.'
+            exit 1
+          fi
+
+          curl --retry 6 --retry-delay 4 --retry-all-errors -fsS https://www.atlasenterprisesuite.com/solutions/connectivity -o /tmp/atlas-connectivity.html
+          grep -Fq 'carrier-neutral' /tmp/atlas-connectivity.html
+          grep -Fq 'fail closed' /tmp/atlas-connectivity.html
+          grep -Fq 'provider-verified' /tmp/atlas-connectivity.html
+
+          curl --retry 6 --retry-delay 4 --retry-all-errors -fsS https://www.atlasenterprisesuite.com/sitemap.xml -o /tmp/atlas-sitemap.xml
+          grep -Fq 'https://www.atlasenterprisesuite.com/product/finance' /tmp/atlas-sitemap.xml
+          grep -Fq 'https://www.atlasenterprisesuite.com/product/connect' /tmp/atlas-sitemap.xml
+          grep -Fq 'https://www.atlasenterprisesuite.com/solutions/connectivity' /tmp/atlas-sitemap.xml
+          grep -Fq '<lastmod>2026-08-22</lastmod>' /tmp/atlas-sitemap.xml
+          if grep -Eq '/dashboard|/api/' /tmp/atlas-sitemap.xml; then
+            echo '::error::Protected dashboard or API route entered the public sitemap.'
+            exit 1
+          fi
 
       - name: Verify application boundary and indexing policy
         shell: bash
@@ -62,6 +93,8 @@ jobs:
           [ "$APP_LOCATION" = '/dashboard' ]
           ROBOTS="$(curl --retry 6 --retry-delay 4 --retry-all-errors -fsS https://www.atlasenterprisesuite.com/robots.txt)"
           printf '%s' "$ROBOTS" | grep -Fq 'Disallow: /dashboard'
+          printf '%s' "$ROBOTS" | grep -Fq 'Disallow: /api/'
+          printf '%s' "$ROBOTS" | grep -Fq 'Sitemap: https://www.atlasenterprisesuite.com/sitemap.xml'
           DASH_HEADERS="$(curl -sSI https://www.atlasenterprisesuite.com/dashboard | tr -d '\r')"
           printf '%s' "$DASH_HEADERS" | grep -Eqi '^x-robots-tag: noindex, nofollow, noarchive$'
 
