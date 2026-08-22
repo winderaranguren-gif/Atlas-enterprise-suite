@@ -6,19 +6,23 @@ on:
     paths:
       - 'modules/public-dashboard-home.js'
       - 'modules/public-site-worker.js'
+      - 'public/**'
       - 'rideos-router.js'
       - 'scripts/validate-public-site.mjs'
       - 'package.json'
       - '.github/workflows/validate-public-site.yml'
+      - '.github/workflows/verify-public-site-production.yml'
   push:
     branches: [main]
     paths:
       - 'modules/public-dashboard-home.js'
       - 'modules/public-site-worker.js'
+      - 'public/**'
       - 'rideos-router.js'
       - 'scripts/validate-public-site.mjs'
       - 'package.json'
       - '.github/workflows/validate-public-site.yml'
+      - '.github/workflows/verify-public-site-production.yml'
 
 permissions:
   contents: read
@@ -37,5 +41,5 @@ jobs:
           node --check modules/public-site-worker.js
           node --check rideos-router.js
           node --check scripts/validate-public-site.mjs
-      - name: Validate architecture, SEO, trust and state claims
+      - name: Validate architecture, SEO, trust, visual assets and state claims
         run: npm run check:public-site

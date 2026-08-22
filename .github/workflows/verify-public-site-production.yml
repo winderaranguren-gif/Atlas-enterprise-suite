@@ -2,7 +2,7 @@ name: Verify ATLAS Public Website Production
 
 on:
   workflow_run:
-    workflows: ['Validate and Deploy ATLAS']
+    workflows: ['Deploy ATLAS Production']
     types: [completed]
 
 permissions:
@@ -13,17 +13,35 @@ jobs:
     if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main'
     runs-on: ubuntu-latest
     steps:
-      - name: Verify corporate home is production entry
+      - name: Verify rebuilt corporate home is production entry
         shell: bash
         run: |
           set -euo pipefail
           curl --retry 6 --retry-delay 4 --retry-all-errors -fsS https://www.atlasenterprisesuite.com/ -o /tmp/atlas-home.html
-          grep -Fq 'Run the work.' /tmp/atlas-home.html
-          grep -Fq 'Public website outside. Enterprise workspace inside.' /tmp/atlas-home.html
-          if grep -Eqi 'System Administrator|99\.98%|1,248|LIVE WEATHER|● LIVE' /tmp/atlas-home.html; then
+          grep -Fq 'One platform.' /tmp/atlas-home.html
+          grep -Fq 'Every solution.' /tmp/atlas-home.html
+          grep -Fq 'Total control.' /tmp/atlas-home.html
+          grep -Fq 'Menus now point somewhere meaningful.' /tmp/atlas-home.html
+          grep -Fq 'ATLAS Design Library' /tmp/atlas-home.html
+          grep -Fq 'Preview only. Module access begins after sign-in and authorization.' /tmp/atlas-home.html
+          if grep -Eqi 'System Administrator|99\.98%|1,248|98% compliance|LIVE WEATHER|● LIVE' /tmp/atlas-home.html; then
             echo '::error::Public homepage contains internal persona, decorative metric, or unverified live-state text.'
             exit 1
           fi
+          if grep -Eqi 'href="#"' /tmp/atlas-home.html; then
+            echo '::error::Public homepage contains an empty hash navigation target.'
+            exit 1
+          fi
+
+      - name: Verify ATLAS Design Library assets are served
+        shell: bash
+        run: |
+          set -euo pipefail
+          check(){ echo "Verifying $1"; curl --retry 6 --retry-delay 3 --retry-all-errors -fsS "$1" -o /dev/null; }
+          check https://www.atlasenterprisesuite.com/assets/atlas-orlando-dashboard.webp
+          check https://www.atlasenterprisesuite.com/assets/atlas-enterprise-dashboard.webp
+          check https://www.atlasenterprisesuite.com/assets/atlas-finance-command.webp
+          check https://www.atlasenterprisesuite.com/assets/atlas-product-ecosystem.webp
 
       - name: Verify public product and trust pages
         shell: bash
@@ -32,6 +50,7 @@ jobs:
           curl --retry 6 --retry-delay 4 --retry-all-errors -fsS https://www.atlasenterprisesuite.com/product | grep -Fq 'The ATLAS enterprise'
           curl --retry 6 --retry-delay 4 --retry-all-errors -fsS https://www.atlasenterprisesuite.com/trust | grep -Fq 'Security claims must be verifiable.'
           curl --retry 6 --retry-delay 4 --retry-all-errors -fsS https://www.atlasenterprisesuite.com/status | grep -Fq 'Unified public health feed: not configured'
+          curl --retry 6 --retry-delay 4 --retry-all-errors -fsS https://www.atlasenterprisesuite.com/identity -o /dev/null
 
       - name: Verify application boundary and indexing policy
         shell: bash
@@ -46,11 +65,14 @@ jobs:
           DASH_HEADERS="$(curl -sSI https://www.atlasenterprisesuite.com/dashboard | tr -d '\r')"
           printf '%s' "$DASH_HEADERS" | grep -Eqi '^x-robots-tag: noindex, nofollow, noarchive$'
 
-      - name: Verify responsive and accessibility markers are served
+      - name: Verify security responsive and accessibility markers are served
         shell: bash
         run: |
           set -euo pipefail
           HOME="$(cat /tmp/atlas-home.html)"
           printf '%s' "$HOME" | grep -Fq 'Skip to content'
-          printf '%s' "$HOME" | grep -Fq 'aria-label="Primary"'
-          printf '%s' "$HOME" | grep -Fq '@media(max-width:620px)'
+          printf '%s' "$HOME" | grep -Fq 'aria-label="Public navigation"'
+          printf '%s' "$HOME" | grep -Fq '@media(max-width:760px)'
+          HEADERS="$(curl -sSI https://www.atlasenterprisesuite.com/ | tr -d '\r')"
+          printf '%s' "$HEADERS" | grep -Eqi "^content-security-policy:.*frame-ancestors 'none'"
+          printf '%s' "$HEADERS" | grep -Eqi '^x-content-type-options: nosniff$'
