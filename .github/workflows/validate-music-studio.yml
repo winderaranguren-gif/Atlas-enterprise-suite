@@ -7,6 +7,7 @@ on:
       - 'modules/music-studio-worker.js'
       - 'scripts/validate-music-studio.mjs'
       - 'atlas-router.js'
+      - 'rideos-router.js'
       - 'package.json'
       - '.github/workflows/validate-music-studio.yml'
   workflow_dispatch:
@@ -24,5 +25,6 @@ jobs:
           node-version: '22'
       - run: node --check modules/music-studio-worker.js
       - run: node --check atlas-router.js
+      - run: node --check rideos-router.js
       - run: node scripts/validate-music-studio.mjs
       - run: npx wrangler deploy --dry-run
