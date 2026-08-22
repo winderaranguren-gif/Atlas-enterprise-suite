@@ -1,0 +1,60 @@
+name: Manufacture ATLAS Model Canary
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'atlas/model-factory.mjs'
+      - 'atlas/trainers/canary_train.py'
+      - 'scripts/validate-model-factory.mjs'
+      - '.github/workflows/manufacture-atlas-model-canary.yml'
+      - 'package.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  manufacture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm install --no-audit --no-fund
+      - run: node --check atlas/model-factory.mjs
+      - run: python3 -m py_compile atlas/trainers/canary_train.py
+      - run: npm run check:model-factory
+      - name: Manufacture ATLAS Audio Canary v1
+        run: npm run atlas:model-factory
+      - name: Verify manufactured artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s build/models/atlas-audio-canary-v1.json
+          test -s build/models/atlas-audio-canary-v1-result.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          m=json.loads(Path('build/models/atlas-audio-canary-v1.json').read_text())
+          r=json.loads(Path('build/models/atlas-audio-canary-v1-result.json').read_text())
+          assert m['model']=='ATLAS Audio Canary v1'
+          assert m['state']=='candidate-canary'
+          assert m['productionCapability'] is False
+          assert m['externalProviders']==[]
+          assert m['metrics']['holdoutAccuracy']>=0.90
+          assert len(r['sha256'])==64
+          print(json.dumps({'model':m['model'],'accuracy':m['metrics']['holdoutAccuracy'],'sha256':r['sha256'],'state':m['state']},indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: atlas-audio-canary-v1
+          path: |
+            build/models/atlas-audio-canary-v1.json
+            build/models/atlas-audio-canary-v1-result.json
+          if-no-files-found: error
+          retention-days: 14
