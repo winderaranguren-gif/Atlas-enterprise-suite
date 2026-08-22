@@ -1,0 +1,51 @@
+name: Validate ATLAS Linux Server
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'infra/linux-server/**'
+      - 'scripts/render-atlas-linux-cloud-init.mjs'
+      - 'scripts/validate-atlas-linux-server.mjs'
+      - '.github/workflows/validate-atlas-linux-server.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'infra/linux-server/**'
+      - 'scripts/render-atlas-linux-cloud-init.mjs'
+      - 'scripts/validate-atlas-linux-server.mjs'
+      - '.github/workflows/validate-atlas-linux-server.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate renderer syntax
+        run: node --check scripts/render-atlas-linux-cloud-init.mjs
+      - name: Validate ATLAS Linux Server contract
+        run: node scripts/validate-atlas-linux-server.mjs
+      - name: Parse rendered cloud-init with Python YAML
+        run: |
+          python3 -m pip install --quiet pyyaml
+          node scripts/render-atlas-linux-cloud-init.mjs \
+            --domain atlas.example.com \
+            --ssh-public-key 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAtlasValidationOnlyKeyMaterial atlas-ci' \
+            --output /tmp/atlas-cloud-init.yaml
+          python3 - <<'PY'
+          import yaml
+          with open('/tmp/atlas-cloud-init.yaml', encoding='utf-8') as f:
+              doc=yaml.safe_load(f)
+          assert doc['hostname']=='atlas-linux-server'
+          assert doc['ssh_pwauth'] is False
+          assert doc['disable_root'] is True
+          assert doc['runcmd']
+          print('ATLAS Linux cloud-init YAML valid')
+          PY
