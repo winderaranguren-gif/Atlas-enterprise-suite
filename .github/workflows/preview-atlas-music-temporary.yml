@@ -28,6 +28,36 @@ jobs:
           node --check rideos-router.js
           node scripts/validate-music-studio.mjs
           npx wrangler deploy --dry-run
+      - name: Build isolated preview configuration
+        shell: bash
+        run: |
+          cat > wrangler.preview.jsonc <<'JSON'
+          {
+            "name": "atlas-music-preview",
+            "main": "rideos-router.js",
+            "compatibility_date": "2026-08-12",
+            "workers_dev": true,
+            "assets": {
+              "directory": "./public",
+              "binding": "ASSETS",
+              "run_worker_first": true
+            },
+            "durable_objects": {
+              "bindings": [
+                {"name": "VIDEO_ROOMS", "class_name": "VideoRoom"},
+                {"name": "CONNECT_STORE", "class_name": "ConnectStore"},
+                {"name": "CAPABILITY_STATE_STORE", "class_name": "CapabilityStateStore"},
+                {"name": "WALLET_STORE", "class_name": "WalletStore"}
+              ]
+            },
+            "migrations": [
+              {"tag": "v1-video-room", "new_sqlite_classes": ["VideoRoom"]},
+              {"tag": "v2-connect-store", "new_sqlite_classes": ["ConnectStore"]},
+              {"tag": "v3-capability-state-store", "new_sqlite_classes": ["CapabilityStateStore"]},
+              {"tag": "v4-wallet-store", "new_sqlite_classes": ["WalletStore"]}
+            ]
+          }
+          JSON
       - name: Deploy temporary Cloudflare preview without account credentials
         id: preview
         env:
@@ -35,10 +65,23 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npx wrangler deploy --temporary 2>&1 | tee /tmp/atlas-music-preview.log
-          URL="$(grep -Eo 'https://[^[:space:]]+' /tmp/atlas-music-preview.log | grep -E 'workers\.dev|pages\.dev|cloudflare' | tail -n 1 | sed 's/[),.;]*$//' || true)"
+          npx wrangler deploy --temporary --config wrangler.preview.jsonc 2>&1 | tee /tmp/atlas-music-preview.log
+          URL="$(grep -Eo 'https://[^[:space:]]+' /tmp/atlas-music-preview.log | grep -E 'workers\.dev' | tail -n 1 | sed 's/[),.;]*$//' || true)"
+          CLAIM="$(grep -Eo 'https://dash\.cloudflare\.com/claim-preview\?[^[:space:]]+' /tmp/atlas-music-preview.log | tail -n 1 | sed 's/[),.;]*$//' || true)"
           echo "preview_url=$URL" >> "$GITHUB_OUTPUT"
           {
             echo '## ATLAS Music temporary preview'
-            if [ -n "$URL" ]; then echo "$URL"; else echo 'Preview deployed; inspect the deployment log for the Cloudflare claim/deployment URL.'; fi
+            if [ -n "$URL" ]; then echo "Preview: $URL/studio/music"; else echo 'Preview URL was not detected automatically; inspect the deployment log.'; fi
+            if [ -n "$CLAIM" ]; then echo "Cloudflare claim: $CLAIM"; fi
           } >> "$GITHUB_STEP_SUMMARY"
+      - name: Smoke-test ATLAS Music preview
+        if: steps.preview.outputs.preview_url != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE='${{ steps.preview.outputs.preview_url }}'
+          curl --retry 5 --retry-delay 2 --retry-all-errors -fsS "$BASE/studio/music" -o /tmp/music.html
+          curl --retry 5 --retry-delay 2 --retry-all-errors -fsS "$BASE/api/studio/music/health" -o /tmp/music-health.json
+          grep -q 'ATLAS MUSIC' /tmp/music.html
+          node -e "const j=require('/tmp/music-health.json');if(!j.ok||j.module!=='ATLAS Music')process.exit(1)"
+          echo "ATLAS Music preview verified at $BASE/studio/music" >> "$GITHUB_STEP_SUMMARY"
