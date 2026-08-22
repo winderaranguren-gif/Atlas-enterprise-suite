@@ -17,6 +17,10 @@ on:
         required: true
         default: true
         type: boolean
+  workflow_run:
+    workflows: ["ATLAS Portable Runtime"]
+    branches: [main]
+    types: [completed]
 
 permissions:
   contents: read
@@ -28,32 +32,60 @@ env:
   ATLAS_VPS_SSH_PRIVATE_KEY: ${{ secrets.ATLAS_VPS_SSH_PRIVATE_KEY }}
   ATLAS_VPS_KNOWN_HOST: ${{ secrets.ATLAS_VPS_KNOWN_HOST }}
   ATLAS_VPS_PRODUCTION_URL: ${{ secrets.ATLAS_VPS_PRODUCTION_URL }}
+  TARGET_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
 
 jobs:
   deploy:
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && vars.ATLAS_VPS_AUTO_DEPLOY == 'true') }}
     runs-on: ubuntu-latest
     environment: production
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TARGET_SHA }}
 
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+
+      - name: Resolve immutable release contract
+        id: release
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_IMAGE: ${{ inputs.image }}
+          INPUT_DOMAIN: ${{ inputs.domain }}
+          AUTO_DOMAIN: ${{ vars.ATLAS_SOVEREIGN_DOMAIN }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            IMAGE="$INPUT_IMAGE"
+            DOMAIN="$INPUT_DOMAIN"
+            BOOTSTRAP="${{ inputs.bootstrap }}"
+          else
+            IMAGE="ghcr.io/winderaranguren-gif/atlas-enterprise-suite:${TARGET_SHA}"
+            DOMAIN="$AUTO_DOMAIN"
+            BOOTSTRAP="false"
+          fi
+          printf 'image=%s\n' "$IMAGE" >> "$GITHUB_OUTPUT"
+          printf 'domain=%s\n' "$DOMAIN" >> "$GITHUB_OUTPUT"
+          printf 'bootstrap=%s\n' "$BOOTSTRAP" >> "$GITHUB_OUTPUT"
+          printf 'target_sha=%s\n' "$TARGET_SHA" >> "$GITHUB_OUTPUT"
 
       - name: Validate ATLAS VPS release files
         shell: bash
         run: |
           set -euo pipefail
           node scripts/validate-atlas-vps.mjs
+          node scripts/validate-provider-independence.mjs
           bash -n scripts/atlas-vps-bootstrap.sh
           bash -n scripts/atlas-vps-deploy.sh
 
       - name: Validate deployment inputs and credentials
-        id: contract
         shell: bash
         env:
-          IMAGE: ${{ inputs.image }}
-          DOMAIN: ${{ inputs.domain }}
+          IMAGE: ${{ steps.release.outputs.image }}
+          DOMAIN: ${{ steps.release.outputs.domain }}
         run: |
           set -euo pipefail
           [[ "$IMAGE" =~ ^ghcr\.io/winderaranguren-gif/atlas-enterprise-suite(:[A-Za-z0-9._-]+|@sha256:[a-f0-9]{64})$ ]] || { echo 'Invalid ATLAS image.' >&2; exit 1; }
@@ -62,6 +94,18 @@ jobs:
           for name in ATLAS_VPS_HOST ATLAS_VPS_USER ATLAS_VPS_SSH_PRIVATE_KEY ATLAS_VPS_KNOWN_HOST ATLAS_VPS_PRODUCTION_URL; do
             [[ -n "${!name:-}" ]] || { echo "Missing required secret: $name" >&2; exit 1; }
           done
+
+      - name: Mark sovereign VPS deployment pending
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STATUS_SHA: ${{ steps.release.outputs.target_sha }}
+        shell: bash
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${STATUS_SHA}" \
+            -d "{\"state\":\"pending\",\"context\":\"atlas/sovereign-production\",\"description\":\"Deploying ATLAS sovereign VPS\",\"target_url\":\"https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}" >/dev/null
 
       - name: Prepare pinned SSH transport
         shell: bash
@@ -82,11 +126,11 @@ jobs:
             ssh "${ssh_opts[@]}" "$target" 'rm -rf /tmp/atlas-vps-source && mkdir -p /tmp/atlas-vps-source && tar -xzf - -C /tmp/atlas-vps-source'
 
       - name: Bootstrap ATLAS VPS
-        if: ${{ inputs.bootstrap }}
+        if: ${{ steps.release.outputs.bootstrap == 'true' }}
         shell: bash
         env:
-          IMAGE: ${{ inputs.image }}
-          DOMAIN: ${{ inputs.domain }}
+          IMAGE: ${{ steps.release.outputs.image }}
+          DOMAIN: ${{ steps.release.outputs.domain }}
         run: |
           set -euo pipefail
           target="${ATLAS_VPS_USER}@${ATLAS_VPS_HOST}"
@@ -96,7 +140,7 @@ jobs:
       - name: Deploy selected ATLAS image with rollback
         shell: bash
         env:
-          IMAGE: ${{ inputs.image }}
+          IMAGE: ${{ steps.release.outputs.image }}
         run: |
           set -euo pipefail
           target="${ATLAS_VPS_USER}@${ATLAS_VPS_HOST}"
@@ -109,26 +153,28 @@ jobs:
           set -euo pipefail
           node scripts/verify-sovereign-production.mjs "$ATLAS_VPS_PRODUCTION_URL"
 
-      - name: Mark ATLAS VPS production verified
+      - name: Mark ATLAS sovereign production verified
         if: success()
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          STATUS_SHA: ${{ steps.release.outputs.target_sha }}
         run: |
           curl -fsS -X POST \
             -H "Authorization: Bearer ${GH_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
-            -d "{\"state\":\"success\",\"context\":\"atlas/vps-production\",\"description\":\"ATLAS VPS production verified\",\"target_url\":\"https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}" >/dev/null
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${STATUS_SHA}" \
+            -d "{\"state\":\"success\",\"context\":\"atlas/sovereign-production\",\"description\":\"ATLAS sovereign VPS production verified\",\"target_url\":\"https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}" >/dev/null
 
-      - name: Mark ATLAS VPS production failure
+      - name: Mark ATLAS sovereign production failure
         if: failure()
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          STATUS_SHA: ${{ steps.release.outputs.target_sha }}
         run: |
           curl -sS -X POST \
             -H "Authorization: Bearer ${GH_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
-            -d "{\"state\":\"failure\",\"context\":\"atlas/vps-production\",\"description\":\"ATLAS VPS deployment or verification failed\",\"target_url\":\"https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}" >/dev/null || true
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${STATUS_SHA}" \
+            -d "{\"state\":\"failure\",\"context\":\"atlas/sovereign-production\",\"description\":\"ATLAS sovereign VPS deployment or verification failed\",\"target_url\":\"https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}" >/dev/null || true

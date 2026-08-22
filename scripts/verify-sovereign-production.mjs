@@ -23,7 +23,7 @@ async function get(path,{json=false,contains=[]}={}){
   const timer=setTimeout(()=>controller.abort(),15000);
   let response;
   try{
-    response=await fetch(url,{redirect:'follow',headers:{'user-agent':'ATLAS-Sovereign-Production-Verifier/1'},signal:controller.signal});
+    response=await fetch(url,{redirect:'follow',headers:{'user-agent':'ATLAS-Sovereign-Production-Verifier/2'},signal:controller.signal});
   }finally{
     clearTimeout(timer);
   }
@@ -42,7 +42,15 @@ if(!runtime?.ok)throw new Error('Portable runtime capability endpoint is not hea
 
 await get('/',{contains:['ATLAS']});
 await get('/identity',{contains:['ATLAS']});
+await get('/studio',{contains:['ATLAS']});
 await get('/studio/create-anything',{contains:['ATLAS']});
+await get('/studio/production',{contains:['ATLAS']});
+
+const studio=await get('/api/studio/health',{json:true});
+if(studio?.ok!==true)throw new Error('ATLAS Creator Studio health contract mismatch.');
+
+const studioProduction=await get('/api/studio/production/health',{json:true});
+if(studioProduction?.ok!==true)throw new Error('ATLAS Native Studio production health contract mismatch.');
 
 const universal=await get('/api/studio/creator/universal/capabilities',{json:true});
 if(universal?.service!=='atlas-universal-creator')throw new Error('ATLAS Universal Creator production contract mismatch.');
@@ -50,5 +58,16 @@ if(!Array.isArray(universal?.externalProviders)||universal.externalProviders.len
 
 const web=await get('/api/studio/creator/web/capabilities',{json:true});
 if(web?.service!=='atlas-creator-web-director')throw new Error('ATLAS Creator Web Director production contract mismatch.');
+if(Array.isArray(web?.externalProviders)&&web.externalProviders.length!==0)throw new Error('Creator Web Director unexpectedly requires an external builder.');
 
-console.log(JSON.stringify({ok:true,service:'ATLAS Sovereign Production',target:base.origin,portableRuntime:true,universalCreator:true,creatorWeb:true,verifiedAt:new Date().toISOString()},null,2));
+console.log(JSON.stringify({
+  ok:true,
+  service:'ATLAS Sovereign Production',
+  target:base.origin,
+  portableRuntime:true,
+  creatorStudio:true,
+  nativeStudio:true,
+  universalCreator:true,
+  creatorWeb:true,
+  verifiedAt:new Date().toISOString()
+},null,2));
