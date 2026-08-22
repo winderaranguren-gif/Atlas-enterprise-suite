@@ -1,0 +1,160 @@
+#cloud-config
+hostname: __ATLAS_HOSTNAME__
+manage_etc_hosts: true
+package_update: true
+package_upgrade: true
+ssh_pwauth: false
+disable_root: true
+
+users:
+  - default
+  - name: atlas
+    gecos: ATLAS Linux Server Administrator
+    groups: [adm, sudo]
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    lock_passwd: true
+    ssh_authorized_keys:
+      - __ATLAS_SSH_PUBLIC_KEY__
+
+write_files:
+  - path: /opt/atlas-vps/.env
+    owner: root:root
+    permissions: '0600'
+    content: |
+      ATLAS_IMAGE=__ATLAS_IMAGE__
+      ATLAS_DOMAIN=__ATLAS_DOMAIN__
+
+  - path: /opt/atlas-vps/compose.yml
+    owner: root:root
+    permissions: '0640'
+    content: |
+      services:
+        atlas:
+          image: ${ATLAS_IMAGE}
+          container_name: atlas-app
+          restart: unless-stopped
+          env_file:
+            - .env
+          environment:
+            NODE_ENV: production
+            HOST: 0.0.0.0
+            PORT: 8080
+            ATLAS_RUNTIME_PROVIDER: atlas-linux-server
+            ATLAS_STATE_DIR: /var/lib/atlas
+          volumes:
+            - atlas_state:/var/lib/atlas
+          expose:
+            - "8080"
+          networks:
+            - atlas_net
+          read_only: true
+          tmpfs:
+            - /tmp:size=128m,mode=1777
+          security_opt:
+            - no-new-privileges:true
+          cap_drop:
+            - ALL
+          healthcheck:
+            test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/_atlas/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+            interval: 20s
+            timeout: 5s
+            start_period: 15s
+            retries: 4
+
+        edge:
+          image: caddy:2-alpine
+          container_name: atlas-edge
+          restart: unless-stopped
+          depends_on:
+            atlas:
+              condition: service_healthy
+          ports:
+            - "80:80"
+            - "443:443"
+            - "443:443/udp"
+          volumes:
+            - ./Caddyfile:/etc/caddy/Caddyfile:ro
+            - caddy_data:/data
+            - caddy_config:/config
+          networks:
+            - atlas_net
+          security_opt:
+            - no-new-privileges:true
+
+      volumes:
+        atlas_state:
+          name: atlas_linux_state
+        caddy_data:
+          name: atlas_linux_caddy_data
+        caddy_config:
+          name: atlas_linux_caddy_config
+
+      networks:
+        atlas_net:
+          name: atlas_linux_net
+          driver: bridge
+
+  - path: /opt/atlas-vps/Caddyfile
+    owner: root:root
+    permissions: '0644'
+    content: |
+      __ATLAS_DOMAIN__ {
+        encode zstd gzip
+        reverse_proxy atlas:8080
+        header {
+          Strict-Transport-Security "max-age=31536000; includeSubDomains"
+          X-Content-Type-Options "nosniff"
+          Referrer-Policy "strict-origin-when-cross-origin"
+          -Server
+        }
+      }
+
+  - path: /usr/local/sbin/atlas-first-boot
+    owner: root:root
+    permissions: '0750'
+    content: |
+      #!/usr/bin/env bash
+      set -euo pipefail
+      export DEBIAN_FRONTEND=noninteractive
+
+      if [[ -f /var/lib/atlas-linux-server/bootstrapped ]]; then
+        exit 0
+      fi
+
+      apt-get update -y
+      apt-get install -y ca-certificates curl docker.io ufw
+      if ! docker compose version >/dev/null 2>&1; then
+        apt-get install -y docker-compose-v2 2>/dev/null || apt-get install -y docker-compose-plugin 2>/dev/null
+      fi
+      docker compose version >/dev/null 2>&1
+      systemctl enable --now docker
+
+      ufw allow __ATLAS_SSH_PORT__/tcp
+      ufw allow 80/tcp
+      ufw allow 443/tcp
+      ufw allow 443/udp
+      ufw --force enable
+
+      cd /opt/atlas-vps
+      docker compose -f compose.yml pull
+      docker compose -f compose.yml up -d
+
+      healthy=''
+      for _ in $(seq 1 60); do
+        healthy="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}unknown{{end}}' atlas-app 2>/dev/null || true)"
+        [[ "$healthy" == healthy ]] && break
+        [[ "$healthy" == unhealthy ]] && { docker logs --tail 150 atlas-app >&2 || true; exit 1; }
+        sleep 2
+      done
+      [[ "$healthy" == healthy ]]
+
+      docker exec atlas-app node -e "fetch('http://127.0.0.1:8080/_atlas/health').then(r=>r.json()).then(j=>process.exit(j.ok&&j.service==='ATLAS Portable Runtime'?0:1)).catch(()=>process.exit(1))"
+
+      install -d -m 0750 /var/lib/atlas-linux-server
+      date -u +%FT%TZ > /var/lib/atlas-linux-server/bootstrapped
+
+runcmd:
+  - [bash, -lc, /usr/local/sbin/atlas-first-boot]
+
+final_message: "ATLAS Linux Server bootstrap finished. Verify the public origin before marking production."
