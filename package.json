@@ -73,6 +73,9 @@
     "check:public-site": "node scripts/validate-public-site.mjs",
     "check:vps": "node scripts/validate-atlas-vps.mjs",
     "check:weather": "node scripts/validate-weather.mjs",
-    "deploy:provider": "wrangler deploy"
+    "check:provider-independence": "node scripts/validate-provider-independence.mjs",
+    "deploy:provider": "node atlas/deploy-orchestrator.mjs plan sovereign",
+    "deploy:sovereign": "node atlas/deploy-orchestrator.mjs plan sovereign",
+    "deploy:cloudflare": "wrangler deploy"
   }
 }
