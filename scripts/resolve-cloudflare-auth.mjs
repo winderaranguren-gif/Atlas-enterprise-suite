@@ -50,15 +50,52 @@ try {
 for (const match of cleaned.matchAll(/\b(?:cfat|cfut)_[A-Za-z0-9_-]{10,}\b/g)) add(match[0]);
 for (const match of cleaned.matchAll(/[A-Za-z0-9_-]{30,}/g)) add(match[0]);
 
-// Recover credentials that were accidentally saved as colon-delimited pairs
-// such as label:token, account-id:token, or Authorization:Bearer token.
-// Each segment is tested independently without ever printing its value.
+// Recover credentials accidentally saved as colon-delimited pairs such as
+// label:token, account-id:token, or Authorization:Bearer token. Each segment
+// is tested independently without ever printing its value.
 const colonSegments = cleaned
   .split(':')
   .map((segment) => segment.trim())
   .filter(Boolean);
 if (colonSegments.length > 1 && colonSegments.length <= 4) {
   for (const segment of colonSegments) add(segment);
+}
+
+async function cloudflareTokenActive(candidate) {
+  // Cloudflare documents both endpoints for testing whether an API token is
+  // active. Prefer the configured account-scoped endpoint, then fall back to
+  // the user-token endpoint for user-issued scoped tokens. This avoids
+  // requiring `wrangler whoami` to enumerate account metadata just to prove
+  // token validity.
+  const endpoints = [
+    `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/tokens/verify`,
+    'https://api.cloudflare.com/client/v4/user/tokens/verify',
+  ];
+
+  for (const endpoint of endpoints) {
+    try {
+      const response = await fetch(endpoint, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${candidate}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!response.ok) continue;
+      const payload = await response.json();
+      if (payload?.success === true && payload?.result?.status === 'active') return true;
+    } catch {}
+  }
+  return false;
+}
+
+for (const candidate of candidates) {
+  console.log(`::add-mask::${candidate}`);
+  if (await cloudflareTokenActive(candidate)) {
+    appendFileSync(githubEnv, `CLOUDFLARE_API_TOKEN=${candidate}\n`, 'utf8');
+    console.log('Cloudflare authentication resolved as active API token.');
+    process.exit(0);
+  }
 }
 
 const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx';
@@ -69,15 +106,6 @@ function wranglerWhoami(env) {
   });
   const text = `${result.stdout || ''}\n${result.stderr || ''}`;
   return result.status === 0 && text.includes(accountId);
-}
-
-for (const candidate of candidates) {
-  console.log(`::add-mask::${candidate}`);
-  if (wranglerWhoami({ CLOUDFLARE_API_TOKEN: candidate, CLOUDFLARE_API_KEY: '', CLOUDFLARE_EMAIL: '' })) {
-    appendFileSync(githubEnv, `CLOUDFLARE_API_TOKEN=${candidate}\n`, 'utf8');
-    console.log('Cloudflare authentication resolved as API token.');
-    process.exit(0);
-  }
 }
 
 let legacy = null;
@@ -100,7 +128,7 @@ if (legacy) {
   }
 }
 
-fail('Stored Cloudflare credential does not authenticate the configured ATLAS account.', {
+fail('Stored Cloudflare credential is not an active API token for the configured ATLAS Cloudflare account.', {
   rawLength: [...raw].length,
   candidates: candidates.length,
   prefixedCandidates: candidates.filter((v) => /^cf(?:at|ut)_/.test(v)).length,
