@@ -1,0 +1,38 @@
+name: Validate ATLAS GPU STT Foundation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'atlas/gpu-executor.mjs'
+      - 'atlas/trainers/stt_train.py'
+      - 'modules/studio-model-lab-worker.js'
+      - 'scripts/validate-gpu-stt-foundation.mjs'
+      - '.github/workflows/validate-gpu-stt-foundation.yml'
+      - 'package.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-gpu-stt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm install --no-audit --no-fund
+      - run: node --check atlas/gpu-executor.mjs
+      - run: python3 -m py_compile atlas/trainers/stt_train.py
+      - run: node --check modules/studio-model-lab-worker.js
+      - run: npm run check:gpu-stt
+      - name: Verify hardware probe is honest on non-GPU CI
+        run: |
+          node atlas/gpu-executor.mjs status > /tmp/gpu.json
+          node -e "const j=require('/tmp/gpu.json'); if(j.service!=='ATLAS GPU Executor'||!Array.isArray(j.externalProviders)||j.externalProviders.length) process.exit(1); if(j.ready!==false) throw new Error('Hosted CI unexpectedly reported a configured NVIDIA training node');"
+      - run: npx wrangler deploy --dry-run
