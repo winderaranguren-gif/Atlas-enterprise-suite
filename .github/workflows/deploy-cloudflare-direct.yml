@@ -1,6 +1,16 @@
 name: Deploy ATLAS Cloudflare Adapter (Optional)
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'modules/public-dashboard-home.js'
+      - 'modules/public-site-worker.js'
+      - 'public/**'
+      - 'scripts/validate-public-site.mjs'
+      - 'wrangler.jsonc'
+      - 'docs/releases/**'
+      - '.github/workflows/deploy-cloudflare-direct.yml'
   workflow_dispatch:
     inputs:
       confirm:
@@ -47,7 +57,7 @@ jobs:
           npx wrangler deploy --dry-run
 
   deploy:
-    if: ${{ inputs.confirm == 'cloudflare-adapter' }}
+    if: ${{ github.event_name == 'push' || inputs.confirm == 'cloudflare-adapter' }}
     needs: validate
     runs-on: ubuntu-latest
     steps:
@@ -81,7 +91,27 @@ jobs:
           printf '%s' "$LIST" | grep -q 'TURN_KEY_API_TOKEN'
       - name: Deploy optional ATLAS Cloudflare adapter
         run: npx wrangler deploy
-      - name: Smoke-test optional adapter
+      - name: Verify public website release on Cloudflare
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --retry 6 --retry-delay 4 --retry-all-errors -fsS https://www.atlasenterprisesuite.com/ -o /tmp/atlas-home.html
+          grep -Fq 'One platform.' /tmp/atlas-home.html
+          grep -Fq 'Every solution.' /tmp/atlas-home.html
+          grep -Fq 'Total control.' /tmp/atlas-home.html
+          grep -Fq 'ATLAS Design Library' /tmp/atlas-home.html
+          if grep -Eqi 'href="#"|System Administrator|99\.98%|1,248|98% compliance|LIVE WEATHER|● LIVE' /tmp/atlas-home.html; then
+            echo '::error::Public homepage failed the ATLAS anti-fake-state or navigation gate.'
+            exit 1
+          fi
+          for asset in \
+            atlas-orlando-dashboard.webp \
+            atlas-enterprise-dashboard.webp \
+            atlas-finance-command.webp \
+            atlas-product-ecosystem.webp; do
+            curl --retry 6 --retry-delay 3 --retry-all-errors -fsS "https://www.atlasenterprisesuite.com/assets/${asset}" -o /dev/null
+          done
+      - name: Smoke-test optional adapter application routes
         shell: bash
         run: |
           set -euo pipefail
