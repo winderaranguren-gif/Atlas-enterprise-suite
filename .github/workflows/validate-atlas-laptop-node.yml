@@ -1,0 +1,26 @@
+name: Validate ATLAS Laptop Node
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate ATLAS laptop node contract
+        run: node scripts/validate-atlas-laptop-node.mjs
+      - name: Validate Bash launcher syntax
+        run: bash -n scripts/atlas-laptop-node.sh
+      - name: Validate Compose model
+        run: docker compose -f infra/laptop/compose.yml config >/dev/null
