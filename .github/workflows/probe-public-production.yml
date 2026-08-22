@@ -1,0 +1,50 @@
+name: Probe ATLAS Public Production
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/probe-public-production.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  probe-public-production:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify rebuilt home from public Internet
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --retry 8 --retry-delay 5 --retry-all-errors -fsS https://www.atlasenterprisesuite.com/ -o /tmp/home.html
+          grep -Fq 'One platform.' /tmp/home.html
+          grep -Fq 'Every solution.' /tmp/home.html
+          grep -Fq 'Total control.' /tmp/home.html
+          grep -Fq 'Menus now point somewhere meaningful.' /tmp/home.html
+          grep -Fq 'ATLAS Design Library' /tmp/home.html
+          grep -Fq 'Preview only. Module access begins after sign-in and authorization.' /tmp/home.html
+          if grep -Eqi 'System Administrator|99\.98%|1,248|98% compliance|LIVE WEATHER|● LIVE|href="#"' /tmp/home.html; then
+            echo '::error::Stale or unsafe public homepage content detected.'
+            exit 1
+          fi
+      - name: Verify public Design Library assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          for asset in atlas-orlando-dashboard.webp atlas-enterprise-dashboard.webp atlas-finance-command.webp atlas-product-ecosystem.webp; do
+            curl --retry 8 --retry-delay 5 --retry-all-errors -fsS "https://www.atlasenterprisesuite.com/assets/$asset" -o "/tmp/$asset"
+            test -s "/tmp/$asset"
+          done
+      - name: Verify Identity boundary and public security headers
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --retry 8 --retry-delay 5 --retry-all-errors -fsS https://www.atlasenterprisesuite.com/identity -o /dev/null
+          APP_STATUS="$(curl -sS -o /dev/null -w '%{http_code}' https://www.atlasenterprisesuite.com/app)"
+          APP_LOCATION="$(curl -sSI https://www.atlasenterprisesuite.com/app | tr -d '\r' | awk 'BEGIN{IGNORECASE=1} /^location:/{print $2; exit}')"
+          [ "$APP_STATUS" = '307' ]
+          [ "$APP_LOCATION" = '/dashboard' ]
+          HEADERS="$(curl -sSI https://www.atlasenterprisesuite.com/ | tr -d '\r')"
+          printf '%s' "$HEADERS" | grep -Eqi "^content-security-policy:.*frame-ancestors 'none'"
+          printf '%s' "$HEADERS" | grep -Eqi '^x-content-type-options: nosniff$'
