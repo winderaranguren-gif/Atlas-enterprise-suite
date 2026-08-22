@@ -9,6 +9,8 @@ async function text(path) {
 }
 
 const html = await text('/studio');
+const client = await text('/studio/client.js');
+const runtimeSurface = html + '\n' + client;
 const required = [
   'Home & Inspiration',
   'Create & Edit',
@@ -23,15 +25,19 @@ const required = [
   'Creator feedback',
   '/studio/production'
 ];
-for (const token of required) assert.ok(html.includes(token), `missing UI token: ${token}`);
+for (const token of required) assert.ok(runtimeSurface.includes(token), `missing UI/runtime token: ${token}`);
 
 for (const forbidden of ['1.84M','128.4K','$8,420','642000','184000','Publish demo','Demo Mode · Connector Ready']) {
-  assert.ok(!html.includes(forbidden), `synthetic/demo metric leaked into Studio: ${forbidden}`);
+  assert.ok(!runtimeSurface.includes(forbidden), `synthetic/demo metric leaked into Studio: ${forbidden}`);
 }
 assert.ok(!html.includes('href="#"'), 'empty navigation links are not allowed');
-assert.ok(html.includes('No analytics connected or imported'), 'analytics must have a truthful empty state');
-assert.ok(html.includes('No rewards, balance or program data connected/imported'), 'monetization must have a truthful empty state');
+assert.ok(client.includes('No analytics connected or imported'), 'analytics must have a truthful empty state');
+assert.ok(client.includes('No rewards, balance or program data connected/imported'), 'monetization must have a truthful empty state');
 assert.ok(html.includes('Publish externally</button>') && html.includes('disabled title="Requires authorized publishing connector"'), 'external publish must remain disabled without a connector');
+assert.ok(html.includes('<script src="/studio/client.js"></script>'), 'browser runtime must be served separately');
+assert.ok(client.includes('navigator.mediaDevices.getUserMedia'), 'camera capture must be wired');
+assert.ok(client.includes('new MediaRecorder'), 'recording must be wired');
+assert.ok(client.includes("download('atlas-smart-split-plan.json'"), 'Smart Split export must be wired');
 
 const health = JSON.parse(await text('/api/studio/health'));
 assert.equal(health.ok, true);
