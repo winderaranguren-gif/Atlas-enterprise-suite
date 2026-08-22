@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {existsSync,statSync} from 'node:fs';
 import {handlePublicDashboardHome} from '../modules/public-dashboard-home.js';
 import {handlePublicSite} from '../modules/public-site-worker.js';
 
@@ -31,15 +32,33 @@ const home=await page('/');
 assert.match(home.html,/One platform\./i);
 assert.match(home.html,/Every solution\./i);
 assert.match(home.html,/Total control\./i);
-assert.match(home.html,/Public preview outside\. Authorized modules inside\./i);
+assert.match(home.html,/Public preview outside\./i);
+assert.match(home.html,/Authorized modules inside\./i);
 assert.match(home.html,/Preview only\. Module access begins after sign-in and authorization\./i);
 assert.match(home.html,/href="\/identity"/i,'public home must provide a deliberate sign-in transition');
 assert.match(home.html,/Accounting/i,'public home may visually preview module names');
 assert.match(home.html,/Connect data/i,'business metrics must remain unpopulated before authorized data is connected');
+assert.match(home.html,/ATLAS Design Library/i,'public home must identify curated visual assets as design-library concepts');
+assert.match(home.html,/\/assets\/atlas-orlando-dashboard\.webp/i,'public home must use the curated Orlando visual');
+assert.match(home.html,/\/assets\/atlas-enterprise-dashboard\.webp/i,'public home must use the curated enterprise visual');
+assert.match(home.html,/\/assets\/atlas-finance-command\.webp/i,'public home must use the curated finance visual');
+assert.match(home.html,/\/assets\/atlas-product-ecosystem\.webp/i,'public home must use the curated ecosystem visual');
+assert.doesNotMatch(home.html,/href="#"/i,'public home must not contain empty hash navigation');
 assert.doesNotMatch(home.html,/href="\/(finance|hr|operations|ride|wallet|studio|workbench|browser)"/i,'public home must not expose application modules as active links');
 assert.doesNotMatch(home.html,/System Administrator/i,'public home must not expose an administrator persona');
 assert.doesNotMatch(home.html,/\$2\.45M|1,248|99\.98%|98% compliance/i,'public home must not expose decorative operational metrics');
 assert.doesNotMatch(home.html,/LIVE WEATHER|● LIVE/i,'public home must not manufacture live state');
+
+const visualAssets=[
+  'public/assets/atlas-orlando-dashboard.webp',
+  'public/assets/atlas-enterprise-dashboard.webp',
+  'public/assets/atlas-finance-command.webp',
+  'public/assets/atlas-product-ecosystem.webp'
+];
+for(const asset of visualAssets){
+  assert.ok(existsSync(asset),`${asset} must exist in the repository-owned public asset bundle`);
+  assert.ok(statSync(asset).size>1000,`${asset} must contain a non-empty web image`);
+}
 
 const headHome=route('/','HEAD');
 assert.equal(headHome.status,200);
@@ -77,4 +96,4 @@ const status=await page('/status');
 assert.match(status.html,/not configured/i,'Status page must fail honestly when a unified health feed is absent');
 assert.doesNotMatch(status.html,/99\.9|100% operational/i,'Status page must not invent uptime');
 
-console.log(`ATLAS public website validation passed: ${publicPaths.length} pages + visual public dashboard boundary, routing, SEO, trust, status and anti-fake-state gates.`);
+console.log(`ATLAS public website validation passed: ${publicPaths.length} pages + routed visual home, Design Library assets, SEO, trust, status and anti-fake-state gates.`);
