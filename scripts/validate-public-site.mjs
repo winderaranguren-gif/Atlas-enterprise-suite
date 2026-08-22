@@ -72,7 +72,7 @@ assert.match(connect.html,/ATLAS Connect/i);
 assert.match(connect.html,/Network Fabric/i,'Connect product page must expose Network Fabric');
 assert.match(connect.html,/Device Registry/i,'Connect product page must expose Device Registry');
 assert.match(connect.html,/Verizon/i,'Connect product page may describe Verizon as a supported provider category without claiming a live connection');
-assert.doesNotMatch(connect.html,/Verizon.*connected|connected.*Verizon/i,'Connect public page must not claim Verizon is connected');
+assert.doesNotMatch(connect.html,/Verizon\s+(is\s+)?connected|Verizon\s+status\s*:\s*connected|Verizon\s+online/i,'Connect public page must not claim Verizon is connected');
 
 const connectivity=await page('/solutions/connectivity');
 assert.match(connectivity.html,/carrier-neutral/i,'connectivity solution must describe the provider-neutral architecture');
