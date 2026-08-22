@@ -18,7 +18,7 @@ jobs:
         with:
           node-version: '22'
       - run: npm install --no-audit --no-fund
-      - name: Verify visual launcher, API and artwork asset
+      - name: Verify visual launcher, submenus, routes, API and artwork asset
         shell: bash
         run: |
           node --input-type=module <<'NODE'
@@ -26,15 +26,44 @@ jobs:
           const menu=await dispatchAtlasRequest(new Request('http://atlas.local/menu'));
           if(!menu.ok) throw new Error(`menu returned ${menu.status}`);
           const html=await menu.text();
-          for(const token of ['Visual Command Menu','/assets/atlas-menu-board.jpg','href="/health"','href="/erp"','href="/education"','href="/global"']){
+          for(const token of ['Visual Command Menu','/assets/atlas-menu-board.jpg','id="submenu"','Tap a module to inspect its real submenu','Open module']){
             if(!html.includes(token)) throw new Error(`menu missing ${token}`);
           }
           const api=await dispatchAtlasRequest(new Request('http://atlas.local/api/menu/modules'));
           const data=await api.json();
           if(!data.ok||!Array.isArray(data.modules)||data.modules.length<12) throw new Error('menu API did not expose live destinations');
+          const required={
+            health:['/health/patients','/health/virtual-care','/health/smart-rooms'],
+            erp:['/erp/operations','/erp/supply-chain','/erp/inventory'],
+            education:['/education/students','/education/learning','/education/assessments'],
+            finance:['/finance/accounting','/finance/cash-flow','/finance/control-center'],
+            browser:['/browser/evidence','/browser/settings','/browser/ios-readiness'],
+            connect:['/connect/inbox','/connect/contacts','/connect/settings'],
+            studio:['/studio/create-anything','/studio/director','/studio/production']
+          };
+          for(const [id,routes] of Object.entries(required)){
+            const mod=data.modules.find(m=>m.id===id);
+            if(!mod||!Array.isArray(mod.children)) throw new Error(`${id} submenu missing`);
+            const childRoutes=new Set(mod.children.map(c=>c[1]));
+            for(const route of routes) if(!childRoutes.has(route)) throw new Error(`${id} submenu missing ${route}`);
+          }
+          const allRoutes=new Set();
+          for(const mod of data.modules){
+            allRoutes.add(mod.route);
+            for(const child of mod.children||[]) allRoutes.add(child[1]);
+          }
+          for(const route of allRoutes){
+            if(route==='/menu') continue;
+            const response=await dispatchAtlasRequest(new Request(`http://atlas.local${route}`));
+            if(route==='/wallet'){
+              if(![200,503].includes(response.status)) throw new Error(`protected wallet route returned unexpected ${response.status}`);
+              continue;
+            }
+            if(response.status>=400) throw new Error(`submenu route ${route} returned ${response.status}`);
+          }
           const image=await dispatchAtlasRequest(new Request('http://atlas.local/assets/atlas-menu-board.jpg'));
           if(!image.ok) throw new Error(`artwork returned ${image.status}`);
           if(!(image.headers.get('content-type')||'').includes('image/jpeg')) throw new Error('artwork MIME type is not JPEG');
           if((await image.arrayBuffer()).byteLength<10000) throw new Error('artwork asset is unexpectedly small');
-          console.log('ATLAS visual menu validation passed');
+          console.log(`ATLAS visual submenu validation passed across ${allRoutes.size} routes; Wallet correctly treated as protected`);
           NODE
