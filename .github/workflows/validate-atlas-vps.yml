@@ -1,0 +1,52 @@
+name: Validate ATLAS VPS
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'infra/vps/**'
+      - 'scripts/atlas-vps-*.sh'
+      - 'scripts/validate-atlas-vps.mjs'
+      - 'docs/ATLAS_VPS.md'
+      - '.github/workflows/deploy-atlas-vps.yml'
+      - '.github/workflows/validate-atlas-vps.yml'
+      - 'package.json'
+  push:
+    branches: [main]
+    paths:
+      - 'infra/vps/**'
+      - 'scripts/atlas-vps-*.sh'
+      - 'scripts/validate-atlas-vps.mjs'
+      - 'docs/ATLAS_VPS.md'
+      - '.github/workflows/deploy-atlas-vps.yml'
+      - '.github/workflows/validate-atlas-vps.yml'
+      - 'package.json'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate ATLAS VPS contract
+        run: npm run check:vps
+      - name: Validate shell syntax
+        run: |
+          bash -n scripts/atlas-vps-bootstrap.sh
+          bash -n scripts/atlas-vps-deploy.sh
+      - name: Validate Compose model
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat >infra/vps/.env <<'EOF'
+          ATLAS_IMAGE=ghcr.io/winderaranguren-gif/atlas-enterprise-suite:latest
+          ATLAS_DOMAIN=atlas.example.com
+          EOF
+          printf ':80 { reverse_proxy atlas:8080 }\n' >infra/vps/Caddyfile
+          docker compose -f infra/vps/compose.yml --env-file infra/vps/.env config >/dev/null
+          rm -f infra/vps/.env infra/vps/Caddyfile

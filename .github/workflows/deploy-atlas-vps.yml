@@ -1,0 +1,134 @@
+name: Deploy ATLAS VPS
+
+on:
+  workflow_dispatch:
+    inputs:
+      image:
+        description: Canonical ATLAS OCI image tag or digest
+        required: true
+        default: ghcr.io/winderaranguren-gif/atlas-enterprise-suite:latest
+        type: string
+      domain:
+        description: Public ATLAS hostname already pointed at the VPS
+        required: true
+        type: string
+      bootstrap:
+        description: Bootstrap the Linux host before deployment
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+  statuses: write
+
+env:
+  ATLAS_VPS_HOST: ${{ secrets.ATLAS_VPS_HOST }}
+  ATLAS_VPS_USER: ${{ secrets.ATLAS_VPS_USER }}
+  ATLAS_VPS_SSH_PRIVATE_KEY: ${{ secrets.ATLAS_VPS_SSH_PRIVATE_KEY }}
+  ATLAS_VPS_KNOWN_HOST: ${{ secrets.ATLAS_VPS_KNOWN_HOST }}
+  ATLAS_VPS_PRODUCTION_URL: ${{ secrets.ATLAS_VPS_PRODUCTION_URL }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validate ATLAS VPS release files
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/validate-atlas-vps.mjs
+          bash -n scripts/atlas-vps-bootstrap.sh
+          bash -n scripts/atlas-vps-deploy.sh
+
+      - name: Validate deployment inputs and credentials
+        id: contract
+        shell: bash
+        env:
+          IMAGE: ${{ inputs.image }}
+          DOMAIN: ${{ inputs.domain }}
+        run: |
+          set -euo pipefail
+          [[ "$IMAGE" =~ ^ghcr\.io/winderaranguren-gif/atlas-enterprise-suite(:[A-Za-z0-9._-]+|@sha256:[a-f0-9]{64})$ ]] || { echo 'Invalid ATLAS image.' >&2; exit 1; }
+          [[ "$DOMAIN" =~ ^([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,63}$ ]] || { echo 'Invalid production domain.' >&2; exit 1; }
+          [[ "$ATLAS_VPS_PRODUCTION_URL" =~ ^https://[A-Za-z0-9.-]+(:[0-9]+)?/?$ ]] || { echo 'ATLAS_VPS_PRODUCTION_URL must be an HTTPS origin.' >&2; exit 1; }
+          for name in ATLAS_VPS_HOST ATLAS_VPS_USER ATLAS_VPS_SSH_PRIVATE_KEY ATLAS_VPS_KNOWN_HOST ATLAS_VPS_PRODUCTION_URL; do
+            [[ -n "${!name:-}" ]] || { echo "Missing required secret: $name" >&2; exit 1; }
+          done
+
+      - name: Prepare pinned SSH transport
+        shell: bash
+        run: |
+          set -euo pipefail
+          install -d -m 0700 "$HOME/.ssh"
+          printf '%s\n' "$ATLAS_VPS_SSH_PRIVATE_KEY" > "$HOME/.ssh/atlas_vps"
+          printf '%s\n' "$ATLAS_VPS_KNOWN_HOST" > "$HOME/.ssh/known_hosts"
+          chmod 0600 "$HOME/.ssh/atlas_vps" "$HOME/.ssh/known_hosts"
+
+      - name: Upload ATLAS VPS runtime contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          target="${ATLAS_VPS_USER}@${ATLAS_VPS_HOST}"
+          ssh_opts=(-i "$HOME/.ssh/atlas_vps" -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$HOME/.ssh/known_hosts")
+          tar -czf - infra/vps/compose.yml scripts/atlas-vps-bootstrap.sh scripts/atlas-vps-deploy.sh | \
+            ssh "${ssh_opts[@]}" "$target" 'rm -rf /tmp/atlas-vps-source && mkdir -p /tmp/atlas-vps-source && tar -xzf - -C /tmp/atlas-vps-source'
+
+      - name: Bootstrap ATLAS VPS
+        if: ${{ inputs.bootstrap }}
+        shell: bash
+        env:
+          IMAGE: ${{ inputs.image }}
+          DOMAIN: ${{ inputs.domain }}
+        run: |
+          set -euo pipefail
+          target="${ATLAS_VPS_USER}@${ATLAS_VPS_HOST}"
+          ssh_opts=(-i "$HOME/.ssh/atlas_vps" -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$HOME/.ssh/known_hosts")
+          ssh "${ssh_opts[@]}" "$target" "cd /tmp/atlas-vps-source && sudo bash scripts/atlas-vps-bootstrap.sh --domain '$DOMAIN' --image '$IMAGE'"
+
+      - name: Deploy selected ATLAS image with rollback
+        shell: bash
+        env:
+          IMAGE: ${{ inputs.image }}
+        run: |
+          set -euo pipefail
+          target="${ATLAS_VPS_USER}@${ATLAS_VPS_HOST}"
+          ssh_opts=(-i "$HOME/.ssh/atlas_vps" -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$HOME/.ssh/known_hosts")
+          ssh "${ssh_opts[@]}" "$target" "sudo ATLAS_PUBLIC_URL='$ATLAS_VPS_PRODUCTION_URL' /opt/atlas-vps/bin/atlas-vps-deploy '$IMAGE'"
+
+      - name: Verify sovereign ATLAS production
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/verify-sovereign-production.mjs "$ATLAS_VPS_PRODUCTION_URL"
+
+      - name: Mark ATLAS VPS production verified
+        if: success()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -d "{\"state\":\"success\",\"context\":\"atlas/vps-production\",\"description\":\"ATLAS VPS production verified\",\"target_url\":\"https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}" >/dev/null
+
+      - name: Mark ATLAS VPS production failure
+        if: failure()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl -sS -X POST \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            -d "{\"state\":\"failure\",\"context\":\"atlas/vps-production\",\"description\":\"ATLAS VPS deployment or verification failed\",\"target_url\":\"https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\"}" >/dev/null || true
